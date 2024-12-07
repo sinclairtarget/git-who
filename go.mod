@@ -1,3 +1,3 @@
-module github.com/sinclairtarget/gits
+module github.com/sinclairtarget/git-who
 
 go 1.23

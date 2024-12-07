@@ -23,7 +23,7 @@ func main() {
         "tree": treeCmd(),
     }
 
-    mainFlagSet := flag.NewFlagSet("gits", flag.ExitOnError)
+    mainFlagSet := flag.NewFlagSet("git-who", flag.ExitOnError)
     versionFlag := mainFlagSet.Bool("version", false, "Print version and exit")
 
     mainFlagSet.Parse(os.Args[1:])
@@ -51,7 +51,7 @@ func main() {
 // -------------------- Subcommand Definitions  --------------------------------
 
 func tableCmd() command {
-    flagSet := flag.NewFlagSet("gits table", flag.ExitOnError)
+    flagSet := flag.NewFlagSet("git-who table", flag.ExitOnError)
 
     return command{
         flagSet: flagSet,
@@ -63,7 +63,7 @@ func tableCmd() command {
 }
 
 func treeCmd() command {
-    flagSet := flag.NewFlagSet("gits tree", flag.ExitOnError)
+    flagSet := flag.NewFlagSet("git-who tree", flag.ExitOnError)
 
     return command{
         flagSet: flagSet,
