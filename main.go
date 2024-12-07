@@ -35,14 +35,11 @@ func main() {
 
     args := mainFlagSet.Args()
 
-    var cmd command
-    if len(args) == 0 {
-        cmd = subcommands["table"]
-    } else {
-        var ok bool
-        cmd, ok = subcommands[args[0]]
-        if !ok {
-            cmd = subcommands["table"]
+    cmd := subcommands["table"] // Default to "table"
+    if len(args) > 0 {
+        firstArg := args[0]
+        if subcommand, ok := subcommands[firstArg]; ok {
+            cmd = subcommand
         }
     }
 
