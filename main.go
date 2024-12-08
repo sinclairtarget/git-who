@@ -5,6 +5,8 @@ import (
     "fmt"
     "log"
     "os"
+
+    "github.com/sinclairtarget/git-who/internal/git"
 )
 
 const version = "0.1"
@@ -13,15 +15,6 @@ type command struct {
     flagSet *flag.FlagSet
     run func(args []string) error
 }
-
-// Whether we rank authors by commit, lines, or files.
-type tallyMode int
-
-const (
-    commitMode tallyMode = iota
-    linesMode 
-    filesMode
-)
 
 // Main examines the args and delegates to the specified subcommand.
 //
@@ -69,11 +62,6 @@ func main() {
     }
 }
 
-// Parse revisions from file path
-func parseArgs(args []string) (revs []string, path string) {
-    return args, "."
-}
-
 // -v- Subcommand definitions --------------------------------------------------
 
 func tableCmd() command {
@@ -90,7 +78,7 @@ func tableCmd() command {
     return command{
         flagSet: flagSet,
         run: func(args []string) error {
-            revs, path := parseArgs(args)
+            revs, path := git.ParseArgs(args)
             return table(revs, path, *useCsv)
         },
     }
@@ -112,13 +100,13 @@ func treeCmd() command {
     return command{
         flagSet: flagSet,
         run: func(args []string) error {
-            revs, path := parseArgs(args)
+            revs, path := git.ParseArgs(args)
 
-            var mode tallyMode
+            var mode git.TallyMode
             if *useLines {
-                mode = linesMode
+                mode = git.LinesMode
             } else if *useFiles {
-                mode = filesMode
+                mode = git.FilesMode
             }
 
             return tree(revs, path, mode, *depth)
