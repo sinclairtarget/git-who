@@ -9,35 +9,42 @@ package git
 import (
 	"bufio"
 	"fmt"
-	"iter"
 	"os/exec"
 	"slices"
+	"strconv"
+	"time"
+
+	"github.com/sinclairtarget/git-who/internal/itererr"
 )
 
-// Whether we rank authors by commit, lines, or files.
-type TallyMode int
-
-const (
-    CommitMode TallyMode = iota
-    LinesMode 
-    FilesMode
-)
-
-// Output from a Git CLI command
-type CmdOutput struct {
-	Lines iter.Seq[string]
-	Err error
+type Commit struct {
+	Hash         string
+	ShortHash    string
+	AuthorName   string
+	AuthorEmail  string
+	Date         time.Time
+	Subject      string
 }
 
+func (c Commit) String() string {
+	return fmt.Sprintf(
+		"{ hash:%s email:%s date:%s }",
+		c.ShortHash,
+		c.AuthorEmail,
+		c.Date,
+	)
+}
+
+// Arguments used for `git log`
 var baseArgs = []string {
 	"log",
-	"--pretty=format:%H:%h%n%an%n%ae%n%ad%n%s",
+	"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s",
 	"--numstat",
 	"--date=unix",
 }
 
 // Runs git log and returns an iterator over each line of the output
-func LogLines(revs []string, path string) (*CmdOutput, error) {
+func LogLines(revs []string, path string) (*itererr.Iter[string], error) {
 	args := slices.Concat(baseArgs, revs, []string { path })
 
 	cmd := exec.Command("git", args...)
@@ -52,9 +59,9 @@ func LogLines(revs []string, path string) (*CmdOutput, error) {
 	}
 
 	scanner := bufio.NewScanner(stdout)
-	var it CmdOutput = CmdOutput {}
 
-	it.Lines = func(yield func(string) bool) {
+	lines := itererr.Iter[string] {}
+	lines.Seq = func(yield func(string) bool) {
 		for scanner.Scan() {
 			if !yield(scanner.Text()) {
 				break
@@ -63,15 +70,73 @@ func LogLines(revs []string, path string) (*CmdOutput, error) {
 
 		err := scanner.Err()
 		if err != nil {
-			it.Err = fmt.Errorf("failed to scan stdout: %w", err)
+			lines.Err = fmt.Errorf("failed to scan stdout: %w", err)
 		}
 
 		err = cmd.Wait()
-		if err != nil && it.Err == nil {
+		if err != nil && lines.Err == nil {
 			// TODO: Can we log stderr as well here to help diagnose?
-			it.Err = fmt.Errorf("error after waiting for subprocess: %w", err)
+			lines.Err = fmt.Errorf(
+				"error after waiting for subprocess: %w",
+				err,
+			)
 		}
 	}
 
-	return &it, nil
+	return &lines, nil
+}
+
+func ParseCommits(lines *itererr.Iter[string]) *itererr.Iter[Commit] {
+	commits := itererr.Iter[Commit] {}
+	commits.Seq = func(yield func(Commit) bool) {
+		var commit Commit
+		var linesThisCommit int
+
+		for line := range lines.Seq {
+			fmt.Println(line)
+			if len(line) == 0 {
+				linesThisCommit = 0
+				if !yield(commit) {
+					break
+				}
+
+				continue
+			}
+
+			switch {
+			case linesThisCommit == 0:
+				commit.Hash = line
+			case linesThisCommit == 1:
+				commit.ShortHash = line
+			case linesThisCommit == 2:
+				commit.AuthorName = line
+			case linesThisCommit == 3:
+				commit.AuthorEmail = line
+			case linesThisCommit == 4:
+				i, err := strconv.Atoi(line)
+				if err != nil {
+					commits.Err = fmt.Errorf("error parsing commits: %w", err)
+					return
+				}
+
+				commit.Date = time.Unix(int64(i), 0)
+			case linesThisCommit == 5:
+				commit.Subject = line
+			case linesThisCommit >= 6:
+				// We parsed all other fields, now we're reading files
+			}
+
+			linesThisCommit += 1
+		}
+
+		if linesThisCommit > 0 {
+			yield(commit)
+		}
+
+		if lines.Err != nil {
+			commits.Err = fmt.Errorf("error parsing commits: %w", lines.Err)
+		}
+	}
+
+	return &commits
 }

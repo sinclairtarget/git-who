@@ -11,19 +11,20 @@ import (
 func table(revs []string, path string, useCsv bool) error {
 	fmt.Printf("table() revs: %v, path: %s, useCsv: %t\n", revs, path, useCsv)
 
-	output, err := git.LogLines(revs, path)
+	lines, err := git.LogLines(revs, path)
 	if err != nil {
 		return fmt.Errorf("failed to run git log: %w", err)
 	}
 
-	for l := range output.Lines {
-		fmt.Printf("%s\n", l)
+	commits := git.ParseCommits(lines)
+	for commit := range commits.Seq {
+		fmt.Printf("%v\n", commit)
 	}
 
-	if output.Err != nil {
+	if commits.Err != nil {
 		return fmt.Errorf(
-			"encountered error while iterating git log output: %w",
-			output.Err,
+			"encountered error while parsing git log: %w",
+			commits.Err,
 		)
 	}
 
