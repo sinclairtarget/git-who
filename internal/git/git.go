@@ -107,14 +107,14 @@ func parseFileDiff(line string) (FileDiff, error) {
 	added, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return diff,
-			   fmt.Errorf("could not parse %s as int: %w", parts[0], added)
+			   fmt.Errorf("could not parse %s as int: %w", parts[0], err)
 	}
 	diff.LinesAdded = added
 
 	removed, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return diff,
-			   fmt.Errorf("could not parse %s as int: %w", parts[1], added)
+			   fmt.Errorf("could not parse %s as int: %w", parts[1], err)
 	}
 	diff.LinesRemoved = removed
 

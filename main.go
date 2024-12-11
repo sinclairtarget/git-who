@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
 const version = "0.1"
@@ -102,11 +103,11 @@ func treeCmd() command {
 		run: func(args []string) error {
 			revs, path := git.ParseArgs(args)
 
-			var mode git.TallyMode
+			var mode tally.TallyMode
 			if *useLines {
-				mode = git.LinesMode
+				mode = tally.LinesMode
 			} else if *useFiles {
-				mode = git.FilesMode
+				mode = tally.FilesMode
 			}
 
 			return tree(revs, path, mode, *depth)

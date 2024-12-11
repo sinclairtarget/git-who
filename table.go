@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
 // The "table" subcommand summarizes the authorship history of the given
@@ -16,16 +17,13 @@ func table(revs []string, path string, useCsv bool) error {
 		return fmt.Errorf("failed to run git log: %w", err)
 	}
 
-	commits := git.ParseCommits(lines)
-	for commit := range commits.Seq {
-		fmt.Printf("%v\n", commit)
+	tallies, err := tally.TallyCommits(git.ParseCommits(lines))
+	if err != nil {
+		return fmt.Errorf("failed to tally commits: %w", err)
 	}
 
-	if commits.Err != nil {
-		return fmt.Errorf(
-			"encountered error while parsing git log: %w",
-			commits.Err,
-		)
+	for _, tally := range tallies {
+		fmt.Println(tally)
 	}
 
 	return nil
