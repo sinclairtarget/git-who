@@ -12,10 +12,18 @@ import (
 	"os/exec"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/itererr"
 )
+
+// A file that was changed in a Commit.
+type FileDiff struct {
+	Path         string
+	LinesAdded   int
+	LinesRemoved int
+}
 
 type Commit struct {
 	Hash         string
@@ -24,14 +32,16 @@ type Commit struct {
 	AuthorEmail  string
 	Date         time.Time
 	Subject      string
+	FileDiffs    []FileDiff
 }
 
 func (c Commit) String() string {
 	return fmt.Sprintf(
-		"{ hash:%s email:%s date:%s }",
+		"{ hash:%s email:%s date:%s files:%d }",
 		c.ShortHash,
 		c.AuthorEmail,
 		c.Date,
+		len(c.FileDiffs),
 	)
 }
 
@@ -86,20 +96,48 @@ func LogLines(revs []string, path string) (*itererr.Iter[string], error) {
 	return &lines, nil
 }
 
+func parseFileDiff(line string) (FileDiff, error) {
+	var diff FileDiff
+
+	parts := strings.Split(line, "\t")
+	if len(parts) != 3 {
+		return diff, fmt.Errorf("could not parse file diff: %s", line)
+	}
+
+	added, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return diff,
+			   fmt.Errorf("could not parse %s as int: %w", parts[0], added)
+	}
+	diff.LinesAdded = added
+
+	removed, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return diff,
+			   fmt.Errorf("could not parse %s as int: %w", parts[1], added)
+	}
+	diff.LinesRemoved = removed
+
+	diff.Path = parts[2]
+	return diff, nil
+}
+
+// Turns an iterator over lines from git log into an iterator of commits
 func ParseCommits(lines *itererr.Iter[string]) *itererr.Iter[Commit] {
 	commits := itererr.Iter[Commit] {}
+
 	commits.Seq = func(yield func(Commit) bool) {
-		var commit Commit
-		var linesThisCommit int
+		commit := Commit { FileDiffs: make([]FileDiff, 0) }
+		linesThisCommit := 0
 
 		for line := range lines.Seq {
-			fmt.Println(line)
 			if len(line) == 0 {
-				linesThisCommit = 0
 				if !yield(commit) {
 					break
 				}
 
+				commit = Commit { FileDiffs: make([]FileDiff, 0) }
+				linesThisCommit = 0
 				continue
 			}
 
@@ -123,7 +161,12 @@ func ParseCommits(lines *itererr.Iter[string]) *itererr.Iter[Commit] {
 			case linesThisCommit == 5:
 				commit.Subject = line
 			case linesThisCommit >= 6:
-				// We parsed all other fields, now we're reading files
+				diff, err := parseFileDiff(line)
+				if err != nil {
+					commits.Err = err
+					return
+				}
+				commit.FileDiffs = append(commit.FileDiffs, diff)
 			}
 
 			linesThisCommit += 1
