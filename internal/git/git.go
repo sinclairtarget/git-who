@@ -58,6 +58,8 @@ func LogLines(revs []string, path string) (*itererr.Iter[string], error) {
 	args := slices.Concat(baseArgs, revs, []string { path })
 
 	cmd := exec.Command("git", args...)
+	logger().Debug("running subprocess", "cmd", cmd)
+
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to open stdout pipe: %w", err)
@@ -91,6 +93,12 @@ func LogLines(revs []string, path string) (*itererr.Iter[string], error) {
 				err,
 			)
 		}
+
+		logger().Debug(
+			"subprocess exited",
+			"code",
+			cmd.ProcessState.ExitCode(),
+		)
 	}
 
 	return &lines, nil
@@ -132,6 +140,11 @@ func ParseCommits(lines *itererr.Iter[string]) *itererr.Iter[Commit] {
 
 		for line := range lines.Seq {
 			if len(line) == 0 {
+				logger().Debug(
+					"yielding parsed commit",
+					"hash",
+					commit.ShortHash,
+				)
 				if !yield(commit) {
 					break
 				}
@@ -173,6 +186,7 @@ func ParseCommits(lines *itererr.Iter[string]) *itererr.Iter[Commit] {
 		}
 
 		if linesThisCommit > 0 {
+			logger().Debug("yielding parsed commit", "hash", commit.ShortHash)
 			yield(commit)
 		}
 

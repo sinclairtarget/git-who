@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -17,6 +17,17 @@ type command struct {
 	run     func(args []string) error
 }
 
+func configureLogging(level slog.Level) {
+	handler := slog.NewTextHandler(
+		os.Stderr,
+		&slog.HandlerOptions{
+			Level: level,
+		},
+	)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+}
+
 // Main examines the args and delegates to the specified subcommand.
 //
 // If no subcommand was specified, we default to the "table" subcommand.
@@ -28,7 +39,9 @@ func main() {
 
 	// --- Handle top-level flags ---
 	mainFlagSet := flag.NewFlagSet("git-who", flag.ExitOnError)
+
 	versionFlag := mainFlagSet.Bool("version", false, "Print version and exit")
+	verboseFlag := mainFlagSet.Bool("v", false, "Enables debug logging")
 
 	mainFlagSet.Usage = func() {
 		fmt.Println("Usage: git-who [options...] [subcommand]")
@@ -41,6 +54,13 @@ func main() {
 	if *versionFlag {
 		fmt.Printf("%s\n", version)
 		return
+	}
+
+	if *verboseFlag {
+		configureLogging(slog.LevelDebug)
+		logger().Debug("Log level set to DEBUG")
+	} else {
+		configureLogging(slog.LevelInfo)
 	}
 
 	args := mainFlagSet.Args()
@@ -59,7 +79,8 @@ func main() {
 	subargs := cmd.flagSet.Args()
 
 	if err := cmd.run(subargs); err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 

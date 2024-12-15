@@ -3,7 +3,8 @@ package tally
 
 import (
 	"fmt"
-	
+	"time"
+
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/itererr"
 )
@@ -27,8 +28,10 @@ type Tally struct {
 }
 
 func TallyCommits(commits *itererr.Iter[git.Commit]) (map[string]Tally, error) {
-	tallies := make(map[string]Tally)	
+	tallies := make(map[string]Tally)
 	filesets := make(map[string]map[string]bool) // Used to dedupe filepaths
+
+	start := time.Now()
 
 	for commit := range commits.Seq {
 		key := commit.AuthorEmail
@@ -37,7 +40,7 @@ func TallyCommits(commits *itererr.Iter[git.Commit]) (map[string]Tally, error) {
 		tally.AuthorName = commit.AuthorName
 		tally.AuthorEmail = commit.AuthorEmail
 		tally.Commits += 1
-		
+
 		_, ok := filesets[key]
 		if !ok {
 			filesets[key] = make(map[string]bool)
@@ -64,6 +67,9 @@ func TallyCommits(commits *itererr.Iter[git.Commit]) (map[string]Tally, error) {
 		tally.FileCount = len(fileset)
 		tallies[key] = tally
 	}
+
+	elapsed := time.Now().Sub(start)
+	logger().Debug("tallied commits", "duration_ms", elapsed.Milliseconds())
 
 	return tallies, nil
 }

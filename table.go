@@ -15,7 +15,16 @@ import (
 // The "table" subcommand summarizes the authorship history of the given
 // commits and path in a table printed to stdout.
 func table(revs []string, path string, useCsv bool) error {
-	fmt.Printf("table() revs: %v, path: %s, useCsv: %t\n", revs, path, useCsv)
+	logger().Debug(
+		"called table()",
+		"revs",
+		revs,
+		"path",
+		path,
+		"useCsv",
+		useCsv,
+	)
+
 	if useCsv == false {
 		return fmt.Errorf("generating non-csv table not yet implemented")
 	}
@@ -53,7 +62,7 @@ func toRecord(t tally.Tally) []string {
 func writeCsv(tallies map[string]tally.Tally) error {
 	sorted := slices.SortedFunc(
 		maps.Values(tallies),
-		func (a, b tally.Tally) int {
+		func(a, b tally.Tally) int {
 			if a.Commits < b.Commits {
 				return -1
 			} else if a.Commits == b.Commits {
@@ -67,7 +76,7 @@ func writeCsv(tallies map[string]tally.Tally) error {
 	w := csv.NewWriter(os.Stdout)
 
 	// Write header
-	w.Write([]string {
+	w.Write([]string{
 		"name",
 		"email",
 		"commits",
