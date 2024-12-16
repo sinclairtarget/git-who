@@ -47,9 +47,31 @@ func main() {
 		fmt.Println("Usage: git-who [options...] [subcommand]")
 		fmt.Println("git-who tallies authorship")
 		mainFlagSet.PrintDefaults()
+
+		fmt.Println()
+		fmt.Println("Subcommands:")
+
+		for name, cmd := range subcommands {
+			fmt.Println(name)
+			cmd.flagSet.PrintDefaults()
+		}
 	}
 
-	mainFlagSet.Parse(os.Args[1:])
+	// Look for the index of the first arg not intended as a top-level flag.
+	// We handle this manually so that specifying the default subcommand is
+	// optional even when providing subcommand flags.
+	subcmdIndex := 1
+loop:
+	for subcmdIndex < len(os.Args) {
+		switch os.Args[subcmdIndex] {
+		case "-version", "--version", "-v", "--v", "-h", "--help":
+			subcmdIndex += 1
+		default:
+			break loop
+		}
+	}
+
+	mainFlagSet.Parse(os.Args[1:subcmdIndex])
 
 	if *versionFlag {
 		fmt.Printf("%s\n", version)
@@ -63,7 +85,7 @@ func main() {
 		configureLogging(slog.LevelInfo)
 	}
 
-	args := mainFlagSet.Args()
+	args := os.Args[subcmdIndex:]
 
 	// --- Handle subcommands ---
 	cmd := subcommands["table"] // Default to "table"
