@@ -63,7 +63,7 @@ func writeCsv(tallies map[string]tally.Tally) error {
 	sorted := slices.SortedFunc(
 		maps.Values(tallies),
 		func(a, b tally.Tally) int {
-			if a.Commits < b.Commits {
+			if a.Commits > b.Commits {
 				return -1
 			} else if a.Commits == b.Commits {
 				return 0
