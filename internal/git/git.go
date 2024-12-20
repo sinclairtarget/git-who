@@ -7,15 +7,11 @@
 package git
 
 import (
-	"bufio"
 	"fmt"
-	"os/exec"
-	"slices"
+	"iter"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/sinclairtarget/git-who/internal/itererr"
 )
 
 // A file that was changed in a Commit.
@@ -45,65 +41,6 @@ func (c Commit) String() string {
 	)
 }
 
-// Arguments used for `git log`
-var baseArgs = []string {
-	"log",
-	"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s",
-	"--numstat",
-	"--date=unix",
-}
-
-// Runs git log and returns an iterator over each line of the output
-func LogLines(revs []string, path string) (*itererr.Iter[string], error) {
-	args := slices.Concat(baseArgs, revs, []string { path })
-
-	cmd := exec.Command("git", args...)
-	logger().Debug("running subprocess", "cmd", cmd)
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to open stdout pipe: %w", err)
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		return nil, fmt.Errorf("failed to start subprocess: %w", err)
-	}
-
-	scanner := bufio.NewScanner(stdout)
-
-	lines := itererr.Iter[string] {}
-	lines.Seq = func(yield func(string) bool) {
-		for scanner.Scan() {
-			if !yield(scanner.Text()) {
-				break
-			}
-		}
-
-		err := scanner.Err()
-		if err != nil {
-			lines.Err = fmt.Errorf("failed to scan stdout: %w", err)
-		}
-
-		err = cmd.Wait()
-		if err != nil && lines.Err == nil {
-			// TODO: Can we log stderr as well here to help diagnose?
-			lines.Err = fmt.Errorf(
-				"error after waiting for subprocess: %w",
-				err,
-			)
-		}
-
-		logger().Debug(
-			"subprocess exited",
-			"code",
-			cmd.ProcessState.ExitCode(),
-		)
-	}
-
-	return &lines, nil
-}
-
 func parseFileDiff(line string) (FileDiff, error) {
 	var diff FileDiff
 
@@ -131,22 +68,25 @@ func parseFileDiff(line string) (FileDiff, error) {
 }
 
 // Turns an iterator over lines from git log into an iterator of commits
-func ParseCommits(lines *itererr.Iter[string]) *itererr.Iter[Commit] {
-	commits := itererr.Iter[Commit] {}
-
-	commits.Seq = func(yield func(Commit) bool) {
+func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
+	return func(yield func(Commit, error) bool) {
 		commit := Commit { FileDiffs: make([]FileDiff, 0) }
 		linesThisCommit := 0
 
-		for line := range lines.Seq {
+		for line, err := range lines {
+			if err != nil {
+				yield(commit, fmt.Errorf("error parsing commits: %w", err))
+				return
+			}
+
 			if len(line) == 0 {
 				logger().Debug(
 					"yielding parsed commit",
 					"hash",
 					commit.ShortHash,
 				)
-				if !yield(commit) {
-					break
+				if !yield(commit, nil) {
+					return
 				}
 
 				commit = Commit { FileDiffs: make([]FileDiff, 0) }
@@ -166,7 +106,7 @@ func ParseCommits(lines *itererr.Iter[string]) *itererr.Iter[Commit] {
 			case linesThisCommit == 4:
 				i, err := strconv.Atoi(line)
 				if err != nil {
-					commits.Err = fmt.Errorf("error parsing commits: %w", err)
+					yield(commit, fmt.Errorf("error parsing commits: %w", err))
 					return
 				}
 
@@ -176,7 +116,7 @@ func ParseCommits(lines *itererr.Iter[string]) *itererr.Iter[Commit] {
 			case linesThisCommit >= 6:
 				diff, err := parseFileDiff(line)
 				if err != nil {
-					commits.Err = err
+					yield(commit, err)
 					return
 				}
 				commit.FileDiffs = append(commit.FileDiffs, diff)
@@ -187,13 +127,26 @@ func ParseCommits(lines *itererr.Iter[string]) *itererr.Iter[Commit] {
 
 		if linesThisCommit > 0 {
 			logger().Debug("yielding parsed commit", "hash", commit.ShortHash)
-			yield(commit)
-		}
-
-		if lines.Err != nil {
-			commits.Err = fmt.Errorf("error parsing commits: %w", lines.Err)
+			yield(commit, nil)
 		}
 	}
+}
 
-	return &commits
+func Commits(revs []string, path string) (
+	iter.Seq2[Commit, error],
+	func() error,
+	error,
+) {
+	subprocess, err := RunLog(revs, path)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	lines := subprocess.StdoutLines()
+	commits := parseCommits(lines)
+
+	closer := func() error {
+		return subprocess.Wait()
+	}
+	return commits, closer, nil
 }

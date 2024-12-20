@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/itererr"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
@@ -43,7 +42,15 @@ func TestTallyCommits(t *testing.T) {
 		},
 	}
 
-	tallies, err := tally.TallyCommits(itererr.FromSlice(commits))
+	iter := func(yield func(git.Commit, error) bool) {
+		for _, commit := range commits {
+			if !yield(commit, nil) {
+				break
+			}
+		}
+	}
+
+	tallies, err := tally.TallyCommits(iter)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}

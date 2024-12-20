@@ -14,7 +14,13 @@ import (
 
 // The "table" subcommand summarizes the authorship history of the given
 // commits and path in a table printed to stdout.
-func table(revs []string, path string, useCsv bool) error {
+func table(revs []string, path string, useCsv bool) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("error running \"table\": %w", err)
+		}
+	}()
+
 	logger().Debug(
 		"called table()",
 		"revs",
@@ -29,12 +35,24 @@ func table(revs []string, path string, useCsv bool) error {
 		return fmt.Errorf("generating non-csv table not yet implemented")
 	}
 
-	lines, err := git.LogLines(revs, path)
-	if err != nil {
-		return fmt.Errorf("failed to run git log: %w", err)
-	}
+	tallies, err := func() (_ map[string]tally.Tally, err error) {
+		commits, closer, err := git.Commits(revs, path)
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			if err == nil {
+				err = closer()
+			}
+		}()
 
-	tallies, err := tally.TallyCommits(git.ParseCommits(lines))
+		tallies, err := tally.TallyCommits(commits)
+		if err != nil {
+			return nil, err
+		}
+
+		return tallies, nil
+	}()
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}

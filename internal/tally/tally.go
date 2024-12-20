@@ -3,10 +3,10 @@ package tally
 
 import (
 	"fmt"
+	"iter"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/itererr"
 )
 
 // Whether we rank authors by commit, lines, or files.
@@ -27,13 +27,17 @@ type Tally struct {
 	FileCount    int
 }
 
-func TallyCommits(commits *itererr.Iter[git.Commit]) (map[string]Tally, error) {
+func TallyCommits(commits iter.Seq2[git.Commit, error]) (map[string]Tally, error) {
 	tallies := make(map[string]Tally)
 	filesets := make(map[string]map[string]bool) // Used to dedupe filepaths
 
 	start := time.Now()
 
-	for commit := range commits.Seq {
+	for commit, err := range commits {
+		if err != nil {
+			return nil, fmt.Errorf("error iterating commits: %w", err)
+		}
+
 		key := commit.AuthorEmail
 		tally := tallies[key]
 
@@ -55,10 +59,6 @@ func TallyCommits(commits *itererr.Iter[git.Commit]) (map[string]Tally, error) {
 		}
 
 		tallies[key] = tally
-	}
-
-	if commits.Err != nil {
-		return nil, fmt.Errorf("error iterating commits: %w", commits.Err)
 	}
 
 	// Get count of unique files touched
