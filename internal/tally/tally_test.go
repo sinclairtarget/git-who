@@ -1,9 +1,11 @@
 package tally_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/iterutils"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
@@ -42,15 +44,8 @@ func TestTallyCommits(t *testing.T) {
 		},
 	}
 
-	iter := func(yield func(git.Commit, error) bool) {
-		for _, commit := range commits {
-			if !yield(commit, nil) {
-				break
-			}
-		}
-	}
-
-	tallies, err := tally.TallyCommits(iter)
+	seq := iterutils.WithoutErrors(slices.Values(commits))
+	tallies, err := tally.TallyCommits(seq)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
