@@ -2,10 +2,10 @@ package git
 
 import (
 	"bufio"
-	"os/exec"
 	"fmt"
-	"iter"
 	"io"
+	"iter"
+	"os/exec"
 	"slices"
 )
 
@@ -61,20 +61,20 @@ func Run(args []string) (*Subprocess, error) {
 	}
 
 	return &Subprocess{
-		cmd: cmd,
+		cmd:    cmd,
 		stdout: stdout,
 	}, nil
 }
 
 // Runs git log
 func RunLog(revs []string, path string) (*Subprocess, error) {
-	var baseArgs = []string {
+	var baseArgs = []string{
 		"log",
 		"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s",
 		"--numstat",
 		"--date=unix",
 	}
-	args := slices.Concat(baseArgs, revs, []string { path })
+	args := slices.Concat(baseArgs, revs, []string{path})
 
 	subprocess, err := Run(args)
 	if err != nil {

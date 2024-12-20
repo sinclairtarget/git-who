@@ -10,34 +10,34 @@ import (
 )
 
 func TestTallyCommits(t *testing.T) {
-	commits := []git.Commit {
-		git.Commit {
-			Hash: "baa",
-			ShortHash: "baa",
-			AuthorName: "bob",
+	commits := []git.Commit{
+		git.Commit{
+			Hash:        "baa",
+			ShortHash:   "baa",
+			AuthorName:  "bob",
 			AuthorEmail: "bob@mail.com",
-			FileDiffs: []git.FileDiff {
-				git.FileDiff {
-					Path: "bim.txt",
-					LinesAdded: 4,
+			FileDiffs: []git.FileDiff{
+				git.FileDiff{
+					Path:         "bim.txt",
+					LinesAdded:   4,
 					LinesRemoved: 0,
 				},
-				git.FileDiff {
-					Path: "vim.txt",
-					LinesAdded: 8,
+				git.FileDiff{
+					Path:         "vim.txt",
+					LinesAdded:   8,
 					LinesRemoved: 2,
 				},
 			},
 		},
-		git.Commit {
-			Hash: "bab",
-			ShortHash: "bab",
-			AuthorName: "jim",
+		git.Commit{
+			Hash:        "bab",
+			ShortHash:   "bab",
+			AuthorName:  "jim",
 			AuthorEmail: "jim@mail.com",
-			FileDiffs: []git.FileDiff {
-				git.FileDiff {
-					Path: "bim.txt",
-					LinesAdded: 3,
+			FileDiffs: []git.FileDiff{
+				git.FileDiff{
+					Path:         "bim.txt",
+					LinesAdded:   3,
 					LinesRemoved: 1,
 				},
 			},

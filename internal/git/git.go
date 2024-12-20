@@ -3,7 +3,7 @@
 *
 * We invoke Git directly as a subprocess and parse the output rather than using
 * git2go/libgit2.
-*/
+ */
 package git
 
 import (
@@ -22,13 +22,13 @@ type FileDiff struct {
 }
 
 type Commit struct {
-	Hash         string
-	ShortHash    string
-	AuthorName   string
-	AuthorEmail  string
-	Date         time.Time
-	Subject      string
-	FileDiffs    []FileDiff
+	Hash        string
+	ShortHash   string
+	AuthorName  string
+	AuthorEmail string
+	Date        time.Time
+	Subject     string
+	FileDiffs   []FileDiff
 }
 
 func (c Commit) String() string {
@@ -52,14 +52,14 @@ func parseFileDiff(line string) (FileDiff, error) {
 	added, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return diff,
-			   fmt.Errorf("could not parse %s as int: %w", parts[0], err)
+			fmt.Errorf("could not parse %s as int: %w", parts[0], err)
 	}
 	diff.LinesAdded = added
 
 	removed, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return diff,
-			   fmt.Errorf("could not parse %s as int: %w", parts[1], err)
+			fmt.Errorf("could not parse %s as int: %w", parts[1], err)
 	}
 	diff.LinesRemoved = removed
 
@@ -70,7 +70,7 @@ func parseFileDiff(line string) (FileDiff, error) {
 // Turns an iterator over lines from git log into an iterator of commits
 func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 	return func(yield func(Commit, error) bool) {
-		commit := Commit { FileDiffs: make([]FileDiff, 0) }
+		commit := Commit{FileDiffs: make([]FileDiff, 0)}
 		linesThisCommit := 0
 
 		for line, err := range lines {
@@ -89,7 +89,7 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 					return
 				}
 
-				commit = Commit { FileDiffs: make([]FileDiff, 0) }
+				commit = Commit{FileDiffs: make([]FileDiff, 0)}
 				linesThisCommit = 0
 				continue
 			}

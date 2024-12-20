@@ -13,9 +13,9 @@ import (
 type TallyMode int
 
 const (
-    CommitMode TallyMode = iota
-    LinesMode
-    FilesMode
+	CommitMode TallyMode = iota
+	LinesMode
+	FilesMode
 )
 
 type Tally struct {
