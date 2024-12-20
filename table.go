@@ -31,10 +31,6 @@ func table(revs []string, path string, useCsv bool) (err error) {
 		useCsv,
 	)
 
-	if useCsv == false {
-		return fmt.Errorf("generating non-csv table not yet implemented")
-	}
-
 	tallies, err := func() (_ map[string]tally.Tally, err error) {
 		commits, closer, err := git.Commits(revs, path)
 		if err != nil {
@@ -57,8 +53,26 @@ func table(revs []string, path string, useCsv bool) (err error) {
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}
 
+	sorted := slices.SortedFunc(
+		maps.Values(tallies),
+		func(a, b tally.Tally) int {
+			if a.Commits > b.Commits {
+				return -1
+			} else if a.Commits == b.Commits {
+				return 0
+			} else {
+				return 1
+			}
+		},
+	)
+
 	if useCsv {
-		writeCsv(tallies)
+		err := writeCsv(sorted)
+		if err != nil {
+			return err
+		}
+	} else {
+		writeTable(sorted)
 	}
 
 	return nil
@@ -77,20 +91,7 @@ func toRecord(t tally.Tally) []string {
 	)
 }
 
-func writeCsv(tallies map[string]tally.Tally) error {
-	sorted := slices.SortedFunc(
-		maps.Values(tallies),
-		func(a, b tally.Tally) int {
-			if a.Commits > b.Commits {
-				return -1
-			} else if a.Commits == b.Commits {
-				return 0
-			} else {
-				return 1
-			}
-		},
-	)
-
+func writeCsv(tallies []tally.Tally) error {
 	w := csv.NewWriter(os.Stdout)
 
 	// Write header
@@ -103,7 +104,7 @@ func writeCsv(tallies map[string]tally.Tally) error {
 		"files",
 	})
 
-	for _, tally := range sorted {
+	for _, tally := range tallies {
 		record := toRecord(tally)
 		if err := w.Write(record); err != nil {
 			return fmt.Errorf("error writing CSV record to stdout: %w", err)
@@ -116,4 +117,15 @@ func writeCsv(tallies map[string]tally.Tally) error {
 	}
 
 	return nil
+}
+
+func writeTable(tallies []tally.Tally) {
+	fmt.Printf("%s\t%s\t%s\n", "Email", "Author", "Commits")
+	for _, tally := range tallies {
+		fmt.Printf("%s\t%s\t%d\n",
+			tally.AuthorEmail,
+			tally.AuthorName,
+			tally.Commits,
+		)
+	}
 }
