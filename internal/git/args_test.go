@@ -1,66 +1,93 @@
+// This file contains tests for git-who's argument parsing.
+
 package git_test
 
 import (
+	"errors"
 	"slices"
 	"testing"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
+const safeTag string = "test-commit"
+const safeCommit string = "a3ef200f6dad5c4f6124b0727a6a8091a93af9dd"
+const filename string = "args_test.go"
+
+// This test only works in the git-who Git repo.
 func TestParseArgs(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    []string
-		expRevs []string
-		expPath string
+		name     string
+		args     []string
+		expRevs  []string
+		expPaths []string
 	}{
 		{
-			"empty_args",
-			[]string{},
-			[]string{},
-			".",
+			name:     "empty_args",
+			args:     []string{},
+			expRevs:  []string{"HEAD"},
+			expPaths: []string{"."},
 		},
 		{
-			"nil_args",
-			nil,
-			[]string{},
-			".",
+			name:     "commit",
+			args:     []string{safeTag},
+			expRevs:  []string{safeCommit},
+			expPaths: []string{"."},
 		},
 		{
-			"no_separator",
-			[]string{"foo", "bar"},
-			[]string{"foo", "bar"},
-			".",
+			name:     "commit_path",
+			args:     []string{safeTag, filename},
+			expRevs:  []string{safeCommit},
+			expPaths: []string{filename},
 		},
 		{
-			"separator",
-			[]string{"foo", "--", "bar"},
-			[]string{"foo"},
-			"bar",
+			name:     "path",
+			args:     []string{filename},
+			expRevs:  []string{"HEAD"},
+			expPaths: []string{filename},
 		},
 		{
-			"trailing_separator",
-			[]string{"foo", "--"},
-			[]string{"foo"},
-			".",
+			name:     "separator",
+			args:     []string{safeTag, "--", filename},
+			expRevs:  []string{safeCommit},
+			expPaths: []string{filename},
 		},
 		{
-			"duplicate_separator", // Should ignore extra args
-			[]string{"foo", "--", "bar", "--"},
-			[]string{"foo"},
-			"bar",
+			name:     "nonexistant_path_after_separator",
+			args:     []string{safeTag, "--", "foobar"},
+			expRevs:  []string{safeCommit},
+			expPaths: []string{"foobar"},
 		},
 		{
-			"duplicate_trailing_separator",
-			[]string{"foo", "--", "--"},
-			[]string{"foo"},
-			".",
+			name:     "trailing_separator",
+			args:     []string{safeTag, "--"},
+			expRevs:  []string{safeCommit},
+			expPaths: []string{"."},
+		},
+		{
+			name: "multiple_args",
+			args: []string{
+				safeTag,
+				safeTag,
+				filename,
+				filename,
+			},
+			expRevs:  []string{safeCommit, safeCommit},
+			expPaths: []string{filename, filename},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			revs, path := git.ParseArgs(test.args)
+			revs, paths, err := git.ParseArgs(test.args)
+			if err != nil {
+				var subErr git.SubprocessErr
+				if errors.As(err, &subErr) {
+					t.Logf("subprocess error output:\n%s", subErr.Stderr)
+				}
+				t.Errorf("got error: %v", err)
+			}
+
 			if !slices.Equal(revs, test.expRevs) {
 				t.Errorf(
 					"expected %v as revs but got %v",
@@ -69,12 +96,41 @@ func TestParseArgs(t *testing.T) {
 				)
 			}
 
-			if path != test.expPath {
+			if !slices.Equal(paths, test.expPaths) {
 				t.Errorf(
-					"expected \"%s\" as path but got \"%s\"",
-					test.expPath,
-					path,
+					"expected %v as paths but got %v",
+					test.expPaths,
+					paths,
 				)
+			}
+		})
+	}
+}
+
+func TestParseArgsError(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "not_path_or_rev",
+			args: []string{"foobar"},
+		},
+		{
+			name: "not_path",
+			args: []string{safeTag, "foobar"},
+		},
+		{
+			name: "not_rev",
+			args: []string{"foobar", "--", filename},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, _, err := git.ParseArgs(test.args)
+			if err == nil {
+				t.Error("expected error, but none returned")
 			}
 		})
 	}

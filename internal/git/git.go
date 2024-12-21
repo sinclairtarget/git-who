@@ -132,12 +132,12 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 	}
 }
 
-func Commits(revs []string, path string) (
+func Commits(revs []string, paths []string) (
 	iter.Seq2[Commit, error],
 	func() error,
 	error,
 ) {
-	subprocess, err := RunLog(revs, path)
+	subprocess, err := RunLog(revs, paths)
 	if err != nil {
 		return nil, nil, err
 	}

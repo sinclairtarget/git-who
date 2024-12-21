@@ -13,8 +13,8 @@ import (
 )
 
 // The "table" subcommand summarizes the authorship history of the given
-// commits and path in a table printed to stdout.
-func table(revs []string, path string, useCsv bool) (err error) {
+// commits and paths in a table printed to stdout.
+func table(revs []string, paths []string, useCsv bool) (err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("error running \"table\": %w", err)
@@ -25,14 +25,14 @@ func table(revs []string, path string, useCsv bool) (err error) {
 		"called table()",
 		"revs",
 		revs,
-		"path",
-		path,
+		"paths",
+		paths,
 		"useCsv",
 		useCsv,
 	)
 
 	tallies, err := func() (_ map[string]tally.Tally, err error) {
-		commits, closer, err := git.Commits(revs, path)
+		commits, closer, err := git.Commits(revs, paths)
 		if err != nil {
 			return nil, err
 		}

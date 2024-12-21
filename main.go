@@ -122,8 +122,11 @@ func tableCmd() command {
 	return command{
 		flagSet: flagSet,
 		run: func(args []string) error {
-			revs, path := git.ParseArgs(args)
-			return table(revs, path, *useCsv)
+			revs, paths, err := git.ParseArgs(args)
+			if err != nil {
+				return fmt.Errorf("could not parse args: %w", err)
+			}
+			return table(revs, paths, *useCsv)
 		},
 	}
 }
@@ -144,7 +147,10 @@ func treeCmd() command {
 	return command{
 		flagSet: flagSet,
 		run: func(args []string) error {
-			revs, path := git.ParseArgs(args)
+			revs, paths, err := git.ParseArgs(args)
+			if err != nil {
+				return fmt.Errorf("could not parse args: %w", err)
+			}
 
 			var mode tally.TallyMode
 			if *useLines {
@@ -153,7 +159,7 @@ func treeCmd() command {
 				mode = tally.FilesMode
 			}
 
-			return tree(revs, path, mode, *depth)
+			return tree(revs, paths, mode, *depth)
 		},
 	}
 }
