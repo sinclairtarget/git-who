@@ -60,11 +60,13 @@ func ParseArgs(args []string) (revs []string, paths []string, err error) {
 }
 
 // Returns true if this is a (full-length) Git revision hash, false otherwise.
+//
+// We also need to handle a hash with "^" in front.
 func isRev(s string) bool {
-	matched, err := regexp.MatchString(`[a-f0-9]+`, s)
+	matched, err := regexp.MatchString(`[\^a-f0-9]+`, s)
 	if err != nil {
 		logger().Error("Bad regexp!")
 	}
 
-	return matched && len(s) == 40
+	return matched && (len(s) == 40 || len(s) == 41)
 }

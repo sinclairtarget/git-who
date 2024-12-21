@@ -135,3 +135,19 @@ func TestParseArgsError(t *testing.T) {
 		})
 	}
 }
+
+func TestParseArgsRange(t *testing.T) {
+	revs, paths, err := git.ParseArgs([]string{"HEAD~3.."})
+	if err != nil {
+		t.Errorf("got unexpected error: %v", err)
+	}
+
+	if len(revs) != 2 {
+		t.Errorf("expected revs to have length 2, but got: %v", revs)
+	}
+
+	expPaths := []string{"."}
+	if !slices.Equal(paths, expPaths) {
+		t.Errorf("expected %v as paths but got %v", expPaths, paths)
+	}
+}

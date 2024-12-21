@@ -120,6 +120,10 @@ func writeCsv(tallies []tally.Tally) error {
 }
 
 func writeTable(tallies []tally.Tally) {
+	if len(tallies) == 0 {
+		return
+	}
+
 	fmt.Printf("%s\t%s\t%s\n", "Email", "Author", "Commits")
 	for _, tally := range tallies {
 		fmt.Printf("%s\t%s\t%d\n",
