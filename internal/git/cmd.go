@@ -103,6 +103,7 @@ func RunLog(revs []string, paths []string) (*Subprocess, error) {
 		"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s",
 		"--numstat",
 		"--date=unix",
+		"--no-merges", // Ensures every commit has file diffs
 	}
 	args := slices.Concat(baseArgs, revs, []string{"--"}, paths)
 

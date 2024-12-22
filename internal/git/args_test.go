@@ -65,6 +65,12 @@ func TestParseArgs(t *testing.T) {
 			expPaths: []string{"."},
 		},
 		{
+			name:     "leading_separator",
+			args:     []string{"--", filename},
+			expRevs:  []string{"HEAD"},
+			expPaths: []string{filename},
+		},
+		{
 			name: "multiple_args",
 			args: []string{
 				safeTag,

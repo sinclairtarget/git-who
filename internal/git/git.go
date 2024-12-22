@@ -41,6 +41,16 @@ func (c Commit) String() string {
 	)
 }
 
+func (c Commit) Name() string {
+	if c.ShortHash != "" {
+		return c.ShortHash
+	} else if c.Hash != "" {
+		return c.Hash
+	} else {
+		return "unknown"
+	}
+}
+
 func parseFileDiff(line string) (FileDiff, error) {
 	var diff FileDiff
 
@@ -49,19 +59,32 @@ func parseFileDiff(line string) (FileDiff, error) {
 		return diff, fmt.Errorf("could not parse file diff: %s", line)
 	}
 
-	added, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return diff,
-			fmt.Errorf("could not parse %s as int: %w", parts[0], err)
-	}
-	diff.LinesAdded = added
+	if parts[0] != "-" {
+		added, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return diff,
+				fmt.Errorf("could not parse %s as int on line \"%s\": %w",
+					parts[0],
+					line,
+					err,
+				)
+		}
 
-	removed, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return diff,
-			fmt.Errorf("could not parse %s as int: %w", parts[1], err)
+		diff.LinesAdded = added
 	}
-	diff.LinesRemoved = removed
+
+	if parts[1] != "-" {
+		removed, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return diff,
+				fmt.Errorf("could not parse %s as int on line \"%s\": %w",
+					parts[1],
+					line,
+					err,
+				)
+		}
+		diff.LinesRemoved = removed
+	}
 
 	diff.Path = parts[2]
 	return diff, nil
@@ -75,16 +98,19 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 
 		for line, err := range lines {
 			if err != nil {
-				yield(commit, fmt.Errorf("error parsing commits: %w", err))
+				yield(
+					commit,
+					fmt.Errorf(
+						"error reading commit %s: %w",
+						commit.Name(),
+						err,
+					),
+				)
 				return
 			}
 
 			if len(line) == 0 {
-				logger().Debug(
-					"yielding parsed commit",
-					"hash",
-					commit.ShortHash,
-				)
+				logger().Debug("yielding parsed commit", "hash", commit.Name())
 				if !yield(commit, nil) {
 					return
 				}
@@ -106,7 +132,14 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			case linesThisCommit == 4:
 				i, err := strconv.Atoi(line)
 				if err != nil {
-					yield(commit, fmt.Errorf("error parsing commits: %w", err))
+					yield(
+						commit,
+						fmt.Errorf(
+							"error parsing date from commit %s: %w",
+							commit.Name(),
+							err,
+						),
+					)
 					return
 				}
 
@@ -116,7 +149,14 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			case linesThisCommit >= 6:
 				diff, err := parseFileDiff(line)
 				if err != nil {
-					yield(commit, err)
+					yield(
+						commit,
+						fmt.Errorf(
+							"error parsing file diffs from commit %s: %w",
+							commit.Name(),
+							err,
+						),
+					)
 					return
 				}
 				commit.FileDiffs = append(commit.FileDiffs, diff)
@@ -126,7 +166,7 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 		}
 
 		if linesThisCommit > 0 {
-			logger().Debug("yielding parsed commit", "hash", commit.ShortHash)
+			logger().Debug("yielding parsed commit", "hash", commit.Name())
 			yield(commit, nil)
 		}
 	}
