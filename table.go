@@ -7,10 +7,13 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
+
+const colWidth = 100
 
 // The "table" subcommand summarizes the authorship history of the given
 // commits and paths in a table printed to stdout.
@@ -124,12 +127,49 @@ func writeTable(tallies []tally.Tally) {
 		return
 	}
 
-	fmt.Printf("%s\t%s\t%s\n", "Email", "Author", "Commits")
+	var build strings.Builder
+	for _ = range colWidth - 2 {
+		build.WriteRune('─')
+	}
+	rule := build.String()
+
+	// -- Write header --
+	fmt.Printf("┌%s┐\n", rule)
+	fmt.Printf(
+		"│%-27s %-29s %9s %9s %20s│\n",
+		"Author",
+		"Email",
+		"Commits",
+		"Files",
+		"Lines (+/-)",
+	)
+	fmt.Printf("├%s┤\n", rule)
+
+	// -- Write table rows --
 	for _, tally := range tallies {
-		fmt.Printf("%s\t%s\t%d\n",
-			tally.AuthorEmail,
-			tally.AuthorName,
+		lines := fmt.Sprintf(
+			"[32m%9d[0m / [31m%8d[0m",
+			tally.LinesAdded,
+			tally.LinesRemoved,
+		)
+
+		fmt.Printf(
+			"│%-27s %-29s %9d %9d %20s│\n",
+			abbrev(tally.AuthorName, 27),
+			abbrev(tally.AuthorEmail, 29),
 			tally.Commits,
+			tally.FileCount,
+			lines,
 		)
 	}
+
+	fmt.Printf("└%s┘\n", rule)
+}
+
+func abbrev(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+
+	return s[:max-3] + "..."
 }
