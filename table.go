@@ -17,7 +17,12 @@ const colWidth = 100
 
 // The "table" subcommand summarizes the authorship history of the given
 // commits and paths in a table printed to stdout.
-func table(revs []string, paths []string, useCsv bool) (err error) {
+func table(
+	revs []string,
+	paths []string,
+	mode tally.TallyMode,
+	useCsv bool,
+) (err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("error running \"table\": %w", err)
@@ -30,6 +35,8 @@ func table(revs []string, paths []string, useCsv bool) (err error) {
 		revs,
 		"paths",
 		paths,
+		"mode",
+		mode,
 		"useCsv",
 		useCsv,
 	)
@@ -59,9 +66,12 @@ func table(revs []string, paths []string, useCsv bool) (err error) {
 	sorted := slices.SortedFunc(
 		maps.Values(tallies),
 		func(a, b tally.Tally) int {
-			if a.Commits > b.Commits {
+			aRank := a.SortKey(mode)
+			bRank := b.SortKey(mode)
+
+			if aRank > bRank {
 				return -1
-			} else if a.Commits == b.Commits {
+			} else if aRank == bRank {
 				return 0
 			} else {
 				return 1

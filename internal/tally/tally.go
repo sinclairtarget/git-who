@@ -27,6 +27,20 @@ type Tally struct {
 	FileCount    int
 }
 
+func (t Tally) SortKey(mode TallyMode) int {
+	switch mode {
+	case CommitMode:
+		return t.Commits
+	case FilesMode:
+		return t.FileCount
+	case LinesMode:
+		return t.LinesAdded + t.LinesRemoved
+	default:
+		panic("unrecognized mode in switch statement")
+	}
+}
+
+// Returns a map of commiter -> Tally
 func TallyCommits(commits iter.Seq2[git.Commit, error]) (map[string]Tally, error) {
 	tallies := make(map[string]Tally)
 	filesets := make(map[string]map[string]bool) // Used to dedupe filepaths

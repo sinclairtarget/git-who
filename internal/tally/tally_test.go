@@ -45,7 +45,7 @@ func TestTallyCommits(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
-	tallies, err := tally.TallyCommits(seq)
+	tallies, err := tally.TallyCommits(seq, tally.CommitMode)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}

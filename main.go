@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -112,9 +113,11 @@ func tableCmd() command {
 	flagSet := flag.NewFlagSet("git-who table", flag.ExitOnError)
 
 	useCsv := flagSet.Bool("csv", false, "Output as csv")
+	linesMode := flagSet.Bool("l", false, "Sort by lines added + removed")
+	filesMode := flagSet.Bool("f", false, "Sort by files changed")
 
 	flagSet.Usage = func() {
-		fmt.Println("Usage: git-who table [--csv] [revision...] [[--] path]")
+		fmt.Println("Usage: git-who table [--csv] [-l|-f] [revision...] [[--] path]")
 		fmt.Println("Print out a table summarizing authorship")
 		flagSet.PrintDefaults()
 	}
@@ -122,11 +125,20 @@ func tableCmd() command {
 	return command{
 		flagSet: flagSet,
 		run: func(args []string) error {
+			mode := tally.CommitMode
+			if *linesMode && *filesMode {
+				return errors.New("-l and -f flags are mutually exclusive")
+			} else if *linesMode {
+				mode = tally.LinesMode
+			} else if *filesMode {
+				mode = tally.FilesMode
+			}
+
 			revs, paths, err := git.ParseArgs(args)
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return table(revs, paths, *useCsv)
+			return table(revs, paths, mode, *useCsv)
 		},
 	}
 }
