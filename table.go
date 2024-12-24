@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
-	"maps"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -41,7 +39,7 @@ func table(
 		useCsv,
 	)
 
-	tallies, err := func() (_ map[string]tally.Tally, err error) {
+	tallies, err := func() (_ []tally.Tally, err error) {
 		commits, closer, err := git.Commits(revs, paths)
 		if err != nil {
 			return nil, err
@@ -52,7 +50,7 @@ func table(
 			}
 		}()
 
-		tallies, err := tally.TallyCommits(commits)
+		tallies, err := tally.TallyCommits(commits, mode)
 		if err != nil {
 			return nil, err
 		}
@@ -63,29 +61,13 @@ func table(
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}
 
-	sorted := slices.SortedFunc(
-		maps.Values(tallies),
-		func(a, b tally.Tally) int {
-			aRank := a.SortKey(mode)
-			bRank := b.SortKey(mode)
-
-			if aRank > bRank {
-				return -1
-			} else if aRank == bRank {
-				return 0
-			} else {
-				return 1
-			}
-		},
-	)
-
 	if useCsv {
-		err := writeCsv(sorted)
+		err := writeCsv(tallies)
 		if err != nil {
 			return err
 		}
 	} else {
-		writeTable(sorted)
+		writeTable(tallies)
 	}
 
 	return nil

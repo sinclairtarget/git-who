@@ -4,6 +4,8 @@ package tally
 import (
 	"fmt"
 	"iter"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -40,8 +42,12 @@ func (t Tally) SortKey(mode TallyMode) int {
 	}
 }
 
-// Returns a map of commiter -> Tally
-func TallyCommits(commits iter.Seq2[git.Commit, error]) (map[string]Tally, error) {
+// Returns a slice of tallies in descending order by most commits / files /
+// lines.
+func TallyCommits(
+	commits iter.Seq2[git.Commit, error],
+	mode TallyMode,
+) ([]Tally, error) {
 	tallies := make(map[string]Tally)
 	filesets := make(map[string]map[string]bool) // Used to dedupe filepaths
 
@@ -82,8 +88,25 @@ func TallyCommits(commits iter.Seq2[git.Commit, error]) (map[string]Tally, error
 		tallies[key] = tally
 	}
 
+	// Sort list
+	sorted := slices.SortedFunc(
+		maps.Values(tallies),
+		func(a, b Tally) int {
+			aRank := a.SortKey(mode)
+			bRank := b.SortKey(mode)
+
+			if aRank > bRank {
+				return -1
+			} else if aRank == bRank {
+				return 0
+			} else {
+				return 1
+			}
+		},
+	)
+
 	elapsed := time.Now().Sub(start)
 	logger().Debug("tallied commits", "duration_ms", elapsed.Milliseconds())
 
-	return tallies, nil
+	return sorted, nil
 }
