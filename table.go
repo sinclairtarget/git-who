@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sinclairtarget/git-who/internal/ansi"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
@@ -140,9 +141,13 @@ func writeTable(tallies []tally.Tally) {
 	// -- Write table rows --
 	for _, tally := range tallies {
 		lines := fmt.Sprintf(
-			"[32m%9d[0m / [31m%8d[0m",
+			"%s%9d%s / %s%8d%s",
+			ansi.Green,
 			tally.LinesAdded,
+			ansi.Reset,
+			ansi.Red,
 			tally.LinesRemoved,
+			ansi.Reset,
 		)
 
 		fmt.Printf(
