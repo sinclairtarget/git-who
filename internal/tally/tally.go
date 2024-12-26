@@ -6,6 +6,7 @@ import (
 	"iter"
 	"maps"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -40,6 +41,19 @@ func (t Tally) SortKey(mode TallyMode) int {
 	default:
 		panic("unrecognized mode in switch statement")
 	}
+}
+
+func Compare(a, b Tally, mode TallyMode) int {
+	aRank := a.SortKey(mode)
+	bRank := b.SortKey(mode)
+
+	if aRank < bRank {
+		return -1
+	} else if bRank < aRank {
+		return 1
+	}
+
+	return strings.Compare(a.AuthorEmail, b.AuthorEmail)
 }
 
 // Returns a slice of tallies in descending order by most commits / files /
@@ -89,21 +103,9 @@ func TallyCommits(
 	}
 
 	// Sort list
-	sorted := slices.SortedFunc(
-		maps.Values(tallies),
-		func(a, b Tally) int {
-			aRank := a.SortKey(mode)
-			bRank := b.SortKey(mode)
-
-			if aRank > bRank {
-				return -1
-			} else if aRank == bRank {
-				return 0
-			} else {
-				return 1
-			}
-		},
-	)
+	sorted := slices.SortedFunc(maps.Values(tallies), func(a, b Tally) int {
+		return -Compare(a, b, mode)
+	})
 
 	elapsed := time.Now().Sub(start)
 	logger().Debug("tallied commits", "duration_ms", elapsed.Milliseconds())

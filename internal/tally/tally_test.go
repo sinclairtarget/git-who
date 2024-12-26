@@ -54,3 +54,18 @@ func TestTallyCommits(t *testing.T) {
 		t.Fatalf("TallyCommits() returned empty map")
 	}
 }
+
+func TestCompare(t *testing.T) {
+	result := tally.Compare(
+		tally.Tally{
+			AuthorEmail: "a",
+		},
+		tally.Tally{
+			AuthorEmail: "b",
+		},
+		tally.CommitMode,
+	)
+	if result != -1 {
+		t.Errorf("expected compare result to be -1 but got %d", result)
+	}
+}
