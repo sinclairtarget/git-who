@@ -4,6 +4,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/iterutils"
 	"github.com/sinclairtarget/git-who/internal/tally"
@@ -82,69 +84,27 @@ func TestTallyCommitsByPath(t *testing.T) {
 		t.Errorf("\"foo\" node has no \"bar.txt\" child")
 	}
 
-	if root.Tally.AuthorEmail != "bob@mail.com" {
-		t.Errorf(
-			"expected root tally author email to be \"%s\" but found \"%s\"",
-			"bob@mail.com",
-			root.Tally.AuthorEmail,
-		)
+	expected := tally.Tally{
+		AuthorName:   "bob",
+		AuthorEmail:  "bob@mail.com",
+		Commits:      2,
+		LinesAdded:   4 + 8 + 23,
+		LinesRemoved: 2,
+		FileCount:    2,
+	}
+	if diff := cmp.Diff(expected, root.Tally); diff != "" {
+		t.Errorf("bob's tally is wrong:\n%s", diff)
 	}
 
-	if root.Tally.FileCount != 2 {
-		t.Errorf(
-			"expected root tally file count to be 2 but found %d",
-			root.Tally.FileCount,
-		)
+	expected = tally.Tally{
+		AuthorName:   "bob",
+		AuthorEmail:  "bob@mail.com",
+		Commits:      2,
+		LinesAdded:   4 + 23,
+		LinesRemoved: 0,
+		FileCount:    1,
 	}
-
-	if root.Tally.Commits != 2 {
-		t.Errorf(
-			"expected root commits to be 2 but found %d",
-			root.Tally.Commits,
-		)
-	}
-
-	if root.Tally.LinesAdded != 4+8+23 {
-		t.Errorf(
-			"expected root lines added to be %d but found %d",
-			4+8+23,
-			root.Tally.LinesAdded,
-		)
-	}
-
-	if root.Tally.LinesRemoved != 2 {
-		t.Errorf(
-			"expected root lines removed to be 2 but found %d",
-			root.Tally.LinesRemoved,
-		)
-	}
-
-	if bimNode.Tally.Commits != 2 {
-		t.Errorf(
-			"expected bim node commits to be 2 but found %d",
-			bimNode.Tally.Commits,
-		)
-	}
-
-	if bimNode.Tally.FileCount != 1 {
-		t.Errorf(
-			"expected bim node file count to be 1 but found %d",
-			bimNode.Tally.FileCount,
-		)
-	}
-
-	if bimNode.Tally.LinesAdded != 4+23 {
-		t.Errorf(
-			"expected bim node lines added to be %d but found %d",
-			4+23,
-			bimNode.Tally.LinesAdded,
-		)
-	}
-
-	if bimNode.Tally.LinesRemoved != 0 {
-		t.Errorf(
-			"expected bim node lines removed to be 0 but found %d",
-			bimNode.Tally.LinesRemoved,
-		)
+	if diff := cmp.Diff(expected, bimNode.Tally); diff != "" {
+		t.Errorf("bob's second tally is wrong:\n%s", diff)
 	}
 }
