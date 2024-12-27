@@ -1,0 +1,3 @@
+[submodule "test-repo"]
+	path = test-repo
+	url = git@github.com:sinclairtarget/git-who-test-repo.git
