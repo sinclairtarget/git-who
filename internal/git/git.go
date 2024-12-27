@@ -9,16 +9,21 @@ package git
 import (
 	"fmt"
 	"iter"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var fileRenameRegexp *regexp.Regexp
 
 // A file that was changed in a Commit.
 type FileDiff struct {
 	Path         string
 	LinesAdded   int
 	LinesRemoved int
+	MoveDest     string // Empty unless the file was renamed
 }
 
 type Commit struct {
@@ -51,9 +56,52 @@ func (c Commit) Name() string {
 	}
 }
 
-func parseFileDiff(line string) (FileDiff, error) {
-	var diff FileDiff
+func init() {
+	fileRenameRegexp = regexp.MustCompile(`{"?(.+)"? => "?(.+)"?}`)
+}
 
+// Parse the path given by git log --numstat for a file diff.
+//
+// Sometimes this looks like /foo/{bar => bim}/baz.txt when a file is moved.
+func parseDiffPath(path string) (outPath string, dst string, err error) {
+	var pathBuilder strings.Builder
+	var dstBuilder strings.Builder
+
+	parts := strings.Split(path, string(os.PathSeparator))
+	for i, part := range parts {
+		if strings.Contains(part, "=>") {
+			matches := fileRenameRegexp.FindStringSubmatch(part)
+			if matches == nil || len(matches) != 3 {
+				return "", "", fmt.Errorf(
+					"error parsing rename from \"%s\" in path \"%s\"",
+					part,
+					path,
+				)
+			}
+
+			fmt.Fprintf(&pathBuilder, matches[1])
+			fmt.Fprintf(&dstBuilder, matches[2])
+		} else {
+			fmt.Fprintf(&pathBuilder, part)
+			fmt.Fprintf(&dstBuilder, part)
+		}
+
+		if i < len(parts)-1 {
+			fmt.Fprintf(&pathBuilder, string(os.PathSeparator))
+			fmt.Fprintf(&dstBuilder, string(os.PathSeparator))
+		}
+	}
+
+	outPath = pathBuilder.String()
+	dst = dstBuilder.String()
+	if dst == outPath {
+		dst = ""
+	}
+
+	return outPath, dst, nil
+}
+
+func parseFileDiff(line string) (diff FileDiff, err error) {
 	parts := strings.Split(line, "\t")
 	if len(parts) != 3 {
 		return diff, fmt.Errorf("could not parse file diff: %s", line)
@@ -86,7 +134,15 @@ func parseFileDiff(line string) (FileDiff, error) {
 		diff.LinesRemoved = removed
 	}
 
-	diff.Path = parts[2]
+	diff.Path, diff.MoveDest, err = parseDiffPath(parts[2])
+	if err != nil {
+		return diff, fmt.Errorf(
+			"could not parse path part of file diff on line \"%s\": %w",
+			line,
+			err,
+		)
+	}
+
 	return diff, nil
 }
 
@@ -172,6 +228,9 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 	}
 }
 
+// Returns an iterator over commits identified by the given revisions and paths.
+//
+// Also returns a closer() function for cleanup and an error when encountered.
 func Commits(revs []string, paths []string) (
 	iter.Seq2[Commit, error],
 	func() error,
