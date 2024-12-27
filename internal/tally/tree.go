@@ -174,25 +174,32 @@ func (t *TreeNode) remove(path string) (*TreeNode, error) {
 * Prunes the following types of nodes from the tree:
 *
 * 1. Interior nodes (directories) with no children.
-* 2. TODO: Leaf nodes (files) with more lines removed than added, i.e. deleted
-* files.
+* 2. Leaf nodes (files) with more lines removed than added, i.e. deleted files.
 *
 * Returns true if this node needs pruning.
  */
 func (t *TreeNode) prune() bool {
 	if t.isFile {
-		return true
+		var totalAdded, totalRemoved int
+		for _, tally := range t.tallies {
+			totalAdded += tally.LinesAdded
+			totalRemoved += tally.LinesRemoved
+		}
+
+		// Check to see if some lines were ever added to handle e.g. ".keep"
+		// files, which are empty.
+		return totalAdded > 0 && totalAdded-totalRemoved <= 0
 	} else {
 		var hasChildren bool
 		for key, child := range t.Children {
 			if child.prune() {
-				hasChildren = true
-			} else {
 				delete(t.Children, key)
+			} else {
+				hasChildren = true
 			}
 		}
 
-		return hasChildren
+		return !hasChildren
 	}
 }
 
