@@ -84,8 +84,6 @@ func TallyCommits(
 			filesets[key] = make(map[string]bool)
 		}
 		for _, diff := range commit.FileDiffs {
-			// TODO: Is the total number of changes really just the sum of
-			// changes per commit?
 			tally.LinesAdded += diff.LinesAdded
 			tally.LinesRemoved += diff.LinesRemoved
 
