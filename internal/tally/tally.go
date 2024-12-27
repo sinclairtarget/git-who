@@ -53,6 +53,7 @@ func Compare(a, b Tally, mode TallyMode) int {
 		return 1
 	}
 
+	// TODO: Should break ties with last commit time
 	return strings.Compare(a.AuthorEmail, b.AuthorEmail)
 }
 

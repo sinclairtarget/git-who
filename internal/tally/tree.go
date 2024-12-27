@@ -18,12 +18,14 @@ type TreeNode struct {
 	Children       map[string]*TreeNode
 	tallies        map[string]Tally
 	lastCommitSeen string
+	isFile         bool // A file, rather than a directory
 }
 
-func newNode() *TreeNode {
+func newNode(isFile bool) *TreeNode {
 	return &TreeNode{
 		Children: map[string]*TreeNode{},
 		tallies:  map[string]Tally{},
+		isFile:   isFile,
 	}
 }
 
@@ -54,7 +56,7 @@ func splitPath(path string) (string, string) {
 }
 
 // Inserts an edit into the tally tree.
-func (t *TreeNode) insert(
+func (t *TreeNode) edit(
 	path string,
 	commit git.Commit,
 	diff git.FileDiff,
@@ -65,11 +67,11 @@ func (t *TreeNode) insert(
 		p, nextP := splitPath(path)
 		child, ok := t.Children[p]
 		if !ok {
-			t.Children[p] = newNode()
+			t.Children[p] = newNode(nextP == "")
 			child = t.Children[p]
 		}
 
-		child.insert(nextP, commit, diff, mode)
+		child.edit(nextP, commit, diff, mode)
 	}
 
 	// Add tally
@@ -110,12 +112,113 @@ func (t *TreeNode) insert(
 	t.Tally = sorted[0]
 }
 
-// Returns a tree of file nodes with an attached tally object.
+func (t *TreeNode) insert(path string, node *TreeNode) error {
+	// Find parent
+	cur := t
+	var p string
+	nextP := path
+
+	for {
+		p, nextP = splitPath(nextP)
+		if nextP == "" {
+			break
+		}
+
+		child, ok := cur.Children[p]
+		if !ok {
+			// Need to create interior node
+			cur.Children[p] = newNode(false)
+			child = cur.Children[p]
+		}
+		cur = child
+	}
+
+	_, ok := cur.Children[p]
+	if ok {
+		return fmt.Errorf("path already exists in tree: \"%s\"", path)
+	}
+
+	cur.Children[p] = node
+	return nil
+}
+
+func (t *TreeNode) remove(path string) (*TreeNode, error) {
+	// Find parent of target node
+	cur := t
+	var p string
+	nextP := path
+
+	for {
+		p, nextP = splitPath(nextP)
+		if nextP == "" {
+			break
+		}
+
+		var ok bool
+		cur, ok = cur.Children[p]
+		if !ok {
+			return nil, fmt.Errorf(
+				"could not find existing node for path \"%s\"",
+				path,
+			)
+		}
+	}
+
+	// Remove child node from children map
+	child := cur.Children[p]
+	delete(cur.Children, p)
+	return child, nil
+}
+
+/*
+* Prunes the following types of nodes from the tree:
+*
+* 1. Interior nodes (directories) with no children.
+* 2. TODO: Leaf nodes (files) with more lines removed than added, i.e. deleted
+* files.
+*
+* Returns true if this node needs pruning.
+ */
+func (t *TreeNode) prune() bool {
+	if t.isFile {
+		return true
+	} else {
+		var hasChildren bool
+		for key, child := range t.Children {
+			if child.prune() {
+				hasChildren = true
+			} else {
+				delete(t.Children, key)
+			}
+		}
+
+		return hasChildren
+	}
+}
+
+/*
+* TallyCommitsByPath() returns a tree of nodes mirroring the working directory
+* with a tally for each node.
+*
+* Handling renamed files is tricky.
+*
+* When a file is renamed, we move the leaf node and its attached tally objects
+* to a new place in the tree. We do not update any interior nodes.
+*
+* Because no interior nodes are updated, this can lead to situations where, say,
+* the tree records more commits happening in a directory than on the files in
+* that directory (this could happen if a file were moved out of a directory).
+* However, the commit count for the directory still relfects the number of
+* commits that would be listed if you were to run `git log` on that directory.
+*
+* As for the new leaf node, it reports commits, lines added, etc. as if
+* `git log --follow` had been used on that filepath.
+ */
 func TallyCommitsByPath(
 	commits iter.Seq2[git.Commit, error],
 	mode TallyMode,
 ) (*TreeNode, error) {
-	root := newNode()
+	root := newNode(false)
 
 	for commit, err := range commits {
 		if err != nil {
@@ -126,11 +229,39 @@ func TallyCommitsByPath(
 			path, err := cleanPath(diff.Path)
 			if err != nil {
 				return nil,
-					fmt.Errorf("error handling diff path: \"%s\"", diff.Path)
+					fmt.Errorf("error cleaning diff path: \"%s\"", diff.Path)
 			}
-			root.insert(path, commit, diff, mode)
+
+			if diff.MoveDest != "" {
+				// Handle renamed file
+				oldPath := path
+				newPath, err := cleanPath(diff.MoveDest)
+				if err != nil {
+					return nil, fmt.Errorf(
+						"error cleaning diff path: \"%s\"",
+						diff.Path,
+					)
+				}
+
+				var node *TreeNode
+				node, err = root.remove(oldPath)
+				if err != nil {
+					return nil, fmt.Errorf("error removing old node: %w", err)
+				}
+
+				err = root.insert(newPath, node)
+				if err != nil {
+					return nil, fmt.Errorf("error inserting new node: %w", err)
+				}
+
+				root.edit(newPath, commit, diff, mode)
+			} else {
+				// Normal file update
+				root.edit(path, commit, diff, mode)
+			}
 		}
 	}
 
+	root.prune()
 	return root, nil
 }
