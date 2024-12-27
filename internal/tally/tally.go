@@ -62,8 +62,11 @@ func TallyCommits(
 	commits iter.Seq2[git.Commit, error],
 	mode TallyMode,
 ) ([]Tally, error) {
+	// Map of author to tally
 	tallies := make(map[string]Tally)
-	filesets := make(map[string]map[string]bool) // Used to dedupe filepaths
+
+	// Map of author to fileset. Used to dedupe filepaths
+	filesets := make(map[string]map[string]bool)
 
 	start := time.Now()
 
@@ -87,7 +90,15 @@ func TallyCommits(
 			tally.LinesAdded += diff.LinesAdded
 			tally.LinesRemoved += diff.LinesRemoved
 
-			filesets[key][diff.Path] = true
+			if diff.MoveDest != "" {
+				// File rename for everyone
+				for author, _ := range filesets {
+					filesets[author][diff.Path] = false
+					filesets[author][diff.MoveDest] = true
+				}
+			} else {
+				filesets[key][diff.Path] = true
+			}
 		}
 
 		tallies[key] = tally
@@ -96,7 +107,14 @@ func TallyCommits(
 	// Get count of unique files touched
 	for key, tally := range tallies {
 		fileset := filesets[key]
-		tally.FileCount = len(fileset)
+
+		sum := 0
+		for _, exists := range fileset {
+			if exists {
+				sum += 1
+			}
+		}
+		tally.FileCount = sum
 		tallies[key] = tally
 	}
 
