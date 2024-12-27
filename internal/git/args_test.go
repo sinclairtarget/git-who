@@ -1,20 +1,35 @@
 // This file contains tests for git-who's argument parsing.
+//
+// Since properly parsing the arguments involves invoking git rev-parse as a
+// subprocess, these tests run against the test repo submodule.
 
 package git_test
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"slices"
 	"testing"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
-const safeTag string = "test-commit"
-const safeCommit string = "a3ef200f6dad5c4f6124b0727a6a8091a93af9dd"
-const filename string = "args_test.go"
+const safeTag string = "root"
+const safeCommit string = "6afef287af5ca43f7d741e7ceff61aad38055b6a"
+const filename string = "README.md"
 
-// This test only works in the git-who Git repo.
+// Run these tests in the test submodule.
+func TestMain(m *testing.M) {
+	err := os.Chdir("../../test-repo")
+	if err != nil {
+		fmt.Printf("error changing working directory to submodule: %v", err)
+		fmt.Printf("Did you initialize the submodule? See README.md.\n")
+		os.Exit(1)
+	}
+	m.Run()
+}
+
 func TestParseArgs(t *testing.T) {
 	tests := []struct {
 		name     string
