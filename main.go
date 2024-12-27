@@ -31,7 +31,7 @@ func configureLogging(level slog.Level) {
 
 // Main examines the args and delegates to the specified subcommand.
 //
-// If no subcommand was specified, we default to the "table" subcommand.
+// If no subcommand was specified, we default to the "tree" subcommand.
 func main() {
 	subcommands := map[string]command{ // Available subcommands
 		"table": tableCmd(),
@@ -89,7 +89,7 @@ loop:
 	args := os.Args[subcmdIndex:]
 
 	// --- Handle subcommands ---
-	cmd := subcommands["table"] // Default to "table"
+	cmd := subcommands["tree"] // Default to "tree"
 	if len(args) > 0 {
 		first := args[0]
 		if subcommand, ok := subcommands[first]; ok {
