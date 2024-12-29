@@ -16,6 +16,36 @@ func init() {
 	fileRenameRegexp = regexp.MustCompile(`{(.*) => (.*)}`)
 }
 
+// Splits a path from git log --numstat on "/", while ignoring "/" surrounded
+// by "{" and "}".
+func splitPath(path string) []string {
+	parts := []string{}
+	var b strings.Builder
+	var inBrackets bool
+
+	for _, c := range path {
+		if c == os.PathSeparator && !inBrackets {
+			parts = append(parts, b.String())
+			b.Reset()
+			continue
+		}
+
+		if c == '{' {
+			inBrackets = true
+		} else if c == '}' {
+			inBrackets = false
+		}
+
+		b.WriteRune(c)
+	}
+
+	if b.Len() > 0 {
+		parts = append(parts, b.String())
+	}
+
+	return parts
+}
+
 // Parse the path given by git log --numstat for a file diff.
 //
 // Sometimes this looks like /foo/{bar => bim}/baz.txt when a file is moved.
@@ -23,7 +53,7 @@ func parseDiffPath(path string) (outPath string, dst string, err error) {
 	var pathBuilder strings.Builder
 	var dstBuilder strings.Builder
 
-	parts := strings.Split(path, string(os.PathSeparator))
+	parts := splitPath(path)
 	for i, part := range parts {
 		if strings.Contains(part, "=>") {
 			matches := fileRenameRegexp.FindStringSubmatch(part)
