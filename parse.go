@@ -6,7 +6,8 @@ import (
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
-// Just prints out a simple representation of the parsed commits for debugging.
+// Just prints out a simple representation of the commits parsed from `git log`
+// for debugging.
 func parse(revs []string, paths []string) (err error) {
 	defer func() {
 		if err != nil {
@@ -28,7 +29,11 @@ func parse(revs []string, paths []string) (err error) {
 		}
 	}()
 
-	for commit := range commits {
+	for commit, err := range commits {
+		if err != nil {
+			return fmt.Errorf("Error iterating commits: %w", err)
+		}
+
 		fmt.Printf("%s\n", commit)
 		for _, diff := range commit.FileDiffs {
 			fmt.Printf("  %s\n", diff)
