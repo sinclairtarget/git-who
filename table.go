@@ -46,8 +46,9 @@ func table(
 			return nil, err
 		}
 		defer func() {
+			errClose := closer()
 			if err == nil {
-				err = closer()
+				err = errClose
 			}
 		}()
 

@@ -14,8 +14,9 @@ import (
 const version = "0.1"
 
 type command struct {
-	flagSet *flag.FlagSet
-	run     func(args []string) error
+	flagSet  *flag.FlagSet
+	run      func(args []string) error
+	isHidden bool // Hide from usage
 }
 
 func configureLogging(level slog.Level) {
@@ -36,6 +37,7 @@ func main() {
 	subcommands := map[string]command{ // Available subcommands
 		"table": tableCmd(),
 		"tree":  treeCmd(),
+		"parse": parseCmd(),
 	}
 
 	// --- Handle top-level flags ---
@@ -53,6 +55,10 @@ func main() {
 		fmt.Println("Subcommands:")
 
 		for name, cmd := range subcommands {
+			if cmd.isHidden {
+				continue
+			}
+
 			fmt.Println(name)
 			cmd.flagSet.PrintDefaults()
 		}
@@ -173,6 +179,21 @@ func treeCmd() command {
 
 			return tree(revs, paths, mode, *depth)
 		},
+	}
+}
+
+func parseCmd() command {
+	flagSet := flag.NewFlagSet("git-who parse", flag.ExitOnError)
+	return command{
+		flagSet: flagSet,
+		run: func(args []string) error {
+			revs, paths, err := git.ParseArgs(args)
+			if err != nil {
+				return fmt.Errorf("could not parse args: %w", err)
+			}
+			return parse(revs, paths)
+		},
+		isHidden: true,
 	}
 }
 
