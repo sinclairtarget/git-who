@@ -57,7 +57,7 @@ func (c Commit) Name() string {
 }
 
 func init() {
-	fileRenameRegexp = regexp.MustCompile(`{"?(.+)"? => "?(.+)"?}`)
+	fileRenameRegexp = regexp.MustCompile(`{(.*) => (.*)}`)
 }
 
 // Parse the path given by git log --numstat for a file diff.
@@ -81,14 +81,23 @@ func parseDiffPath(path string) (outPath string, dst string, err error) {
 
 			fmt.Fprintf(&pathBuilder, matches[1])
 			fmt.Fprintf(&dstBuilder, matches[2])
+
+			if i < len(parts)-1 {
+				if matches[1] != "" {
+					fmt.Fprintf(&pathBuilder, string(os.PathSeparator))
+				}
+				if matches[2] != "" {
+					fmt.Fprintf(&dstBuilder, string(os.PathSeparator))
+				}
+			}
 		} else {
 			fmt.Fprintf(&pathBuilder, part)
 			fmt.Fprintf(&dstBuilder, part)
-		}
 
-		if i < len(parts)-1 {
-			fmt.Fprintf(&pathBuilder, string(os.PathSeparator))
-			fmt.Fprintf(&dstBuilder, string(os.PathSeparator))
+			if i < len(parts)-1 {
+				fmt.Fprintf(&pathBuilder, string(os.PathSeparator))
+				fmt.Fprintf(&dstBuilder, string(os.PathSeparator))
+			}
 		}
 	}
 
