@@ -78,24 +78,24 @@ func parseDiffPath(path string) (outPath string, dst string, err error) {
 				)
 			}
 
-			fmt.Fprintf(&pathBuilder, matches[1])
-			fmt.Fprintf(&dstBuilder, matches[2])
+			pathBuilder.WriteString(matches[1])
+			dstBuilder.WriteString(matches[2])
 
 			if i < len(parts)-1 {
 				if matches[1] != "" {
-					fmt.Fprintf(&pathBuilder, string(os.PathSeparator))
+					pathBuilder.WriteString(string(os.PathSeparator))
 				}
 				if matches[2] != "" {
-					fmt.Fprintf(&dstBuilder, string(os.PathSeparator))
+					dstBuilder.WriteString(string(os.PathSeparator))
 				}
 			}
 		} else {
-			fmt.Fprintf(&pathBuilder, part)
-			fmt.Fprintf(&dstBuilder, part)
+			pathBuilder.WriteString(part)
+			dstBuilder.WriteString(part)
 
 			if i < len(parts)-1 {
-				fmt.Fprintf(&pathBuilder, string(os.PathSeparator))
-				fmt.Fprintf(&dstBuilder, string(os.PathSeparator))
+				pathBuilder.WriteString(string(os.PathSeparator))
+				dstBuilder.WriteString(string(os.PathSeparator))
 			}
 		}
 	}
