@@ -102,6 +102,7 @@ func RunLog(revs []string, paths []string) (*Subprocess, error) {
 		"log",
 		"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s",
 		"--numstat",
+		"--summary",
 		"--date=unix",
 		"--no-merges", // Ensures every commit has file diffs
 		"--reverse",   // Needed to handle file renaming

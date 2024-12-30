@@ -176,33 +176,24 @@ func (t *TreeNode) remove(path string) (*TreeNode, error) {
 * Prunes the following types of nodes from the tree:
 *
 * 1. Interior nodes (directories) with no children.
-* 2. Leaf nodes (files) with more lines removed than added, i.e. deleted files.
 *
 * Returns true if this node needs pruning.
  */
 func (t *TreeNode) prune() bool {
 	if t.isFile {
-		var totalAdded, totalRemoved int
-		for _, tally := range t.tallies {
-			totalAdded += tally.LinesAdded
-			totalRemoved += tally.LinesRemoved
-		}
-
-		// Check to see if some lines were ever added to handle e.g. ".keep"
-		// files, which are empty.
-		return totalAdded > 0 && totalAdded-totalRemoved <= 0
-	} else {
-		var hasChildren bool
-		for key, child := range t.Children {
-			if child.prune() {
-				delete(t.Children, key)
-			} else {
-				hasChildren = true
-			}
-		}
-
-		return !hasChildren
+		return false
 	}
+
+	var hasChildren bool
+	for key, child := range t.Children {
+		if child.prune() {
+			delete(t.Children, key)
+		} else {
+			hasChildren = true
+		}
+	}
+
+	return !hasChildren
 }
 
 /*
@@ -241,7 +232,7 @@ func TallyCommitsByPath(
 					fmt.Errorf("error cleaning diff path: \"%s\"", diff.Path)
 			}
 
-			if diff.MoveDest != "" {
+			if diff.Action == git.Rename {
 				// Handle renamed file
 				oldPath := path
 				newPath, err := cleanPath(diff.MoveDest)
@@ -264,6 +255,8 @@ func TallyCommitsByPath(
 				}
 
 				root.edit(newPath, commit, diff, opts)
+			} else if diff.Action == git.Delete {
+				root.remove(path)
 			} else {
 				// Normal file update
 				root.edit(path, commit, diff, opts)

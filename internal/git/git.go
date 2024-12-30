@@ -43,9 +43,19 @@ func (c Commit) String() string {
 	)
 }
 
+type FileAction int
+
+const (
+	NoAction FileAction = iota
+	Create
+	Delete
+	Rename
+)
+
 // A file that was changed in a Commit.
 type FileDiff struct {
 	Path         string
+	Action       FileAction
 	LinesAdded   int
 	LinesRemoved int
 	MoveDest     string // Empty unless the file was renamed
@@ -53,8 +63,9 @@ type FileDiff struct {
 
 func (d FileDiff) String() string {
 	return fmt.Sprintf(
-		"{ path:\"%s\" move:\"%s\" added:%d removed:%d }",
+		"{ path:\"%s\" action:%d move:\"%s\" added:%d removed:%d }",
 		d.Path,
+		d.Action,
 		d.MoveDest,
 		d.LinesAdded,
 		d.LinesRemoved,

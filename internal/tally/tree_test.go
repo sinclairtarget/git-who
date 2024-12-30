@@ -136,6 +136,7 @@ func TestTallyCommitsByPathRename(t *testing.T) {
 			FileDiffs: []git.FileDiff{
 				git.FileDiff{
 					Path:         "foo/bim.txt",
+					Action:       git.Rename,
 					LinesAdded:   5,
 					LinesRemoved: 1,
 					MoveDest:     "foo/bar.txt",
@@ -232,6 +233,7 @@ func TestTallyCommitsByPathRenameAcrossDirs(t *testing.T) {
 				},
 				git.FileDiff{
 					Path:     "foo/bim.txt",
+					Action:   git.Rename,
 					MoveDest: "zoo/zar.txt",
 				},
 			},

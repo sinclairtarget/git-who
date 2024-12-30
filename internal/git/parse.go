@@ -3,8 +3,10 @@ package git
 import (
 	"fmt"
 	"iter"
+	"maps"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -96,6 +98,7 @@ func parseDiffPath(path string) (outPath string, dst string, err error) {
 	return outPath, dst, nil
 }
 
+// e.g. 9       0       rename-across-dirs/foo/bar.txt
 func parseFileDiff(line string) (diff FileDiff, err error) {
 	parts := strings.Split(line, "\t")
 	if len(parts) != 3 {
@@ -138,13 +141,55 @@ func parseFileDiff(line string) (diff FileDiff, err error) {
 		)
 	}
 
+	if diff.MoveDest != "" {
+		diff.Action = Rename
+	}
+
 	return diff, nil
+}
+
+// e.g. create mode 100644 rename-across-deep-dirs/foo/bar/hello.txt
+func parseFileAction(line string) (_ FileAction, _ string, err error) {
+	line = strings.TrimPrefix(line, " ")
+	action, after, found := strings.Cut(line, " ")
+	if !found {
+		return NoAction, "", fmt.Errorf(
+			"could not parse \"%s\" as file action",
+			line,
+		)
+	}
+
+	switch action {
+	case "create":
+		parts := strings.SplitN(after, " ", 3)
+		if len(parts) != 3 {
+			return NoAction, "", fmt.Errorf(
+				"could not parse \"%s\" as create file action",
+				line,
+			)
+		}
+		return Create, parts[2], nil
+	case "delete":
+		parts := strings.SplitN(after, " ", 3)
+		if len(parts) != 3 {
+			return NoAction, "", fmt.Errorf(
+				"could not parse \"%s\" as delete file action",
+				line,
+			)
+		}
+		return Delete, parts[2], nil
+	case "rename":
+		return Rename, "", nil // We figure out renamed files elsewhere
+	default:
+		return NoAction, "", fmt.Errorf("unknown action in \"%s\"", line)
+	}
 }
 
 // Turns an iterator over lines from git log into an iterator of commits
 func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 	return func(yield func(Commit, error) bool) {
-		commit := Commit{FileDiffs: make([]FileDiff, 0)}
+		var commit Commit
+		diffLookup := map[string]FileDiff{}
 		linesThisCommit := 0
 
 		for line, err := range lines {
@@ -161,12 +206,14 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			}
 
 			if len(line) == 0 {
+				commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
 				logger().Debug("yielding parsed commit", "hash", commit.Name())
 				if !yield(commit, nil) {
 					return
 				}
 
-				commit = Commit{FileDiffs: make([]FileDiff, 0)}
+				commit = Commit{}
+				diffLookup = map[string]FileDiff{}
 				linesThisCommit = 0
 				continue
 			}
@@ -197,7 +244,7 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 				commit.Date = time.Unix(int64(i), 0)
 			case linesThisCommit == 5:
 				commit.Subject = line
-			case linesThisCommit >= 6:
+			case linesThisCommit >= 6 && line[0] != ' ':
 				diff, err := parseFileDiff(line)
 				if err != nil {
 					yield(
@@ -210,13 +257,46 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 					)
 					return
 				}
-				commit.FileDiffs = append(commit.FileDiffs, diff)
+				diffLookup[diff.Path] = diff
+			default:
+				action, path, err := parseFileAction(line)
+				if err != nil {
+					yield(
+						commit,
+						fmt.Errorf(
+							"error parsing file action from commit %s: %w",
+							commit.Name(),
+							err,
+						),
+					)
+					return
+				}
+
+				if action == Rename {
+					continue
+				}
+
+				diff, ok := diffLookup[path]
+				if !ok {
+					yield(
+						commit,
+						fmt.Errorf(
+							"could not look up diff for line \"%s\" using path \"%s\"",
+							line,
+							path,
+						),
+					)
+					return
+				}
+				diff.Action = action
+				diffLookup[path] = diff
 			}
 
 			linesThisCommit += 1
 		}
 
 		if linesThisCommit > 0 {
+			commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
 			logger().Debug("yielding parsed commit", "hash", commit.Name())
 			yield(commit, nil)
 		}

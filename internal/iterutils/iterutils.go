@@ -17,7 +17,7 @@ func WithoutErrors[V any](seq iter.Seq[V]) iter.Seq2[V, error] {
 	}
 }
 
-// Turns a seq into a slice
+// Turns a seq2 into a slice
 func Collect[V any](seq iter.Seq2[V, error]) ([]V, error) {
 	s := []V{}
 	for v, err := range seq {
