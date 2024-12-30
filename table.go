@@ -14,7 +14,8 @@ import (
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
-const colWidth = 65 // Width in columns to use by default
+const narrowWidth = 65 // Width in columns to use by default
+const wideWidth = 80   // Width to use when we have more info to show
 
 // The "table" subcommand summarizes the authorship history of the given
 // commits and paths in a table printed to stdout.
@@ -79,7 +80,7 @@ func table(
 			return err
 		}
 	} else {
-		writeTable(tallies, showEmail)
+		writeTable(tallies, showEmail, mode)
 	}
 
 	return nil
@@ -142,37 +143,57 @@ func writeCsv(tallies []tally.Tally, showEmail bool) error {
 	return nil
 }
 
-func writeTable(tallies []tally.Tally, showEmail bool) {
+func writeTable(tallies []tally.Tally, showEmail bool, mode tally.TallyMode) {
 	if len(tallies) == 0 {
 		return
 	}
 
+	colwidth := narrowWidth
+	if mode == tally.LastModifiedMode {
+		colwidth = wideWidth
+	}
+
 	var build strings.Builder
-	for _ = range colWidth - 2 {
+	for _ = range colwidth - 2 {
 		build.WriteRune('─')
 	}
 	rule := build.String()
 
 	// -- Write header --
 	fmt.Printf("┌%s┐\n", rule)
-	fmt.Printf(
-		"│%-29s %7s %7s %17s│\n",
-		"Author",
-		"Commits",
-		"Files",
-		"Lines (+/-)",
-	)
+
+	if mode == tally.LastModifiedMode {
+		fmt.Printf(
+			"│%-*s %-11s %7s %7s %17s│\n",
+			colwidth-36-12,
+			"Author",
+			"Last",
+			"Commits",
+			"Files",
+			"Lines (+/-)",
+		)
+	} else {
+		fmt.Printf(
+			"│%-*s %7s %7s %17s│\n",
+			colwidth-36,
+			"Author",
+			"Commits",
+			"Files",
+			"Lines (+/-)",
+		)
+	}
 	fmt.Printf("├%s┤\n", rule)
 
 	// -- Write table rows --
-	for _, tally := range tallies {
+	now := time.Now()
+	for _, t := range tallies {
 		lines := fmt.Sprintf(
 			"%s%7d%s / %s%7d%s",
 			ansi.Green,
-			tally.LinesAdded,
+			t.LinesAdded,
 			ansi.Reset,
 			ansi.Red,
-			tally.LinesRemoved,
+			t.LinesRemoved,
 			ansi.Reset,
 		)
 
@@ -180,20 +201,33 @@ func writeTable(tallies []tally.Tally, showEmail bool) {
 		if showEmail {
 			author = fmt.Sprintf(
 				"%s %s",
-				tally.AuthorName,
-				format.GitEmail(tally.AuthorEmail),
+				t.AuthorName,
+				format.GitEmail(t.AuthorEmail),
 			)
 		} else {
-			author = tally.AuthorName
+			author = t.AuthorName
 		}
 
-		fmt.Printf(
-			"│%-29s %7d %7d %17s│\n",
-			format.Abbrev(author, 29),
-			tally.Commits,
-			tally.FileCount,
-			lines,
-		)
+		if mode == tally.LastModifiedMode {
+			fmt.Printf(
+				"│%-*s %-11s %7d %7d %17s│\n",
+				colwidth-36-12,
+				format.Abbrev(author, colwidth-36-12),
+				format.RelativeTime(now, t.LastCommitTime),
+				t.Commits,
+				t.FileCount,
+				lines,
+			)
+		} else {
+			fmt.Printf(
+				"│%-29s %7d %7d %17s│\n",
+				colwidth-36,
+				format.Abbrev(author, colwidth-36),
+				t.Commits,
+				t.FileCount,
+				lines,
+			)
+		}
 	}
 
 	fmt.Printf("└%s┘\n", rule)
