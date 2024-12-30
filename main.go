@@ -28,9 +28,10 @@ type command struct {
 // If no subcommand was specified, we default to the "tree" subcommand.
 func main() {
 	subcommands := map[string]command{ // Available subcommands
+		"dump":  dumpCmd(),
+		"parse": parseCmd(),
 		"table": tableCmd(),
 		"tree":  treeCmd(),
-		"parse": parseCmd(),
 	}
 
 	// --- Handle top-level flags ---
@@ -196,6 +197,21 @@ Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [revision...] [[--] path]
 
 			return tree(revs, paths, mode, *depth, *showEmail)
 		},
+	}
+}
+
+func dumpCmd() command {
+	flagSet := flag.NewFlagSet("git-who dump", flag.ExitOnError)
+	return command{
+		flagSet: flagSet,
+		run: func(args []string) error {
+			revs, paths, err := git.ParseArgs(args)
+			if err != nil {
+				return fmt.Errorf("could not parse args: %w", err)
+			}
+			return dump(revs, paths)
+		},
+		isHidden: true,
 	}
 }
 
