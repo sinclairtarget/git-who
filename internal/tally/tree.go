@@ -60,7 +60,7 @@ func (t *TreeNode) edit(
 	path string,
 	commit git.Commit,
 	diff git.FileDiff,
-	mode TallyMode,
+	opts TallyOpts,
 ) {
 	if path != "" {
 		// Insert child
@@ -71,11 +71,12 @@ func (t *TreeNode) edit(
 			child = t.Children[p]
 		}
 
-		child.edit(nextP, commit, diff, mode)
+		child.edit(nextP, commit, diff, opts)
 	}
 
 	// Add tally
-	nodeTally, ok := t.tallies[commit.AuthorEmail]
+	key := opts.Key(commit)
+	nodeTally, ok := t.tallies[key]
 	if !ok {
 		nodeTally = Tally{
 			AuthorName:  commit.AuthorName,
@@ -95,7 +96,7 @@ func (t *TreeNode) edit(
 	nodeTally.FileCount = 0
 	if len(t.Children) > 0 {
 		for _, child := range t.Children {
-			childTally, ok := child.tallies[commit.AuthorEmail]
+			childTally, ok := child.tallies[key]
 			if ok {
 				nodeTally.FileCount += childTally.FileCount
 			}
@@ -104,11 +105,11 @@ func (t *TreeNode) edit(
 		nodeTally.FileCount = 1
 	}
 
-	t.tallies[commit.AuthorEmail] = nodeTally
+	t.tallies[key] = nodeTally
 
 	// Pick best tally for the node according to the tally mode
 	sorted := slices.SortedFunc(maps.Values(t.tallies), func(a, b Tally) int {
-		return -a.Compare(b, mode)
+		return -a.Compare(b, opts.Mode)
 	})
 	t.Tally = sorted[0]
 }
@@ -224,7 +225,7 @@ func (t *TreeNode) prune() bool {
  */
 func TallyCommitsByPath(
 	commits iter.Seq2[git.Commit, error],
-	mode TallyMode,
+	opts TallyOpts,
 ) (*TreeNode, error) {
 	root := newNode(false)
 
@@ -262,10 +263,10 @@ func TallyCommitsByPath(
 					return nil, fmt.Errorf("error inserting new node: %w", err)
 				}
 
-				root.edit(newPath, commit, diff, mode)
+				root.edit(newPath, commit, diff, opts)
 			} else {
 				// Normal file update
-				root.edit(path, commit, diff, mode)
+				root.edit(path, commit, diff, opts)
 			}
 		}
 	}

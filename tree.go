@@ -7,8 +7,10 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/sinclairtarget/git-who/internal/ansi"
+	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
@@ -18,7 +20,15 @@ const defaultMaxDepth = 100
 type printTreeOpts struct {
 	mode     tally.TallyMode
 	maxDepth int
-	maxWidth int
+}
+
+type treeOutputLine struct {
+	indent    string
+	path      string
+	metric    string
+	tally     tally.Tally
+	isDir     bool
+	showTally bool
 }
 
 func tree(
@@ -26,6 +36,7 @@ func tree(
 	paths []string,
 	mode tally.TallyMode,
 	depth int,
+	showEmail bool,
 ) (err error) {
 	defer func() {
 		if err != nil {
@@ -56,7 +67,14 @@ func tree(
 			}
 		}()
 
-		root, err := tally.TallyCommitsByPath(commits, mode)
+		opts := tally.TallyOpts{Mode: mode}
+		if showEmail {
+			opts.Key = func(c git.Commit) string { return c.AuthorEmail }
+		} else {
+			opts.Key = func(c git.Commit) string { return c.AuthorName }
+		}
+
+		root, err := tally.TallyCommitsByPath(commits, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -72,89 +90,45 @@ func tree(
 		maxDepth = defaultMaxDepth
 	}
 
-	maxWidth := calcMaxWidth(root, ".", 0, maxDepth, 0)
 	opts := printTreeOpts{
 		maxDepth: maxDepth,
-		maxWidth: maxWidth,
 		mode:     mode,
 	}
-
-	printTree(root, ".", 0, "", []bool{}, opts)
+	lines := toLines(root, ".", 0, "", []bool{}, opts, []treeOutputLine{})
+	printTree(lines, showEmail)
 	return nil
 }
 
-func calcMaxWidth(
-	node *tally.TreeNode,
-	path string,
-	depth int,
-	maxDepth int,
-	indent int,
-) int {
-	if depth > maxDepth {
-		return 0
-	}
-
-	widthThisNode := 4*indent + len(path)
-	max := widthThisNode
-
-	if depth < maxDepth && len(node.Children) == 1 {
-		// Path ellision
-		for p, child := range node.Children {
-			childWidth := calcMaxWidth(
-				child,
-				filepath.Join(path, p),
-				depth+1,
-				maxDepth,
-				indent,
-			)
-			if childWidth > max {
-				max = childWidth
-			}
-		}
-	} else {
-		for p, child := range node.Children {
-			childWidth := calcMaxWidth(
-				child,
-				p,
-				depth+1,
-				maxDepth,
-				indent+1,
-			)
-			if childWidth > max {
-				max = childWidth
-			}
-		}
-	}
-
-	return max
-}
-
-func printTree(
+func toLines(
 	node *tally.TreeNode,
 	path string,
 	depth int,
 	lastAuthor string,
 	isFinalChild []bool,
 	opts printTreeOpts,
-) {
+	lines []treeOutputLine,
+) []treeOutputLine {
 	if depth > opts.maxDepth {
-		return
+		return lines
 	}
 
 	if depth < opts.maxDepth && len(node.Children) == 1 {
 		// Path ellision
 		for k, v := range node.Children {
-			printTree(
+			lines = toLines(
 				v,
 				filepath.Join(path, k),
 				depth+1,
 				lastAuthor,
 				isFinalChild,
 				opts,
+				lines,
 			)
 		}
-		return
+		return lines
 	}
+
+	var line treeOutputLine
 
 	var indentBuilder strings.Builder
 	for i, isFinal := range isFinalChild {
@@ -172,69 +146,47 @@ func printTree(
 			}
 		}
 	}
+	line.indent = indentBuilder.String()
 
-	pathPart := path
+	line.path = path
 	if len(node.Children) > 0 {
 		// Have a directory
-		pathPart = path + string(os.PathSeparator)
+		line.path = path + string(os.PathSeparator)
 	}
 
-	var tallyPart string
-	var separator string
-	if node.Tally.AuthorEmail != lastAuthor {
-		tallyPart = fmtTally(node.Tally, opts.mode)
-		separator = strings.Repeat(
-			".",
-			max(2, opts.maxWidth+2-len(isFinalChild)*4-len(pathPart)),
-		)
-	}
+	line.tally = node.Tally
+	line.metric = fmtTallyMetric(node.Tally, opts)
+	line.isDir = len(node.Children) > 0
+	line.showTally = node.Tally.AuthorEmail != lastAuthor
 
-	if len(node.Children) > 0 {
-		fmt.Printf(
-			"%s%s%s%s%s%s\n",
-			indentBuilder.String(),
-			pathPart,
-			ansi.Dim,
-			separator,
-			ansi.Reset,
-			tallyPart,
-		)
-	} else {
-		fmt.Printf(
-			"%s%s%s%s%s%s\n",
-			indentBuilder.String(),
-			pathPart,
-			ansi.Dim,
-			separator,
-			tallyPart,
-			ansi.Reset,
-		)
-	}
+	lines = append(lines, line)
 
 	childPaths := slices.Sorted(maps.Keys(node.Children))
 	for i, p := range childPaths {
 		child := node.Children[p]
-		printTree(
+		lines = toLines(
 			child,
 			p,
 			depth+1,
 			node.Tally.AuthorEmail,
 			append(isFinalChild, i == len(childPaths)-1),
 			opts,
+			lines,
 		)
 	}
+
+	return lines
 }
 
-func fmtTally(t tally.Tally, mode tally.TallyMode) string {
-	switch mode {
+func fmtTallyMetric(t tally.Tally, opts printTreeOpts) string {
+	switch opts.mode {
 	case tally.CommitMode:
-		return fmt.Sprintf("%-15s (%d)", t.AuthorName, t.Commits)
+		return fmt.Sprintf("(%d)", t.Commits)
 	case tally.FilesMode:
-		return fmt.Sprintf("%-15s (%d)", t.AuthorName, t.FileCount)
+		return fmt.Sprintf("(%d)", t.FileCount)
 	case tally.LinesMode:
 		return fmt.Sprintf(
-			"%-15s (%s%d%s / %s%d%s)",
-			t.AuthorName,
+			"(%s%d%s / %s%d%s)",
 			ansi.Green,
 			t.LinesAdded,
 			ansi.DefaultColor,
@@ -244,5 +196,61 @@ func fmtTally(t tally.Tally, mode tally.TallyMode) string {
 		)
 	default:
 		panic("unrecognized mode in switch")
+	}
+}
+
+func printTree(lines []treeOutputLine, showEmail bool) {
+	longest := 0
+	for _, line := range lines {
+		indentLen := utf8.RuneCountInString(line.indent)
+		pathLen := utf8.RuneCountInString(line.path)
+		if indentLen+pathLen > longest {
+			longest = indentLen + pathLen
+		}
+	}
+
+	tallyStart := longest + 4 // Use at least 4 "." to separate path from tally
+
+	for _, line := range lines {
+		if !line.showTally {
+			fmt.Printf("%s%s\n", line.indent, line.path)
+			continue
+		}
+
+		indentLen := utf8.RuneCountInString(line.indent)
+		pathLen := utf8.RuneCountInString(line.path)
+
+		separator := strings.Repeat(".", tallyStart-indentLen-pathLen)
+
+		var author string
+		if showEmail {
+			author = format.Abbrev(format.GitEmail(line.tally.AuthorEmail), 20)
+		} else {
+			author = format.Abbrev(line.tally.AuthorName, 20)
+		}
+
+		if line.isDir {
+			fmt.Printf(
+				"%s%s%s%s%s%s %s\n",
+				line.indent,
+				line.path,
+				ansi.Dim,
+				separator,
+				ansi.Reset,
+				author,
+				line.metric,
+			)
+		} else {
+			fmt.Printf(
+				"%s%s%s%s%s %s%s\n",
+				line.indent,
+				line.path,
+				ansi.Dim,
+				separator,
+				author,
+				line.metric,
+				ansi.Reset,
+			)
+		}
 	}
 }

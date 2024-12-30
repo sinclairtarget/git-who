@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
@@ -108,12 +109,15 @@ func tableCmd() command {
 	flagSet := flag.NewFlagSet("git-who table", flag.ExitOnError)
 
 	useCsv := flagSet.Bool("csv", false, "Output as csv")
+	showEmail := flagSet.Bool("e", false, "Show email address of each author")
 	linesMode := flagSet.Bool("l", false, "Sort by lines added + removed")
 	filesMode := flagSet.Bool("f", false, "Sort by files changed")
 	lastModifiedMode := flagSet.Bool("m", false, "Sort by last modified")
 
 	flagSet.Usage = func() {
-		fmt.Println("Usage: git-who table [--csv] [-l|-f|-m] [revision...] [[--] path]")
+		fmt.Println(strings.TrimSpace(`
+Usage: git-who table [--csv] [-e] [-l|-f|-m] [revision...] [[--] path]
+		`))
 		fmt.Println("Print out a table summarizing authorship")
 		flagSet.PrintDefaults()
 	}
@@ -139,7 +143,7 @@ func tableCmd() command {
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return table(revs, paths, mode, *useCsv)
+			return table(revs, paths, mode, *useCsv, *showEmail)
 		},
 	}
 }
@@ -147,13 +151,16 @@ func tableCmd() command {
 func treeCmd() command {
 	flagSet := flag.NewFlagSet("git-who tree", flag.ExitOnError)
 
+	showEmail := flagSet.Bool("e", false, "Show email address of each author")
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
 	depth := flagSet.Int("d", 0, "Limit on tree depth")
 
 	flagSet.Usage = func() {
-		fmt.Println("Usage: git-who tree [-l|-f] [-d <depth>] [revision...] [[--] path]")
-		fmt.Println("Print out a table summarizing authorship")
+		fmt.Println(strings.TrimSpace(`
+Usage: git-who tree [-e] [-l|-f] [-d <depth>] [revision...] [[--] path]
+		`))
+		fmt.Println("Print out a tree summarizing authorship")
 		flagSet.PrintDefaults()
 	}
 
@@ -165,14 +172,14 @@ func treeCmd() command {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
 
-			var mode tally.TallyMode
+			mode := tally.CommitMode
 			if *useLines {
 				mode = tally.LinesMode
 			} else if *useFiles {
 				mode = tally.FilesMode
 			}
 
-			return tree(revs, paths, mode, *depth)
+			return tree(revs, paths, mode, *depth, *showEmail)
 		},
 	}
 }

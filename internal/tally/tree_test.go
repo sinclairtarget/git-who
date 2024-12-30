@@ -60,7 +60,11 @@ func TestTallyCommitsByPath(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
-	root, err := tally.TallyCommitsByPath(seq, tally.CommitMode)
+	opts := tally.TallyOpts{
+		Mode: tally.CommitMode,
+		Key:  func(c git.Commit) string { return c.AuthorEmail },
+	}
+	root, err := tally.TallyCommitsByPath(seq, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -154,7 +158,11 @@ func TestTallyCommitsByPathRename(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
-	root, err := tally.TallyCommitsByPath(seq, tally.LinesMode)
+	opts := tally.TallyOpts{
+		Mode: tally.CommitMode,
+		Key:  func(c git.Commit) string { return c.AuthorEmail },
+	}
+	root, err := tally.TallyCommitsByPath(seq, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -231,7 +239,11 @@ func TestTallyCommitsByPathRenameAcrossDirs(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
-	root, err := tally.TallyCommitsByPath(seq, tally.LinesMode)
+	opts := tally.TallyOpts{
+		Mode: tally.LinesMode,
+		Key:  func(c git.Commit) string { return c.AuthorEmail },
+	}
+	root, err := tally.TallyCommitsByPath(seq, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}

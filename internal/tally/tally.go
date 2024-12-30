@@ -21,6 +21,11 @@ const (
 	LastModifiedMode
 )
 
+type TallyOpts struct {
+	Mode TallyMode
+	Key  func(c git.Commit) string
+}
+
 type Tally struct {
 	AuthorName     string
 	AuthorEmail    string
@@ -65,7 +70,7 @@ func (a Tally) Compare(b Tally, mode TallyMode) int {
 // The commits must be in chronological order.
 func TallyCommits(
 	commits iter.Seq2[git.Commit, error],
-	mode TallyMode,
+	opts TallyOpts,
 ) ([]Tally, error) {
 	// Map of author to tally
 	tallies := make(map[string]Tally)
@@ -80,7 +85,7 @@ func TallyCommits(
 			return nil, fmt.Errorf("error iterating commits: %w", err)
 		}
 
-		key := commit.AuthorEmail
+		key := opts.Key(commit)
 		tally := tallies[key]
 
 		tally.AuthorName = commit.AuthorName
@@ -126,7 +131,7 @@ func TallyCommits(
 
 	// Sort list
 	sorted := slices.SortedFunc(maps.Values(tallies), func(a, b Tally) int {
-		return -a.Compare(b, mode)
+		return -a.Compare(b, opts.Mode)
 	})
 
 	elapsed := time.Now().Sub(start)

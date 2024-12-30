@@ -8,11 +8,12 @@ import (
 	"strings"
 
 	"github.com/sinclairtarget/git-who/internal/ansi"
+	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
-const colWidth = 100
+const colWidth = 65 // Width in columns to use by default
 
 // The "table" subcommand summarizes the authorship history of the given
 // commits and paths in a table printed to stdout.
@@ -21,6 +22,7 @@ func table(
 	paths []string,
 	mode tally.TallyMode,
 	useCsv bool,
+	showEmail bool,
 ) (err error) {
 	defer func() {
 		if err != nil {
@@ -40,6 +42,13 @@ func table(
 		useCsv,
 	)
 
+	opts := tally.TallyOpts{Mode: mode}
+	if showEmail {
+		opts.Key = func(c git.Commit) string { return c.AuthorEmail }
+	} else {
+		opts.Key = func(c git.Commit) string { return c.AuthorName }
+	}
+
 	tallies, err := func() (_ []tally.Tally, err error) {
 		commits, closer, err := git.Commits(revs, paths)
 		if err != nil {
@@ -52,7 +61,7 @@ func table(
 			}
 		}()
 
-		tallies, err := tally.TallyCommits(commits, mode)
+		tallies, err := tally.TallyCommits(commits, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -64,23 +73,26 @@ func table(
 	}
 
 	if useCsv {
-		err := writeCsv(tallies)
+		err := writeCsv(tallies, showEmail)
 		if err != nil {
 			return err
 		}
 	} else {
-		writeTable(tallies)
+		writeTable(tallies, showEmail)
 	}
 
 	return nil
 }
 
-func toRecord(t tally.Tally) []string {
-	record := make([]string, 0)
+func toRecord(t tally.Tally, showEmail bool) []string {
+	record := []string{t.AuthorName}
+
+	if showEmail {
+		record = append(record, t.AuthorEmail)
+	}
+
 	return append(
 		record,
-		t.AuthorName,
-		t.AuthorEmail,
 		strconv.Itoa(t.Commits),
 		strconv.Itoa(t.LinesAdded),
 		strconv.Itoa(t.LinesRemoved),
@@ -88,21 +100,31 @@ func toRecord(t tally.Tally) []string {
 	)
 }
 
-func writeCsv(tallies []tally.Tally) error {
+func writeCsv(tallies []tally.Tally, showEmail bool) error {
 	w := csv.NewWriter(os.Stdout)
 
 	// Write header
-	w.Write([]string{
-		"name",
-		"email",
-		"commits",
-		"lines added",
-		"lines removed",
-		"files",
-	})
+	if showEmail {
+		w.Write([]string{
+			"name",
+			"email",
+			"commits",
+			"lines added",
+			"lines removed",
+			"files",
+		})
+	} else {
+		w.Write([]string{
+			"name",
+			"commits",
+			"lines added",
+			"lines removed",
+			"files",
+		})
+	}
 
 	for _, tally := range tallies {
-		record := toRecord(tally)
+		record := toRecord(tally, showEmail)
 		if err := w.Write(record); err != nil {
 			return fmt.Errorf("error writing CSV record to stdout: %w", err)
 		}
@@ -116,7 +138,7 @@ func writeCsv(tallies []tally.Tally) error {
 	return nil
 }
 
-func writeTable(tallies []tally.Tally) {
+func writeTable(tallies []tally.Tally, showEmail bool) {
 	if len(tallies) == 0 {
 		return
 	}
@@ -130,9 +152,8 @@ func writeTable(tallies []tally.Tally) {
 	// -- Write header --
 	fmt.Printf("┌%s┐\n", rule)
 	fmt.Printf(
-		"│%-27s %-29s %9s %9s %20s│\n",
+		"│%-29s %7s %7s %17s│\n",
 		"Author",
-		"Email",
 		"Commits",
 		"Files",
 		"Lines (+/-)",
@@ -142,7 +163,7 @@ func writeTable(tallies []tally.Tally) {
 	// -- Write table rows --
 	for _, tally := range tallies {
 		lines := fmt.Sprintf(
-			"%s%9d%s / %s%8d%s",
+			"%s%7d%s / %s%7d%s",
 			ansi.Green,
 			tally.LinesAdded,
 			ansi.Reset,
@@ -151,10 +172,20 @@ func writeTable(tallies []tally.Tally) {
 			ansi.Reset,
 		)
 
+		var author string
+		if showEmail {
+			author = fmt.Sprintf(
+				"%s %s",
+				tally.AuthorName,
+				format.GitEmail(tally.AuthorEmail),
+			)
+		} else {
+			author = tally.AuthorName
+		}
+
 		fmt.Printf(
-			"│%-27s %-29s %9d %9d %20s│\n",
-			abbrev(tally.AuthorName, 27),
-			abbrev(tally.AuthorEmail, 29),
+			"│%-29s %7d %7d %17s│\n",
+			format.Abbrev(author, 29),
 			tally.Commits,
 			tally.FileCount,
 			lines,
@@ -162,12 +193,4 @@ func writeTable(tallies []tally.Tally) {
 	}
 
 	fmt.Printf("└%s┘\n", rule)
-}
-
-func abbrev(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-
-	return s[:max-3] + "..."
 }

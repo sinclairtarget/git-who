@@ -47,7 +47,13 @@ func TestTallyCommits(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
-	tallies, err := tally.TallyCommits(seq, tally.CommitMode)
+	opts := tally.TallyOpts{
+		Mode: tally.CommitMode,
+		Key: func(c git.Commit) string {
+			return c.AuthorEmail
+		},
+	}
+	tallies, err := tally.TallyCommits(seq, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -102,7 +108,13 @@ func TestTallyCommitsRename(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
-	tallies, err := tally.TallyCommits(seq, tally.CommitMode)
+	opts := tally.TallyOpts{
+		Mode: tally.CommitMode,
+		Key: func(c git.Commit) string {
+			return c.AuthorEmail
+		},
+	}
+	tallies, err := tally.TallyCommits(seq, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
