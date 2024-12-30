@@ -251,7 +251,15 @@ func TallyCommitsByPath(
 
 				err = root.insert(newPath, node)
 				if err != nil {
-					return nil, fmt.Errorf("error inserting new node: %w", err)
+					// Don't fail, just warn. Git allows files to be renamed to
+					// existing filenames sometimes.
+					logger().Debug(
+						"WARNING: path exists in tree",
+						"error",
+						err.Error(),
+						"commit",
+						commit.Name(),
+					)
 				}
 
 				root.edit(newPath, commit, diff, opts)
