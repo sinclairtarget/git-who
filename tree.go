@@ -224,9 +224,9 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 
 		var author string
 		if showEmail {
-			author = format.Abbrev(format.GitEmail(line.tally.AuthorEmail), 20)
+			author = format.Abbrev(format.GitEmail(line.tally.AuthorEmail), 25)
 		} else {
-			author = format.Abbrev(line.tally.AuthorName, 20)
+			author = format.Abbrev(line.tally.AuthorName, 25)
 		}
 
 		if line.isDir {
