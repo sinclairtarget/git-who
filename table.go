@@ -149,7 +149,7 @@ func writeTable(tallies []tally.Tally, showEmail bool, mode tally.TallyMode) {
 	}
 
 	colwidth := narrowWidth
-	if mode == tally.LastModifiedMode {
+	if mode == tally.LastModifiedMode || showEmail {
 		colwidth = wideWidth
 	}
 
@@ -220,7 +220,7 @@ func writeTable(tallies []tally.Tally, showEmail bool, mode tally.TallyMode) {
 			)
 		} else {
 			fmt.Printf(
-				"│%-29s %7d %7d %17s│\n",
+				"│%-*s %7d %7d %17s│\n",
 				colwidth-36,
 				format.Abbrev(author, colwidth-36),
 				t.Commits,
