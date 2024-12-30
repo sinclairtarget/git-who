@@ -161,7 +161,23 @@ func toLines(
 
 	lines = append(lines, line)
 
-	childPaths := slices.Sorted(maps.Keys(node.Children))
+	childPaths := slices.SortedFunc(
+		maps.Keys(node.Children),
+		func(a, b string) int {
+			// Show directories first
+			aHasChildren := len(node.Children[a].Children) > 0
+			bHasChildren := len(node.Children[b].Children) > 0
+
+			if aHasChildren == bHasChildren {
+				return strings.Compare(a, b) // Sort alphabetically
+			} else if aHasChildren {
+				return -1
+			} else {
+				return 1
+			}
+		},
+	)
+
 	for i, p := range childPaths {
 		child := node.Children[p]
 		lines = toLines(
