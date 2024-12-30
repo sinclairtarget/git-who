@@ -52,6 +52,17 @@ func splitPath(path string) []string {
 //
 // Sometimes this looks like /foo/{bar => bim}/baz.txt when a file is moved.
 func parseDiffPath(path string) (outPath string, dst string, err error) {
+	if strings.Contains(path, "=>") && !strings.Contains(path, "}") {
+		// Simple case
+		parts := strings.Split(path, " => ")
+		if len(parts) != 2 {
+			return "", "", fmt.Errorf("error parsing diff path from \"%s\" path", path)
+		}
+		outPath = parts[0]
+		dst = parts[1]
+		return outPath, dst, nil
+	}
+
 	var pathBuilder strings.Builder
 	var dstBuilder strings.Builder
 
@@ -181,7 +192,7 @@ func parseFileAction(line string) (_ FileAction, _ string, err error) {
 	case "rename":
 		return Rename, "", nil // We figure out renamed files elsewhere
 	default:
-		return NoAction, "", fmt.Errorf("unknown action in \"%s\"", line)
+		return NoAction, "", nil
 	}
 }
 
@@ -272,7 +283,7 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 					return
 				}
 
-				if action == Rename {
+				if action == Rename || action == NoAction {
 					continue
 				}
 
@@ -281,9 +292,10 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 					yield(
 						commit,
 						fmt.Errorf(
-							"could not look up diff for line \"%s\" using path \"%s\"",
+							"could not look up diff for line \"%s\" using path \"%s\", commit: %s",
 							line,
 							path,
+							commit.Name(),
 						),
 					)
 					return

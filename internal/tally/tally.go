@@ -73,7 +73,7 @@ func TallyCommits(
 	opts TallyOpts,
 ) ([]Tally, error) {
 	// Map of author to tally
-	tallies := make(map[string]Tally)
+	tallies := map[string]Tally{}
 
 	// Map of author to fileset. Used to dedupe filepaths
 	filesets := make(map[string]map[string]bool)

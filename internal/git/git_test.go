@@ -182,3 +182,22 @@ func TestCommitsRenameDeepDir(t *testing.T) {
 		)
 	}
 }
+
+func TestParseWholeLog(t *testing.T) {
+	commitsSeq, closer, err := git.Commits([]string{"HEAD"}, []string{"."})
+	if err != nil {
+		t.Fatalf("error getting commits: %v", err)
+	}
+
+	defer func() {
+		err := closer()
+		if err != nil {
+			t.Errorf("encountered error cleaning up: %v", err)
+		}
+	}()
+
+	_, err = iterutils.Collect(commitsSeq)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+}
