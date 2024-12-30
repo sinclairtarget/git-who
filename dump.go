@@ -2,19 +2,32 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
 // Just prints out the output of git log as seen by git who.
-func dump(revs []string, paths []string) (err error) {
+func dump(revs []string, paths []string, since string) (err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("error running \"dump\": %w", err)
 		}
 	}()
 
-	subprocess, err := git.RunLog(revs, paths)
+	logger().Debug(
+		"called revs()",
+		"revs",
+		revs,
+		"paths",
+		paths,
+		"since",
+		since,
+	)
+
+	start := time.Now()
+
+	subprocess, err := git.RunLog(revs, paths, since)
 	if err != nil {
 		return err
 	}
@@ -29,5 +42,12 @@ func dump(revs []string, paths []string) (err error) {
 	}
 
 	err = subprocess.Wait()
-	return err
+	if err != nil {
+		return err
+	}
+
+	elapsed := time.Now().Sub(start)
+	logger().Debug("finished dump", "duration_ms", elapsed.Milliseconds())
+
+	return nil
 }

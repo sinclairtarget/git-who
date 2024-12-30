@@ -72,15 +72,23 @@ func (d FileDiff) String() string {
 	)
 }
 
-// Returns an iterator over commits identified by the given revisions and paths.
-//
-// Also returns a closer() function for cleanup and an error when encountered.
 func Commits(revs []string, paths []string) (
 	iter.Seq2[Commit, error],
 	func() error,
 	error,
 ) {
-	subprocess, err := RunLog(revs, paths)
+	return CommitsSince(revs, paths, "")
+}
+
+// Returns an iterator over commits identified by the given revisions and paths.
+//
+// Also returns a closer() function for cleanup and an error when encountered.
+func CommitsSince(revs []string, paths []string, since string) (
+	iter.Seq2[Commit, error],
+	func() error,
+	error,
+) {
+	subprocess, err := RunLog(revs, paths, since)
 	if err != nil {
 		return nil, nil, err
 	}

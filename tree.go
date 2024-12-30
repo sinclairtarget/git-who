@@ -37,6 +37,7 @@ func tree(
 	mode tally.TallyMode,
 	depth int,
 	showEmail bool,
+	since string,
 ) (err error) {
 	defer func() {
 		if err != nil {
@@ -54,10 +55,14 @@ func tree(
 		mode,
 		"depth",
 		depth,
+		"showEmail",
+		showEmail,
+		"since",
+		since,
 	)
 
 	root, err := func() (_ *tally.TreeNode, err error) {
-		commits, closer, err := git.Commits(revs, paths)
+		commits, closer, err := git.CommitsSince(revs, paths, since)
 		if err != nil {
 			return nil, err
 		}

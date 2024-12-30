@@ -105,7 +105,7 @@ func Run(args []string) (*Subprocess, error) {
 }
 
 // Runs git log
-func RunLog(revs []string, paths []string) (*Subprocess, error) {
+func RunLog(revs []string, paths []string, since string) (*Subprocess, error) {
 	var baseArgs = []string{
 		"log",
 		"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s",
@@ -115,7 +115,19 @@ func RunLog(revs []string, paths []string) (*Subprocess, error) {
 		"--no-merges", // Ensures every commit has file diffs
 		"--reverse",   // Needed to handle file renaming
 	}
-	args := slices.Concat(baseArgs, revs, []string{"--"}, paths)
+
+	var args []string
+	if since != "" {
+		args = slices.Concat(
+			baseArgs,
+			[]string{"--since", since},
+			revs,
+			[]string{"--"},
+			paths,
+		)
+	} else {
+		args = slices.Concat(baseArgs, revs, []string{"--"}, paths)
+	}
 
 	subprocess, err := Run(args)
 	if err != nil {

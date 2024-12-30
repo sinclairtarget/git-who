@@ -119,6 +119,13 @@ func tableCmd() command {
 	filesMode := flagSet.Bool("f", false, "Sort by files changed")
 	lastModifiedMode := flagSet.Bool("m", false, "Sort by last modified")
 	limit := flagSet.Int("n", 0, "Limit rows in table")
+	since := flagSet.String(
+		"since",
+		"",
+		strings.TrimSpace(`
+Limit to commits after the given date. See git-commit(1) for valid formats
+		`),
+	)
 
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
@@ -153,7 +160,7 @@ Usage: git-who table [--csv] [-e] [-n <n>] [-l|-f|-m] [revision...] [[--] path]
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return table(revs, paths, mode, *useCsv, *showEmail, *limit)
+			return table(revs, paths, mode, *useCsv, *showEmail, *limit, *since)
 		},
 	}
 }
@@ -170,6 +177,13 @@ func treeCmd() command {
 		"Rank authors by last commit time",
 	)
 	depth := flagSet.Int("d", 0, "Limit on tree depth")
+	since := flagSet.String(
+		"since",
+		"",
+		strings.TrimSpace(`
+Limit to commits after the given date. See git-commit(1) for valid formats
+		`),
+	)
 
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
@@ -200,13 +214,22 @@ Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [revision...] [[--] path]
 				mode = tally.LastModifiedMode
 			}
 
-			return tree(revs, paths, mode, *depth, *showEmail)
+			return tree(revs, paths, mode, *depth, *showEmail, *since)
 		},
 	}
 }
 
 func dumpCmd() command {
 	flagSet := flag.NewFlagSet("git-who dump", flag.ExitOnError)
+
+	since := flagSet.String(
+		"since",
+		"",
+		strings.TrimSpace(`
+Limit to commits after the given date. See git-commit(1) for valid formats
+		`),
+	)
+
 	return command{
 		flagSet: flagSet,
 		run: func(args []string) error {
@@ -214,7 +237,7 @@ func dumpCmd() command {
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return dump(revs, paths)
+			return dump(revs, paths, *since)
 		},
 		isHidden: true,
 	}
@@ -222,6 +245,15 @@ func dumpCmd() command {
 
 func parseCmd() command {
 	flagSet := flag.NewFlagSet("git-who parse", flag.ExitOnError)
+
+	since := flagSet.String(
+		"since",
+		"",
+		strings.TrimSpace(`
+Limit to commits after the given date. See git-commit(1) for valid formats
+		`),
+	)
+
 	return command{
 		flagSet: flagSet,
 		run: func(args []string) error {
@@ -229,7 +261,7 @@ func parseCmd() command {
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return parse(revs, paths)
+			return parse(revs, paths, *since)
 		},
 		isHidden: true,
 	}

@@ -26,6 +26,7 @@ func table(
 	useCsv bool,
 	showEmail bool,
 	limit int,
+	since string,
 ) (err error) {
 	defer func() {
 		if err != nil {
@@ -43,6 +44,12 @@ func table(
 		mode,
 		"useCsv",
 		useCsv,
+		"showEmail",
+		showEmail,
+		"limit",
+		limit,
+		"since",
+		since,
 	)
 
 	opts := tally.TallyOpts{Mode: mode}
@@ -53,7 +60,7 @@ func table(
 	}
 
 	tallies, err := func() (_ []tally.Tally, err error) {
-		commits, closer, err := git.Commits(revs, paths)
+		commits, closer, err := git.CommitsSince(revs, paths, since)
 		if err != nil {
 			return nil, err
 		}
