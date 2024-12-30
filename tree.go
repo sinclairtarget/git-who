@@ -194,6 +194,11 @@ func fmtTallyMetric(t tally.Tally, opts printTreeOpts) string {
 			t.LinesRemoved,
 			ansi.DefaultColor,
 		)
+	case tally.LastModifiedMode:
+		return fmt.Sprintf(
+			"(%s)",
+			format.RelativeTime(progStart, t.LastCommitTime),
+		)
 	default:
 		panic("unrecognized mode in switch")
 	}

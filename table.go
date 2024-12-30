@@ -185,7 +185,6 @@ func writeTable(tallies []tally.Tally, showEmail bool, mode tally.TallyMode) {
 	fmt.Printf("├%s┤\n", rule)
 
 	// -- Write table rows --
-	now := time.Now()
 	for _, t := range tallies {
 		lines := fmt.Sprintf(
 			"%s%7d%s / %s%7d%s",
@@ -213,7 +212,7 @@ func writeTable(tallies []tally.Tally, showEmail bool, mode tally.TallyMode) {
 				"│%-*s %-11s %7d %7d %17s│\n",
 				colwidth-36-12,
 				format.Abbrev(author, colwidth-36-12),
-				format.RelativeTime(now, t.LastCommitTime),
+				format.RelativeTime(progStart, t.LastCommitTime),
 				t.Commits,
 				t.FileCount,
 				lines,

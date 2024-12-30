@@ -7,12 +7,15 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
 const version = "0.1"
+
+var progStart time.Time
 
 type command struct {
 	flagSet  *flag.FlagSet
@@ -97,6 +100,7 @@ loop:
 	cmd.flagSet.Parse(args)
 	subargs := cmd.flagSet.Args()
 
+	progStart = time.Now()
 	if err := cmd.run(subargs); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -154,11 +158,16 @@ func treeCmd() command {
 	showEmail := flagSet.Bool("e", false, "Show email address of each author")
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
+	useLastModified := flagSet.Bool(
+		"m",
+		false,
+		"Rank authors by last commit time",
+	)
 	depth := flagSet.Int("d", 0, "Limit on tree depth")
 
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
-Usage: git-who tree [-e] [-l|-f] [-d <depth>] [revision...] [[--] path]
+Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [revision...] [[--] path]
 		`))
 		fmt.Println("Print out a tree summarizing authorship")
 		flagSet.PrintDefaults()
@@ -172,11 +181,17 @@ Usage: git-who tree [-e] [-l|-f] [-d <depth>] [revision...] [[--] path]
 				return fmt.Errorf("could not parse args: %w", err)
 			}
 
+			if !isOnlyOne(*useLines, *useFiles, *useLastModified) {
+				return errors.New("all ranking flags are mutually exclusive")
+			}
+
 			mode := tally.CommitMode
 			if *useLines {
 				mode = tally.LinesMode
 			} else if *useFiles {
 				mode = tally.FilesMode
+			} else if *useLastModified {
+				mode = tally.LastModifiedMode
 			}
 
 			return tree(revs, paths, mode, *depth, *showEmail)
