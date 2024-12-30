@@ -25,6 +25,7 @@ func table(
 	mode tally.TallyMode,
 	useCsv bool,
 	showEmail bool,
+	limit int,
 ) (err error) {
 	defer func() {
 		if err != nil {
@@ -72,6 +73,10 @@ func table(
 	}()
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
+	}
+
+	if limit > 0 {
+		tallies = tallies[:limit]
 	}
 
 	if useCsv {

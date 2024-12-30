@@ -118,10 +118,11 @@ func tableCmd() command {
 	linesMode := flagSet.Bool("l", false, "Sort by lines added + removed")
 	filesMode := flagSet.Bool("f", false, "Sort by files changed")
 	lastModifiedMode := flagSet.Bool("m", false, "Sort by last modified")
+	limit := flagSet.Int("n", 0, "Limit rows in table")
 
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
-Usage: git-who table [--csv] [-e] [-l|-f|-m] [revision...] [[--] path]
+Usage: git-who table [--csv] [-e] [-n <n>] [-l|-f|-m] [revision...] [[--] path]
 		`))
 		fmt.Println("Print out a table summarizing authorship")
 		flagSet.PrintDefaults()
@@ -144,11 +145,15 @@ Usage: git-who table [--csv] [-e] [-l|-f|-m] [revision...] [[--] path]
 				mode = tally.LastModifiedMode
 			}
 
+			if *limit < 0 {
+				return errors.New("-n flag must be a positive integer")
+			}
+
 			revs, paths, err := git.ParseArgs(args)
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return table(revs, paths, mode, *useCsv, *showEmail)
+			return table(revs, paths, mode, *useCsv, *showEmail, *limit)
 		},
 	}
 }
