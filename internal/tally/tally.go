@@ -18,6 +18,7 @@ const (
 	CommitMode TallyMode = iota
 	LinesMode
 	FilesMode
+	LastModifiedMode
 )
 
 type Tally struct {
@@ -30,14 +31,16 @@ type Tally struct {
 	LastCommitTime time.Time
 }
 
-func (t Tally) SortKey(mode TallyMode) int {
+func (t Tally) SortKey(mode TallyMode) int64 {
 	switch mode {
 	case CommitMode:
-		return t.Commits
+		return int64(t.Commits)
 	case FilesMode:
-		return t.FileCount
+		return int64(t.FileCount)
 	case LinesMode:
-		return t.LinesAdded + t.LinesRemoved
+		return int64(t.LinesAdded + t.LinesRemoved)
+	case LastModifiedMode:
+		return t.LastCommitTime.Unix()
 	default:
 		panic("unrecognized mode in switch statement")
 	}

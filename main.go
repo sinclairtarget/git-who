@@ -19,17 +19,6 @@ type command struct {
 	isHidden bool // Hide from usage
 }
 
-func configureLogging(level slog.Level) {
-	handler := slog.NewTextHandler(
-		os.Stderr,
-		&slog.HandlerOptions{
-			Level: level,
-		},
-	)
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
-}
-
 // Main examines the args and delegates to the specified subcommand.
 //
 // If no subcommand was specified, we default to the "tree" subcommand.
@@ -121,9 +110,10 @@ func tableCmd() command {
 	useCsv := flagSet.Bool("csv", false, "Output as csv")
 	linesMode := flagSet.Bool("l", false, "Sort by lines added + removed")
 	filesMode := flagSet.Bool("f", false, "Sort by files changed")
+	lastModifiedMode := flagSet.Bool("m", false, "Sort by last modified")
 
 	flagSet.Usage = func() {
-		fmt.Println("Usage: git-who table [--csv] [-l|-f] [revision...] [[--] path]")
+		fmt.Println("Usage: git-who table [--csv] [-l|-f|-m] [revision...] [[--] path]")
 		fmt.Println("Print out a table summarizing authorship")
 		flagSet.PrintDefaults()
 	}
@@ -132,12 +122,17 @@ func tableCmd() command {
 		flagSet: flagSet,
 		run: func(args []string) error {
 			mode := tally.CommitMode
-			if *linesMode && *filesMode {
-				return errors.New("-l and -f flags are mutually exclusive")
-			} else if *linesMode {
+
+			if !isOnlyOne(*linesMode, *filesMode, *lastModifiedMode) {
+				return errors.New("all sort flags are mutually exclusive")
+			}
+
+			if *linesMode {
 				mode = tally.LinesMode
 			} else if *filesMode {
 				mode = tally.FilesMode
+			} else if *lastModifiedMode {
+				mode = tally.LastModifiedMode
 			}
 
 			revs, paths, err := git.ParseArgs(args)
@@ -198,3 +193,30 @@ func parseCmd() command {
 }
 
 // -^---------------------------------------------------------------------------
+
+func configureLogging(level slog.Level) {
+	handler := slog.NewTextHandler(
+		os.Stderr,
+		&slog.HandlerOptions{
+			Level: level,
+		},
+	)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+}
+
+// Used to check mutual exclusion.
+func isOnlyOne(flags ...bool) bool {
+	var foundOne bool
+	for _, f := range flags {
+		if f {
+			if foundOne {
+				return false
+			}
+
+			foundOne = true
+		}
+	}
+
+	return true
+}
