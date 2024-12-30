@@ -16,6 +16,14 @@ type SubprocessErr struct {
 }
 
 func (err SubprocessErr) Error() string {
+	if err.Stderr != "" {
+		return fmt.Sprintf(
+			"Git subprocess exited with code %d. Error output:\n%s",
+			err.ExitCode,
+			err.Stderr,
+		)
+	}
+
 	return fmt.Sprintf("Git subprocess exited with code %d", err.ExitCode)
 }
 
