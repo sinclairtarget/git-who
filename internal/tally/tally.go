@@ -6,7 +6,6 @@ import (
 	"iter"
 	"maps"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -22,12 +21,13 @@ const (
 )
 
 type Tally struct {
-	AuthorName   string
-	AuthorEmail  string
-	Commits      int
-	LinesAdded   int
-	LinesRemoved int
-	FileCount    int
+	AuthorName     string
+	AuthorEmail    string
+	Commits        int
+	LinesAdded     int
+	LinesRemoved   int
+	FileCount      int
+	LastCommitTime time.Time
 }
 
 func (t Tally) SortKey(mode TallyMode) int {
@@ -43,7 +43,7 @@ func (t Tally) SortKey(mode TallyMode) int {
 	}
 }
 
-func Compare(a, b Tally, mode TallyMode) int {
+func (a Tally) Compare(b Tally, mode TallyMode) int {
 	aRank := a.SortKey(mode)
 	bRank := b.SortKey(mode)
 
@@ -53,12 +53,13 @@ func Compare(a, b Tally, mode TallyMode) int {
 		return 1
 	}
 
-	// TODO: Should break ties with last commit time
-	return strings.Compare(a.AuthorEmail, b.AuthorEmail)
+	return a.LastCommitTime.Compare(b.LastCommitTime)
 }
 
 // Returns a slice of tallies in descending order by most commits / files /
 // lines.
+//
+// The commits must be in chronological order.
 func TallyCommits(
 	commits iter.Seq2[git.Commit, error],
 	mode TallyMode,
@@ -82,6 +83,7 @@ func TallyCommits(
 		tally.AuthorName = commit.AuthorName
 		tally.AuthorEmail = commit.AuthorEmail
 		tally.Commits += 1
+		tally.LastCommitTime = commit.Date
 
 		_, ok := filesets[key]
 		if !ok {
@@ -121,7 +123,7 @@ func TallyCommits(
 
 	// Sort list
 	sorted := slices.SortedFunc(maps.Values(tallies), func(a, b Tally) int {
-		return -Compare(a, b, mode)
+		return -a.Compare(b, mode)
 	})
 
 	elapsed := time.Now().Sub(start)

@@ -88,6 +88,7 @@ func (t *TreeNode) edit(
 
 	if commit.Hash != t.lastCommitSeen {
 		nodeTally.Commits += 1
+		nodeTally.LastCommitTime = commit.Date
 		t.lastCommitSeen = commit.Hash
 	}
 
@@ -107,7 +108,7 @@ func (t *TreeNode) edit(
 
 	// Pick best tally for the node according to the tally mode
 	sorted := slices.SortedFunc(maps.Values(t.tallies), func(a, b Tally) int {
-		return -Compare(a, b, mode)
+		return -a.Compare(b, mode)
 	})
 	t.Tally = sorted[0]
 }
