@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/sinclairtarget/git-who/internal/ansi"
 	"github.com/sinclairtarget/git-who/internal/format"
@@ -97,6 +98,7 @@ func toRecord(t tally.Tally, showEmail bool) []string {
 		strconv.Itoa(t.LinesAdded),
 		strconv.Itoa(t.LinesRemoved),
 		strconv.Itoa(t.FileCount),
+		t.LastCommitTime.Format(time.RFC3339),
 	)
 }
 
@@ -112,6 +114,7 @@ func writeCsv(tallies []tally.Tally, showEmail bool) error {
 			"lines added",
 			"lines removed",
 			"files",
+			"last commit time",
 		})
 	} else {
 		w.Write([]string{
@@ -120,6 +123,7 @@ func writeCsv(tallies []tally.Tally, showEmail bool) error {
 			"lines added",
 			"lines removed",
 			"files",
+			"last commit time",
 		})
 	}
 
