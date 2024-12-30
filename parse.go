@@ -23,9 +23,8 @@ func parse(revs []string, paths []string) (err error) {
 	}
 
 	defer func() {
-		errClose := closer()
 		if err == nil {
-			err = errClose
+			err = closer()
 		}
 	}()
 
