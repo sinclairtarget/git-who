@@ -15,8 +15,17 @@ import (
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
-const narrowWidth = 65 // Width in columns to use by default
-const wideWidth = 80   // Width to use when we have more info to show
+const narrowWidth = 55
+const wideWidth = 80
+
+func pickWidth(mode tally.TallyMode, showEmail bool) int {
+	wideMode := mode == tally.FilesMode || mode == tally.LinesMode
+	if wideMode || showEmail {
+		return wideWidth
+	}
+
+	return narrowWidth
+}
 
 // The "table" subcommand summarizes the authorship history of the given
 // commits and paths in a table printed to stdout.
@@ -88,7 +97,8 @@ func table(
 			return err
 		}
 	} else {
-		writeTable(tallies, showEmail, mode)
+		colwidth := pickWidth(mode, showEmail)
+		writeTable(tallies, colwidth, showEmail, mode)
 	}
 
 	return nil
@@ -151,14 +161,14 @@ func writeCsv(tallies []tally.Tally, showEmail bool) error {
 	return nil
 }
 
-func writeTable(tallies []tally.Tally, showEmail bool, mode tally.TallyMode) {
+func writeTable(
+	tallies []tally.Tally,
+	colwidth int,
+	showEmail bool,
+	mode tally.TallyMode,
+) {
 	if len(tallies) == 0 {
 		return
-	}
-
-	colwidth := narrowWidth
-	if mode == tally.LastModifiedMode || showEmail {
-		colwidth = wideWidth
 	}
 
 	var build strings.Builder
@@ -170,21 +180,20 @@ func writeTable(tallies []tally.Tally, showEmail bool, mode tally.TallyMode) {
 	// -- Write header --
 	fmt.Printf("┌%s┐\n", rule)
 
-	if mode == tally.LastModifiedMode {
+	if mode == tally.CommitMode || mode == tally.LastModifiedMode {
+		fmt.Printf(
+			"│%-*s %-11s %7s│\n",
+			colwidth-22,
+			"Author",
+			"Last Edit",
+			"Commits",
+		)
+	} else {
 		fmt.Printf(
 			"│%-*s %-11s %7s %7s %17s│\n",
 			colwidth-36-12,
 			"Author",
-			"Last",
-			"Commits",
-			"Files",
-			"Lines (+/-)",
-		)
-	} else {
-		fmt.Printf(
-			"│%-*s %7s %7s %17s│\n",
-			colwidth-36,
-			"Author",
+			"Last Edit",
 			"Commits",
 			"Files",
 			"Lines (+/-)",
@@ -215,21 +224,20 @@ func writeTable(tallies []tally.Tally, showEmail bool, mode tally.TallyMode) {
 			author = t.AuthorName
 		}
 
-		if mode == tally.LastModifiedMode {
+		if mode == tally.CommitMode || mode == tally.LastModifiedMode {
+			fmt.Printf(
+				"│%-*s %11s %7d│\n",
+				colwidth-22,
+				format.Abbrev(author, colwidth-22),
+				format.RelativeTime(progStart, t.LastCommitTime),
+				t.Commits,
+			)
+		} else {
 			fmt.Printf(
 				"│%-*s %-11s %7d %7d %17s│\n",
 				colwidth-36-12,
 				format.Abbrev(author, colwidth-36-12),
 				format.RelativeTime(progStart, t.LastCommitTime),
-				t.Commits,
-				t.FileCount,
-				lines,
-			)
-		} else {
-			fmt.Printf(
-				"│%-*s %7d %7d %17s│\n",
-				colwidth-36,
-				format.Abbrev(author, colwidth-36),
 				t.Commits,
 				t.FileCount,
 				lines,
