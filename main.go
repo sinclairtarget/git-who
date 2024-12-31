@@ -33,6 +33,7 @@ func main() {
 		"parse": parseCmd(),
 		"table": tableCmd(),
 		"tree":  treeCmd(),
+		"hist":  histCmd(),
 	}
 
 	// --- Handle top-level flags ---
@@ -125,7 +126,7 @@ func tableCmd() command {
 
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
-Usage: git-who table [--csv] [-e] [-n <n>] [-l|-f|-m] [revision...] [[--] path]
+Usage: git-who table [--csv] [-e] [-n <n>] [-l|-f|-m] [filter opts...] [revision...] [[--] path]
 		`))
 		fmt.Println("Print out a table summarizing authorship")
 		flagSet.PrintDefaults()
@@ -188,7 +189,7 @@ func treeCmd() command {
 
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
-Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [revision...] [[--] path]
+Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [filter opts...] [revision...] [[--] path]
 		`))
 		fmt.Println("Print out a tree summarizing authorship")
 		flagSet.PrintDefaults()
@@ -221,6 +222,53 @@ Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [revision...] [[--] path]
 				mode,
 				*depth,
 				*showEmail,
+				*filterFlags.since,
+				filterFlags.authors,
+				filterFlags.nauthors,
+			)
+		},
+	}
+}
+
+func histCmd() command {
+	flagSet := flag.NewFlagSet("git-who hist", flag.ExitOnError)
+
+	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
+	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
+
+	filterFlags := addFilterFlags(flagSet)
+
+	flagSet.Usage = func() {
+		fmt.Println(strings.TrimSpace(`
+Usage: git-who hist [-e] [-l|-f] [filter opts...] [revision...] [[--] path]
+		`))
+		fmt.Println("Print out a timeline summarizing authorship")
+		flagSet.PrintDefaults()
+	}
+
+	return command{
+		flagSet: flagSet,
+		run: func(args []string) error {
+			revs, paths, err := git.ParseArgs(args)
+			if err != nil {
+				return fmt.Errorf("could not parse args: %w", err)
+			}
+
+			if !isOnlyOne(*useLines, *useFiles) {
+				return errors.New("all ranking flags are mutually exclusive")
+			}
+
+			mode := tally.CommitMode
+			if *useLines {
+				mode = tally.LinesMode
+			} else if *useFiles {
+				mode = tally.FilesMode
+			}
+
+			return hist(
+				revs,
+				paths,
+				mode,
 				*filterFlags.since,
 				filterFlags.authors,
 				filterFlags.nauthors,
