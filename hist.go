@@ -88,8 +88,8 @@ func drawPlot(buckets []tally.TimeBucket, maxVal int, mode tally.TallyMode) {
 	var lastAuthor string
 	for _, bucket := range buckets {
 		value := bucket.Value(mode)
-		clampedValue := int(math.Round(
-			(float64(value) / float64(maxVal)) * float64(barWidth),
+		clampedValue := 1 + int(math.Round(
+			(float64(value)/float64(maxVal))*float64(barWidth-1),
 		))
 		bar := strings.Repeat("#", clampedValue)
 
