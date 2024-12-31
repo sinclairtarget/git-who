@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"os"
@@ -59,26 +60,22 @@ func table(
 		opts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
-	tallies, err := func() (_ []tally.Tally, err error) {
-		commits, closer, err := git.CommitsSince(revs, paths, since)
-		if err != nil {
-			return nil, err
-		}
-		defer func() {
-			if err == nil {
-				err = closer()
-			}
-		}()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-		tallies, err := tally.TallyCommits(commits, opts)
-		if err != nil {
-			return nil, err
-		}
+	commits, closer, err := git.CommitsSince(ctx, revs, paths, since)
+	if err != nil {
+		return err
+	}
 
-		return tallies, nil
-	}()
+	tallies, err := tally.TallyCommits(commits, opts)
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
+	}
+
+	err = closer()
+	if err != nil {
+		return err
 	}
 
 	if limit > 0 {

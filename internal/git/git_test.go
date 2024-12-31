@@ -1,6 +1,7 @@
 package git_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -10,21 +11,22 @@ import (
 func TestCommitsFileRename(t *testing.T) {
 	path := "file-rename"
 
-	commitsSeq, closer, err := git.Commits([]string{"HEAD"}, []string{path})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	commitsSeq, closer, err := git.Commits(ctx, []string{"HEAD"}, []string{path})
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
 	}
 
-	defer func() {
-		err := closer()
-		if err != nil {
-			t.Errorf("encountered error cleaning up: %v", err)
-		}
-	}()
-
 	commits, err := iterutils.Collect(commitsSeq)
 	if err != nil {
 		t.Fatalf(err.Error())
+	}
+
+	err = closer()
+	if err != nil {
+		t.Errorf("encountered error cleaning up: %v", err)
 	}
 
 	if len(commits) != 3 {
@@ -69,21 +71,22 @@ func TestCommitsFileRename(t *testing.T) {
 func TestCommitsFileRenameNewDir(t *testing.T) {
 	path := "rename-new-dir"
 
-	commitsSeq, closer, err := git.Commits([]string{"HEAD"}, []string{path})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	commitsSeq, closer, err := git.Commits(ctx, []string{"HEAD"}, []string{path})
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
 	}
 
-	defer func() {
-		err := closer()
-		if err != nil {
-			t.Errorf("encountered error cleaning up: %v", err)
-		}
-	}()
-
 	commits, err := iterutils.Collect(commitsSeq)
 	if err != nil {
 		t.Fatalf(err.Error())
+	}
+
+	err = closer()
+	if err != nil {
+		t.Errorf("encountered error cleaning up: %v", err)
 	}
 
 	if len(commits) != 2 {
@@ -128,21 +131,22 @@ func TestCommitsFileRenameNewDir(t *testing.T) {
 func TestCommitsRenameDeepDir(t *testing.T) {
 	path := "rename-across-deep-dirs"
 
-	commitsSeq, closer, err := git.Commits([]string{"HEAD"}, []string{path})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	commitsSeq, closer, err := git.Commits(ctx, []string{"HEAD"}, []string{path})
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
 	}
 
-	defer func() {
-		err := closer()
-		if err != nil {
-			t.Errorf("encountered error cleaning up: %v", err)
-		}
-	}()
-
 	commits, err := iterutils.Collect(commitsSeq)
 	if err != nil {
 		t.Fatalf(err.Error())
+	}
+
+	err = closer()
+	if err != nil {
+		t.Errorf("encountered error cleaning up: %v", err)
 	}
 
 	if len(commits) != 2 {
@@ -184,20 +188,21 @@ func TestCommitsRenameDeepDir(t *testing.T) {
 }
 
 func TestParseWholeLog(t *testing.T) {
-	commitsSeq, closer, err := git.Commits([]string{"HEAD"}, []string{"."})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	commitsSeq, closer, err := git.Commits(ctx, []string{"HEAD"}, []string{"."})
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
 	}
 
-	defer func() {
-		err := closer()
-		if err != nil {
-			t.Errorf("encountered error cleaning up: %v", err)
-		}
-	}()
-
 	_, err = iterutils.Collect(commitsSeq)
 	if err != nil {
 		t.Fatalf(err.Error())
+	}
+
+	err = closer()
+	if err != nil {
+		t.Errorf("encountered error cleaning up: %v", err)
 	}
 }

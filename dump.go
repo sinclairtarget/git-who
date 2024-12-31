@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -27,7 +28,10 @@ func dump(revs []string, paths []string, since string) (err error) {
 
 	start := time.Now()
 
-	subprocess, err := git.RunLog(revs, paths, since)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	subprocess, err := git.RunLog(ctx, revs, paths, since)
 	if err != nil {
 		return err
 	}

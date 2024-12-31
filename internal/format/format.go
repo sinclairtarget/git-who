@@ -10,6 +10,7 @@ import (
 
 // Print string with max length, truncating with ellipsis.
 func Abbrev(s string, max int) string {
+	// TODO: Handle unicode chars
 	if len(s) <= max {
 		return s
 	}

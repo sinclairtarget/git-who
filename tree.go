@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"os"
@@ -61,33 +62,29 @@ func tree(
 		since,
 	)
 
-	root, err := func() (_ *tally.TreeNode, err error) {
-		commits, closer, err := git.CommitsSince(revs, paths, since)
-		if err != nil {
-			return nil, err
-		}
-		defer func() {
-			if err == nil {
-				err = closer()
-			}
-		}()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-		opts := tally.TallyOpts{Mode: mode}
-		if showEmail {
-			opts.Key = func(c git.Commit) string { return c.AuthorEmail }
-		} else {
-			opts.Key = func(c git.Commit) string { return c.AuthorName }
-		}
+	commits, closer, err := git.CommitsSince(ctx, revs, paths, since)
+	if err != nil {
+		return err
+	}
 
-		root, err := tally.TallyCommitsByPath(commits, opts)
-		if err != nil {
-			return nil, err
-		}
+	tallyOpts := tally.TallyOpts{Mode: mode}
+	if showEmail {
+		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
+	} else {
+		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
+	}
 
-		return root, nil
-	}()
+	root, err := tally.TallyCommitsByPath(commits, tallyOpts)
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
+	}
+
+	err = closer()
+	if err != nil {
+		return err
 	}
 
 	maxDepth := depth

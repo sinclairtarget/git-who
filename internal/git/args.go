@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 )
@@ -9,18 +10,13 @@ import (
 //
 // We call git rev-parse to disambiguate.
 func ParseArgs(args []string) (revs []string, paths []string, err error) {
-	subprocess, err := RunRevParse(args)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	subprocess, err := RunRevParse(ctx, args)
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not parse args: %w", err)
 	}
-
-	defer func() {
-		if err == nil {
-			err = subprocess.Wait()
-		} else {
-			subprocess.Wait()
-		}
-	}()
 
 	lines := subprocess.StdoutLines()
 	revs = []string{}
@@ -44,6 +40,11 @@ func ParseArgs(args []string) (revs []string, paths []string, err error) {
 				paths = append(paths, line)
 			}
 		}
+	}
+
+	err = subprocess.Wait()
+	if err != nil {
+		return nil, nil, err
 	}
 
 	if len(revs) == 0 {

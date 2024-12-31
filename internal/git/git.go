@@ -7,6 +7,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"iter"
 	"time"
@@ -72,23 +73,28 @@ func (d FileDiff) String() string {
 	)
 }
 
-func Commits(revs []string, paths []string) (
+func Commits(ctx context.Context, revs []string, paths []string) (
 	iter.Seq2[Commit, error],
 	func() error,
 	error,
 ) {
-	return CommitsSince(revs, paths, "")
+	return CommitsSince(ctx, revs, paths, "")
 }
 
 // Returns an iterator over commits identified by the given revisions and paths.
 //
 // Also returns a closer() function for cleanup and an error when encountered.
-func CommitsSince(revs []string, paths []string, since string) (
+func CommitsSince(
+	ctx context.Context,
+	revs []string,
+	paths []string,
+	since string,
+) (
 	iter.Seq2[Commit, error],
 	func() error,
 	error,
 ) {
-	subprocess, err := RunLog(revs, paths, since)
+	subprocess, err := RunLog(ctx, revs, paths, since)
 	if err != nil {
 		return nil, nil, err
 	}

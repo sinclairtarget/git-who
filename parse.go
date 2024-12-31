@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -28,16 +29,13 @@ func parse(revs []string, paths []string, since string) (err error) {
 
 	start := time.Now()
 
-	commits, closer, err := git.CommitsSince(revs, paths, since)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	commits, closer, err := git.CommitsSince(ctx, revs, paths, since)
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		if err == nil {
-			err = closer()
-		}
-	}()
 
 	numCommits := 0
 	for commit, err := range commits {
@@ -56,6 +54,11 @@ func parse(revs []string, paths []string, since string) (err error) {
 	}
 
 	fmt.Printf("Parsed %d commits.\n", numCommits)
+
+	err = closer()
+	if err != nil {
+		return err
+	}
 
 	elapsed := time.Now().Sub(start)
 	logger().Debug("finished parse", "duration_ms", elapsed.Milliseconds())

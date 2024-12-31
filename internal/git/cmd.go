@@ -2,6 +2,7 @@ package git
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"iter"
@@ -55,6 +56,8 @@ func (s Subprocess) StdoutLines() iter.Seq2[string, error] {
 }
 
 func (s Subprocess) Wait() error {
+	logger().Debug("Waiting for subprocess...")
+
 	stderr, err := io.ReadAll(s.stderr)
 	if err != nil {
 		return fmt.Errorf("could not read stderr: %w", err)
@@ -78,8 +81,8 @@ func (s Subprocess) Wait() error {
 	return nil
 }
 
-func Run(args []string) (*Subprocess, error) {
-	cmd := exec.Command("git", args...)
+func Run(ctx context.Context, args []string) (*Subprocess, error) {
+	cmd := exec.CommandContext(ctx, "git", args...)
 	logger().Debug("running subprocess", "cmd", cmd)
 
 	stdout, err := cmd.StdoutPipe()
@@ -105,7 +108,12 @@ func Run(args []string) (*Subprocess, error) {
 }
 
 // Runs git log
-func RunLog(revs []string, paths []string, since string) (*Subprocess, error) {
+func RunLog(
+	ctx context.Context,
+	revs []string,
+	paths []string,
+	since string,
+) (*Subprocess, error) {
 	var baseArgs = []string{
 		"log",
 		"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s",
@@ -129,7 +137,7 @@ func RunLog(revs []string, paths []string, since string) (*Subprocess, error) {
 		args = slices.Concat(baseArgs, revs, []string{"--"}, paths)
 	}
 
-	subprocess, err := Run(args)
+	subprocess, err := Run(ctx, args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git log: %w", err)
 	}
@@ -138,13 +146,13 @@ func RunLog(revs []string, paths []string, since string) (*Subprocess, error) {
 }
 
 // Runs git rev-parse
-func RunRevParse(args []string) (*Subprocess, error) {
+func RunRevParse(ctx context.Context, args []string) (*Subprocess, error) {
 	var baseArgs = []string{
 		"rev-parse",
 		"--no-flags",
 	}
 
-	subprocess, err := Run(slices.Concat(baseArgs, args))
+	subprocess, err := Run(ctx, slices.Concat(baseArgs, args))
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git rev-parse: %w", err)
 	}
