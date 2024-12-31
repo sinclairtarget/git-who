@@ -144,7 +144,9 @@ func (t *TreeNode) insert(path string, node *TreeNode) error {
 	return nil
 }
 
-func (t *TreeNode) remove(path string) (*TreeNode, error) {
+// Removes the node at the given path from the tree. Returns a nil node if there
+// is no node at that path.
+func (t *TreeNode) remove(path string) *TreeNode {
 	// Find parent of target node
 	cur := t
 	var p string
@@ -159,17 +161,18 @@ func (t *TreeNode) remove(path string) (*TreeNode, error) {
 		var ok bool
 		cur, ok = cur.Children[p]
 		if !ok {
-			return nil, fmt.Errorf(
-				"could not find existing node for path \"%s\"",
-				path,
-			)
+			return nil
 		}
 	}
 
 	// Remove child node from children map
-	child := cur.Children[p]
+	child, ok := cur.Children[p]
+	if !ok {
+		return nil
+	}
+
 	delete(cur.Children, p)
-	return child, nil
+	return child
 }
 
 /*
@@ -243,23 +246,20 @@ func TallyCommitsByPath(
 					)
 				}
 
-				var node *TreeNode
-				node, err = root.remove(oldPath)
-				if err != nil {
-					return nil, fmt.Errorf("error removing old node: %w", err)
-				}
-
-				err = root.insert(newPath, node)
-				if err != nil {
-					// Don't fail, just warn. Git allows files to be renamed to
-					// existing filenames sometimes.
-					logger().Debug(
-						"WARNING: path exists in tree",
-						"error",
-						err.Error(),
-						"commit",
-						commit.Name(),
-					)
+				node := root.remove(oldPath)
+				if node != nil {
+					err = root.insert(newPath, node)
+					if err != nil {
+						// Don't fail, just warn. Git allows files to be
+						// renamed to existing filenames sometimes.
+						logger().Debug(
+							"WARNING: path exists in tree",
+							"error",
+							err.Error(),
+							"commit",
+							commit.Name(),
+						)
+					}
 				}
 
 				root.edit(newPath, commit, diff, opts)
