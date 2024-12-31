@@ -115,6 +115,10 @@ func (t *TreeNode) edit(
 }
 
 func (t *TreeNode) insert(path string, node *TreeNode) error {
+	if node == nil {
+		panic("cannot insert nil node into tally tree")
+	}
+
 	// Find parent
 	cur := t
 	var p string
