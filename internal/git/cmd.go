@@ -8,6 +8,7 @@ import (
 	"iter"
 	"os/exec"
 	"slices"
+	"strings"
 )
 
 type SubprocessErr struct {
@@ -81,6 +82,43 @@ func (s Subprocess) Wait() error {
 	return nil
 }
 
+type LogFilters struct {
+	Since    string
+	Authors  []string
+	Nauthors []string
+}
+
+// Turn into CLI args we can pass to `git log`
+func (f LogFilters) ToArgs() []string {
+	args := []string{}
+
+	if f.Since != "" {
+		args = append(args, "--since", f.Since)
+	}
+
+	for _, author := range f.Authors {
+		args = append(args, "--author", author)
+	}
+
+	if len(f.Nauthors) > 0 {
+		args = append(args, "--perl-regexp")
+
+		// Build regex pattern OR-ing together all the nauthors
+		var b strings.Builder
+		for i, nauthor := range f.Nauthors {
+			b.WriteString(nauthor)
+			if i < len(f.Nauthors)-1 {
+				b.WriteString("|")
+			}
+		}
+
+		regex := fmt.Sprintf(`^((?!%s).*)$`, b.String())
+		args = append(args, "--author", regex)
+	}
+
+	return args
+}
+
 func Run(ctx context.Context, args []string) (*Subprocess, error) {
 	cmd := exec.CommandContext(ctx, "git", args...)
 	logger().Debug("running subprocess", "cmd", cmd)
@@ -112,7 +150,7 @@ func RunLog(
 	ctx context.Context,
 	revs []string,
 	paths []string,
-	since string,
+	filters LogFilters,
 ) (*Subprocess, error) {
 	var baseArgs = []string{
 		"log",
@@ -124,18 +162,8 @@ func RunLog(
 		"--reverse",   // Needed to handle file renaming
 	}
 
-	var args []string
-	if since != "" {
-		args = slices.Concat(
-			baseArgs,
-			[]string{"--since", since},
-			revs,
-			[]string{"--"},
-			paths,
-		)
-	} else {
-		args = slices.Concat(baseArgs, revs, []string{"--"}, paths)
-	}
+	filterArgs := filters.ToArgs()
+	args := slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
 
 	subprocess, err := Run(ctx, args)
 	if err != nil {
@@ -150,7 +178,7 @@ func RunShortLog(
 	ctx context.Context,
 	revs []string,
 	paths []string,
-	since string,
+	filters LogFilters,
 ) (*Subprocess, error) {
 	var baseArgs = []string{
 		"log",
@@ -160,18 +188,8 @@ func RunShortLog(
 		"--reverse",   // Needed to handle file renaming
 	}
 
-	var args []string
-	if since != "" {
-		args = slices.Concat(
-			baseArgs,
-			[]string{"--since", since},
-			revs,
-			[]string{"--"},
-			paths,
-		)
-	} else {
-		args = slices.Concat(baseArgs, revs, []string{"--"}, paths)
-	}
+	filterArgs := filters.ToArgs()
+	args := slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
 
 	subprocess, err := Run(ctx, args)
 	if err != nil {

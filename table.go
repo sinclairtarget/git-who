@@ -37,6 +37,8 @@ func table(
 	showEmail bool,
 	limit int,
 	since string,
+	authors []string,
+	nauthors []string,
 ) (err error) {
 	defer func() {
 		if err != nil {
@@ -60,16 +62,28 @@ func table(
 		limit,
 		"since",
 		since,
+		"authors",
+		authors,
+		"nauthors",
+		nauthors,
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitOpts := git.CommitOpts{
-		Since:         since,
-		PopulateDiffs: mode == tally.FilesMode || mode == tally.LinesMode,
+	populateDiffs := mode == tally.FilesMode || mode == tally.LinesMode
+	filters := git.LogFilters{
+		Since:    since,
+		Authors:  authors,
+		Nauthors: nauthors,
 	}
-	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, commitOpts)
+	commits, closer, err := git.CommitsWithOpts(
+		ctx,
+		revs,
+		paths,
+		filters,
+		populateDiffs,
+	)
 	if err != nil {
 		return err
 	}

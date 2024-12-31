@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sinclairtarget/git-who/internal/flagutils"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
@@ -163,6 +164,8 @@ Usage: git-who table [--csv] [-e] [-n <n>] [-l|-f|-m] [revision...] [[--] path]
 				*showEmail,
 				*limit,
 				*filterFlags.since,
+				filterFlags.authors,
+				filterFlags.nauthors,
 			)
 		},
 	}
@@ -219,6 +222,8 @@ Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [revision...] [[--] path]
 				*depth,
 				*showEmail,
 				*filterFlags.since,
+				filterFlags.authors,
+				filterFlags.nauthors,
 			)
 		},
 	}
@@ -238,7 +243,14 @@ func dumpCmd() command {
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return dump(revs, paths, *filterFlags.since, *short)
+			return dump(
+				revs,
+				paths,
+				*short,
+				*filterFlags.since,
+				filterFlags.authors,
+				filterFlags.nauthors,
+			)
 		},
 		isHidden: true,
 	}
@@ -256,7 +268,13 @@ func parseCmd() command {
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return parse(revs, paths, *filterFlags.since)
+			return parse(
+				revs,
+				paths,
+				*filterFlags.since,
+				filterFlags.authors,
+				filterFlags.nauthors,
+			)
 		},
 		isHidden: true,
 	}
@@ -292,13 +310,25 @@ func isOnlyOne(flags ...bool) bool {
 }
 
 type filterFlags struct {
-	since *string
+	since    *string
+	authors  flagutils.SliceFlag
+	nauthors flagutils.SliceFlag
 }
 
-func addFilterFlags(set *flag.FlagSet) filterFlags {
-	return filterFlags{
+func addFilterFlags(set *flag.FlagSet) *filterFlags {
+	flags := filterFlags{
 		since: set.String("since", "", strings.TrimSpace(`
-Limit to commits after the given date. See git-commit(1) for valid formats
+Only count commits after the given date. See git-commit(1) for valid formats
 		`)),
 	}
+
+	set.Var(&flags.authors, "author", strings.TrimSpace(`
+Only count commits by these authors. Can be specified multiple times
+	`))
+
+	set.Var(&flags.nauthors, "nauthor", strings.TrimSpace(`
+Exclude commits by these authors. Can be specified multiple times
+	`))
+
+	return &flags
 }

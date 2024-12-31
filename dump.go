@@ -9,7 +9,14 @@ import (
 )
 
 // Just prints out the output of git log as seen by git who.
-func dump(revs []string, paths []string, since string, short bool) (err error) {
+func dump(
+	revs []string,
+	paths []string,
+	short bool,
+	since string,
+	authors []string,
+	nauthors []string,
+) (err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("error running \"dump\": %w", err)
@@ -22,8 +29,14 @@ func dump(revs []string, paths []string, since string, short bool) (err error) {
 		revs,
 		"paths",
 		paths,
+		"short",
+		short,
 		"since",
 		since,
+		"authors",
+		authors,
+		"nauthors",
+		nauthors,
 	)
 
 	start := time.Now()
@@ -31,11 +44,17 @@ func dump(revs []string, paths []string, since string, short bool) (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	filters := git.LogFilters{
+		Since:    since,
+		Authors:  authors,
+		Nauthors: nauthors,
+	}
+
 	var subprocess *git.Subprocess
 	if short {
-		subprocess, err = git.RunShortLog(ctx, revs, paths, since)
+		subprocess, err = git.RunShortLog(ctx, revs, paths, filters)
 	} else {
-		subprocess, err = git.RunLog(ctx, revs, paths, since)
+		subprocess, err = git.RunLog(ctx, revs, paths, filters)
 	}
 	if err != nil {
 		return err

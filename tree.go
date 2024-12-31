@@ -39,6 +39,8 @@ func tree(
 	depth int,
 	showEmail bool,
 	since string,
+	authors []string,
+	nauthors []string,
 ) (err error) {
 	defer func() {
 		if err != nil {
@@ -60,13 +62,21 @@ func tree(
 		showEmail,
 		"since",
 		since,
+		"authors",
+		authors,
+		"nauthors",
+		nauthors,
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitOpts := git.CommitOpts{Since: since, PopulateDiffs: true}
-	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, commitOpts)
+	filters := git.LogFilters{
+		Since:    since,
+		Authors:  authors,
+		Nauthors: nauthors,
+	}
+	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, filters, true)
 	if err != nil {
 		return err
 	}

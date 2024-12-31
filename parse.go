@@ -10,7 +10,13 @@ import (
 
 // Just prints out a simple representation of the commits parsed from `git log`
 // for debugging.
-func parse(revs []string, paths []string, since string) (err error) {
+func parse(
+	revs []string,
+	paths []string,
+	since string,
+	authors []string,
+	nauthors []string,
+) (err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("error running \"parse\": %w", err)
@@ -25,6 +31,10 @@ func parse(revs []string, paths []string, since string) (err error) {
 		paths,
 		"since",
 		since,
+		"authors",
+		authors,
+		"nauthors",
+		nauthors,
 	)
 
 	start := time.Now()
@@ -32,8 +42,12 @@ func parse(revs []string, paths []string, since string) (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	opts := git.CommitOpts{Since: since, PopulateDiffs: true}
-	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, opts)
+	filters := git.LogFilters{
+		Since:    since,
+		Authors:  authors,
+		Nauthors: nauthors,
+	}
+	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, filters, true)
 	if err != nil {
 		return err
 	}
