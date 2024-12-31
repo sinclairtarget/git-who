@@ -36,7 +36,7 @@ func RelativeTime(now time.Time, t time.Time) string {
 	} else if duration < day {
 		hours := int(duration / time.Hour)
 		if hours > 1 {
-			return fmt.Sprintf("%d hrs. ago", hours)
+			return fmt.Sprintf("%d hr. ago", hours)
 		} else {
 			return fmt.Sprintf("%d hour ago", hours)
 		}
@@ -63,8 +63,10 @@ func RelativeTime(now time.Time, t time.Time) string {
 		}
 	} else {
 		years := int(duration / year)
-		if years > 1 {
-			return fmt.Sprintf("%d yrs. ago", years)
+		if years > 99 {
+			return ">99 yr. ago"
+		} else if years > 1 {
+			return fmt.Sprintf("%d yr. ago", years)
 		} else {
 			return fmt.Sprintf("%d year ago", years)
 		}
