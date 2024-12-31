@@ -25,7 +25,7 @@ type command struct {
 
 // Main examines the args and delegates to the specified subcommand.
 //
-// If no subcommand was specified, we default to the "tree" subcommand.
+// If no subcommand was specified, we default to the "table" subcommand.
 func main() {
 	subcommands := map[string]command{ // Available subcommands
 		"dump":  dumpCmd(),
@@ -89,7 +89,7 @@ loop:
 	args := os.Args[subcmdIndex:]
 
 	// --- Handle subcommands ---
-	cmd := subcommands["tree"] // Default to "tree"
+	cmd := subcommands["table"] // Default to "table"
 	if len(args) > 0 {
 		first := args[0]
 		if subcommand, ok := subcommands[first]; ok {
