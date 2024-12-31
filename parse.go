@@ -32,7 +32,8 @@ func parse(revs []string, paths []string, since string) (err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commits, closer, err := git.CommitsSince(ctx, revs, paths, since)
+	opts := git.CommitOpts{Since: since, PopulateDiffs: true}
+	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, opts)
 	if err != nil {
 		return err
 	}

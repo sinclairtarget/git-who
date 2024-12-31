@@ -229,6 +229,7 @@ func dumpCmd() command {
 Limit to commits after the given date. See git-commit(1) for valid formats
 		`),
 	)
+	short := flagSet.Bool("s", false, "Use short log")
 
 	return command{
 		flagSet: flagSet,
@@ -237,7 +238,7 @@ Limit to commits after the given date. See git-commit(1) for valid formats
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return dump(revs, paths, *since)
+			return dump(revs, paths, *since, *short)
 		},
 		isHidden: true,
 	}

@@ -65,7 +65,8 @@ func tree(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commits, closer, err := git.CommitsSince(ctx, revs, paths, since)
+	commitOpts := git.CommitOpts{Since: since, PopulateDiffs: true}
+	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, commitOpts)
 	if err != nil {
 		return err
 	}

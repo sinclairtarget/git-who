@@ -145,6 +145,42 @@ func RunLog(
 	return subprocess, nil
 }
 
+// Runs git log without --numstat or --summary, which is much faster.
+func RunShortLog(
+	ctx context.Context,
+	revs []string,
+	paths []string,
+	since string,
+) (*Subprocess, error) {
+	var baseArgs = []string{
+		"log",
+		"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s%n",
+		"--date=unix",
+		"--no-merges", // Ensures every commit has file diffs
+		"--reverse",   // Needed to handle file renaming
+	}
+
+	var args []string
+	if since != "" {
+		args = slices.Concat(
+			baseArgs,
+			[]string{"--since", since},
+			revs,
+			[]string{"--"},
+			paths,
+		)
+	} else {
+		args = slices.Concat(baseArgs, revs, []string{"--"}, paths)
+	}
+
+	subprocess, err := Run(ctx, args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run git log: %w", err)
+	}
+
+	return subprocess, nil
+}
+
 // Runs git rev-parse
 func RunRevParse(ctx context.Context, args []string) (*Subprocess, error) {
 	var baseArgs = []string{

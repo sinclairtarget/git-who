@@ -73,28 +73,33 @@ func (d FileDiff) String() string {
 	)
 }
 
-func Commits(ctx context.Context, revs []string, paths []string) (
-	iter.Seq2[Commit, error],
-	func() error,
-	error,
-) {
-	return CommitsSince(ctx, revs, paths, "")
+// Options for Commits()
+type CommitOpts struct {
+	Since         string // Passed to git log --since
+	PopulateDiffs bool   // Get file edits and lines changed, but slower
 }
 
 // Returns an iterator over commits identified by the given revisions and paths.
 //
 // Also returns a closer() function for cleanup and an error when encountered.
-func CommitsSince(
+func CommitsWithOpts(
 	ctx context.Context,
 	revs []string,
 	paths []string,
-	since string,
+	opts CommitOpts,
 ) (
 	iter.Seq2[Commit, error],
 	func() error,
 	error,
 ) {
-	subprocess, err := RunLog(ctx, revs, paths, since)
+	var subprocess *Subprocess
+	var err error
+	if opts.PopulateDiffs {
+		subprocess, err = RunLog(ctx, revs, paths, opts.Since)
+	} else {
+		subprocess, err = RunShortLog(ctx, revs, paths, opts.Since)
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}
@@ -106,4 +111,12 @@ func CommitsSince(
 		return subprocess.Wait()
 	}
 	return commits, closer, nil
+}
+
+func Commits(ctx context.Context, revs []string, paths []string) (
+	iter.Seq2[Commit, error],
+	func() error,
+	error,
+) {
+	return CommitsWithOpts(ctx, revs, paths, CommitOpts{})
 }

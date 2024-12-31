@@ -62,22 +62,26 @@ func table(
 		since,
 	)
 
-	opts := tally.TallyOpts{Mode: mode}
-	if showEmail {
-		opts.Key = func(c git.Commit) string { return c.AuthorEmail }
-	} else {
-		opts.Key = func(c git.Commit) string { return c.AuthorName }
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commits, closer, err := git.CommitsSince(ctx, revs, paths, since)
+	commitOpts := git.CommitOpts{
+		Since:         since,
+		PopulateDiffs: mode == tally.FilesMode || mode == tally.LinesMode,
+	}
+	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, commitOpts)
 	if err != nil {
 		return err
 	}
 
-	tallies, err := tally.TallyCommits(commits, opts)
+	tallyOpts := tally.TallyOpts{Mode: mode}
+	if showEmail {
+		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
+	} else {
+		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
+	}
+
+	tallies, err := tally.TallyCommits(commits, tallyOpts)
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}
