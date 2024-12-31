@@ -119,13 +119,8 @@ func tableCmd() command {
 	filesMode := flagSet.Bool("f", false, "Sort by files changed")
 	lastModifiedMode := flagSet.Bool("m", false, "Sort by last modified")
 	limit := flagSet.Int("n", 0, "Limit rows in table")
-	since := flagSet.String(
-		"since",
-		"",
-		strings.TrimSpace(`
-Limit to commits after the given date. See git-commit(1) for valid formats
-		`),
-	)
+
+	filterFlags := addFilterFlags(flagSet)
 
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
@@ -160,7 +155,15 @@ Usage: git-who table [--csv] [-e] [-n <n>] [-l|-f|-m] [revision...] [[--] path]
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return table(revs, paths, mode, *useCsv, *showEmail, *limit, *since)
+			return table(
+				revs,
+				paths,
+				mode,
+				*useCsv,
+				*showEmail,
+				*limit,
+				*filterFlags.since,
+			)
 		},
 	}
 }
@@ -177,13 +180,8 @@ func treeCmd() command {
 		"Rank authors by last commit time",
 	)
 	depth := flagSet.Int("d", 0, "Limit on tree depth")
-	since := flagSet.String(
-		"since",
-		"",
-		strings.TrimSpace(`
-Limit to commits after the given date. See git-commit(1) for valid formats
-		`),
-	)
+
+	filterFlags := addFilterFlags(flagSet)
 
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
@@ -214,7 +212,14 @@ Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [revision...] [[--] path]
 				mode = tally.LastModifiedMode
 			}
 
-			return tree(revs, paths, mode, *depth, *showEmail, *since)
+			return tree(
+				revs,
+				paths,
+				mode,
+				*depth,
+				*showEmail,
+				*filterFlags.since,
+			)
 		},
 	}
 }
@@ -222,14 +227,9 @@ Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [revision...] [[--] path]
 func dumpCmd() command {
 	flagSet := flag.NewFlagSet("git-who dump", flag.ExitOnError)
 
-	since := flagSet.String(
-		"since",
-		"",
-		strings.TrimSpace(`
-Limit to commits after the given date. See git-commit(1) for valid formats
-		`),
-	)
 	short := flagSet.Bool("s", false, "Use short log")
+
+	filterFlags := addFilterFlags(flagSet)
 
 	return command{
 		flagSet: flagSet,
@@ -238,7 +238,7 @@ Limit to commits after the given date. See git-commit(1) for valid formats
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return dump(revs, paths, *since, *short)
+			return dump(revs, paths, *filterFlags.since, *short)
 		},
 		isHidden: true,
 	}
@@ -247,13 +247,7 @@ Limit to commits after the given date. See git-commit(1) for valid formats
 func parseCmd() command {
 	flagSet := flag.NewFlagSet("git-who parse", flag.ExitOnError)
 
-	since := flagSet.String(
-		"since",
-		"",
-		strings.TrimSpace(`
-Limit to commits after the given date. See git-commit(1) for valid formats
-		`),
-	)
+	filterFlags := addFilterFlags(flagSet)
 
 	return command{
 		flagSet: flagSet,
@@ -262,7 +256,7 @@ Limit to commits after the given date. See git-commit(1) for valid formats
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
-			return parse(revs, paths, *since)
+			return parse(revs, paths, *filterFlags.since)
 		},
 		isHidden: true,
 	}
@@ -295,4 +289,16 @@ func isOnlyOne(flags ...bool) bool {
 	}
 
 	return true
+}
+
+type filterFlags struct {
+	since *string
+}
+
+func addFilterFlags(set *flag.FlagSet) filterFlags {
+	return filterFlags{
+		since: set.String("since", "", strings.TrimSpace(`
+Limit to commits after the given date. See git-commit(1) for valid formats
+		`)),
+	}
 }
