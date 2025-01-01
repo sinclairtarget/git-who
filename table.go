@@ -105,7 +105,7 @@ func table(
 		return err
 	}
 
-	if limit > 0 {
+	if limit > 0 && limit < len(tallies) {
 		tallies = tallies[:limit]
 	}
 
