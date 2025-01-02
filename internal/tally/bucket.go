@@ -3,8 +3,6 @@ package tally
 import (
 	"fmt"
 	"iter"
-	"maps"
-	"slices"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -74,6 +72,20 @@ func calcBucketSize(start time.Time, end time.Time) bucketFunc {
 	}
 }
 
+func finalizeBucket(bucket TimeBucket, mode TallyMode) TimeBucket {
+	// Get count of unique files touched
+	for key, tally := range bucket.tallies {
+		fileset := bucket.filesets[key]
+		tally.FileCount = countFiles(fileset)
+		bucket.tallies[key] = tally
+	}
+
+	sorted := sortTallies(bucket.tallies, mode)
+	bucket.Tally = sorted[0]
+
+	return bucket
+}
+
 func TallyCommitsByDate(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
@@ -98,25 +110,7 @@ func TallyCommitsByDate(
 		if bucket.Time.IsZero() {
 			bucket = newBucket(name, bucketedTime)
 		} else if bucketedTime.Sub(bucket.Time) > 0 {
-			// Get count of unique files touched
-			for key, tally := range bucket.tallies {
-				fileset := bucket.filesets[key]
-
-				sum := 0
-				for _, exists := range fileset {
-					if exists {
-						sum += 1
-					}
-				}
-				tally.FileCount = sum
-				bucket.tallies[key] = tally
-			}
-
-			// Sort list
-			sorted := slices.SortedFunc(maps.Values(bucket.tallies), func(a, b Tally) int {
-				return -a.Compare(b, opts.Mode)
-			})
-			bucket.Tally = sorted[0]
+			bucket = finalizeBucket(bucket, opts.Mode)
 			buckets = append(buckets, bucket)
 			bucket = newBucket(name, bucketedTime)
 		}
@@ -137,11 +131,7 @@ func TallyCommitsByDate(
 			tally.LinesRemoved += diff.LinesRemoved
 
 			if diff.MoveDest != "" {
-				// File rename for everyone
-				for author, _ := range bucket.filesets {
-					bucket.filesets[author][diff.Path] = false
-					bucket.filesets[author][diff.MoveDest] = true
-				}
+				moveFile(bucket.filesets, diff)
 			} else {
 				bucket.filesets[key][diff.Path] = true
 			}
@@ -150,25 +140,7 @@ func TallyCommitsByDate(
 		bucket.tallies[key] = tally
 	}
 
-	// Get count of unique files touched
-	for key, tally := range bucket.tallies {
-		fileset := bucket.filesets[key]
-
-		sum := 0
-		for _, exists := range fileset {
-			if exists {
-				sum += 1
-			}
-		}
-		tally.FileCount = sum
-		bucket.tallies[key] = tally
-	}
-
-	// Sort list
-	sorted := slices.SortedFunc(maps.Values(bucket.tallies), func(a, b Tally) int {
-		return -a.Compare(b, opts.Mode)
-	})
-	bucket.Tally = sorted[0]
+	bucket = finalizeBucket(bucket, opts.Mode)
 	buckets = append(buckets, bucket)
 	return buckets, nil
 }

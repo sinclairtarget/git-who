@@ -100,13 +100,8 @@ func TallyCommits(
 		for _, diff := range commit.FileDiffs {
 			tally.LinesAdded += diff.LinesAdded
 			tally.LinesRemoved += diff.LinesRemoved
-
 			if diff.MoveDest != "" {
-				// File rename for everyone
-				for author, _ := range filesets {
-					filesets[author][diff.Path] = false
-					filesets[author][diff.MoveDest] = true
-				}
+				moveFile(filesets, diff)
 			} else {
 				filesets[key][diff.Path] = true
 			}
@@ -118,24 +113,42 @@ func TallyCommits(
 	// Get count of unique files touched
 	for key, tally := range tallies {
 		fileset := filesets[key]
-
-		sum := 0
-		for _, exists := range fileset {
-			if exists {
-				sum += 1
-			}
-		}
-		tally.FileCount = sum
+		tally.FileCount = countFiles(fileset)
 		tallies[key] = tally
 	}
 
 	// Sort list
-	sorted := slices.SortedFunc(maps.Values(tallies), func(a, b Tally) int {
-		return -a.Compare(b, opts.Mode)
-	})
+	sorted := sortTallies(tallies, opts.Mode)
 
 	elapsed := time.Now().Sub(start)
 	logger().Debug("tallied commits", "duration_ms", elapsed.Milliseconds())
 
 	return sorted, nil
+}
+
+func moveFile(filesets map[string]map[string]bool, diff git.FileDiff) {
+	// File rename for everyone
+	for author, _ := range filesets {
+		filesets[author][diff.Path] = false
+		filesets[author][diff.MoveDest] = true
+	}
+}
+
+func countFiles(fileset map[string]bool) int {
+	sum := 0
+	for _, exists := range fileset {
+		if exists {
+			sum += 1
+		}
+	}
+
+	return sum
+}
+
+func sortTallies(tallies map[string]Tally, mode TallyMode) []Tally {
+	sorted := slices.SortedFunc(maps.Values(tallies), func(a, b Tally) int {
+		return -a.Compare(b, mode)
+	})
+
+	return sorted
 }

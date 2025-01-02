@@ -4,10 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"iter"
-	"maps"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -108,9 +106,7 @@ func (t *TreeNode) edit(
 	t.tallies[key] = nodeTally
 
 	// Pick best tally for the node according to the tally mode
-	sorted := slices.SortedFunc(maps.Values(t.tallies), func(a, b Tally) int {
-		return -a.Compare(b, opts.Mode)
-	})
+	sorted := sortTallies(t.tallies, opts.Mode)
 	t.Tally = sorted[0]
 }
 
