@@ -88,19 +88,23 @@ func drawPlot(buckets []tally.TimeBucket, maxVal int, mode tally.TallyMode) {
 	var lastAuthor string
 	for _, bucket := range buckets {
 		value := bucket.Value(mode)
-		clampedValue := 1 + int(math.Round(
-			(float64(value)/float64(maxVal))*float64(barWidth-1),
+		clampedValue := int(math.Ceil(
+			(float64(value) / float64(maxVal)) * float64(barWidth-1),
 		))
 		bar := strings.Repeat("#", clampedValue)
 
-		tallyPart := fmtHistTally(
-			bucket.Tally,
-			mode,
-			bucket.Tally.AuthorName == lastAuthor,
-		)
-		fmt.Printf("%s ┤ %-*s %s\n", bucket.Name, barWidth, bar, tallyPart)
+		if value > 0 {
+			tallyPart := fmtHistTally(
+				bucket.Tally,
+				mode,
+				bucket.Tally.AuthorName == lastAuthor,
+			)
+			fmt.Printf("%s ┤ %-*s %s\n", bucket.Name, barWidth, bar, tallyPart)
 
-		lastAuthor = bucket.Tally.AuthorName
+			lastAuthor = bucket.Tally.AuthorName
+		} else {
+			fmt.Printf("%s ┤ \n", bucket.Name)
+		}
 	}
 }
 

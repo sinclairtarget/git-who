@@ -38,36 +38,72 @@ func newBucket(name string, t time.Time) TimeBucket {
 	}
 }
 
-type bucketFunc func(time.Time) (string, time.Time)
+// Resolution for a time series.
+//
+// apply - Truncate time to its time bucket
+// label - Format the date to a label for the bucket
+// next - Get next time in series, given a time
+type resolution struct {
+	apply func(time.Time) time.Time
+	label func(time.Time) string
+	next  func(time.Time) time.Time
+}
 
-func calcBucketSize(start time.Time, end time.Time) bucketFunc {
+func calcResolution(start time.Time, end time.Time) resolution {
 	duration := end.Sub(start)
 	day := time.Hour * 24
 	year := day * 365
 
-	if duration > 5*year {
+	if duration > year*5 {
 		// Yearly buckets
-		return func(t time.Time) (string, time.Time) {
-			year, _, _ := t.UTC().Date()
-			bucketedTime := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
-			name := bucketedTime.Format("2006")
-			return name, bucketedTime
+		apply := func(t time.Time) time.Time {
+			year, _, _ := t.Date()
+			return time.Date(year, 1, 1, 0, 0, 0, 0, time.Local)
 		}
-	} else if duration > 60*day {
+		return resolution{
+			apply: apply,
+			next: func(t time.Time) time.Time {
+				t = apply(t)
+				year, _, _ := t.Date()
+				return time.Date(year+1, 1, 1, 0, 0, 0, 0, time.Local)
+			},
+			label: func(t time.Time) string {
+				return apply(t).Format("2006")
+			},
+		}
+	} else if duration > day*60 {
 		// Monthly buckets
-		return func(t time.Time) (string, time.Time) {
-			year, month, _ := t.UTC().Date()
-			bucketedTime := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
-			name := bucketedTime.Format("Jan 2006")
-			return name, bucketedTime
+		apply := func(t time.Time) time.Time {
+			year, month, _ := t.Date()
+			return time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
+		}
+		return resolution{
+			apply: apply,
+			next: func(t time.Time) time.Time {
+				t = apply(t)
+				year, month, _ := t.Date()
+				return time.Date(year, month+1, 1, 0, 0, 0, 0, time.Local)
+			},
+			label: func(t time.Time) string {
+				return apply(t).Format("Jan 2006")
+			},
 		}
 	} else {
 		// Daily buckets
-		return func(t time.Time) (string, time.Time) {
-			year, month, day := t.UTC().Date()
-			bucketedTime := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
-			name := bucketedTime.Format(time.DateOnly)
-			return name, bucketedTime
+		apply := func(t time.Time) time.Time {
+			year, month, day := t.Date()
+			return time.Date(year, month, day, 0, 0, 0, 0, time.Local)
+		}
+		return resolution{
+			apply: apply,
+			next: func(t time.Time) time.Time {
+				t = apply(t)
+				year, month, day := t.Date()
+				return time.Date(year, month, day+1, 0, 0, 0, 0, time.Local)
+			},
+			label: func(t time.Time) string {
+				return apply(t).Format(time.DateOnly)
+			},
 		}
 	}
 }
@@ -80,41 +116,77 @@ func finalizeBucket(bucket TimeBucket, mode TallyMode) TimeBucket {
 		bucket.tallies[key] = tally
 	}
 
-	sorted := sortTallies(bucket.tallies, mode)
-	bucket.Tally = sorted[0]
+	if len(bucket.tallies) > 0 {
+		sorted := sortTallies(bucket.tallies, mode)
+		bucket.Tally = sorted[0]
+	}
 
 	return bucket
 }
 
+// Returns a list of "time buckets," with a winning tally for each date.
+//
+// The resolution / size of the buckets is determined based on the duration
+// between the first commit and now.
 func TallyCommitsByDate(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
 	now time.Time,
-) ([]TimeBucket, error) {
-	buckets := []TimeBucket{}
-	var toBucket bucketFunc
-	var bucket TimeBucket
+) (_ []TimeBucket, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("error while tallying commits by date: %w", err)
+		}
+	}()
 
-	for commit, err := range commits {
+	buckets := []TimeBucket{}
+
+	next, stop := iter.Pull2(commits)
+	defer stop()
+
+	// Use first commit to calculate resolution
+	firstCommit, err, ok := next()
+	if err != nil {
+		return buckets, err
+	}
+	if !ok {
+		return buckets, nil // Iterator is empty
+	}
+
+	resolution := calcResolution(firstCommit.Date, now)
+
+	// Init buckets/timeseries
+	t := resolution.apply(firstCommit.Date)
+	for now.Sub(t) > 0 {
+		bucket := newBucket(resolution.label(t), resolution.apply(t))
+		buckets = append(buckets, bucket)
+		t = resolution.next(t)
+	}
+
+	// Tally
+	i := 0
+	for {
+		commit, err, ok := next()
 		if err != nil {
 			return buckets, fmt.Errorf("error iterating commits: %w", err)
 		}
+		if !ok {
+			break
+		}
 
-		if toBucket == nil {
-			toBucket = calcBucketSize(commit.Date, now)
+		bucket := buckets[i]
+		bucketedCommitTime := resolution.apply(commit.Date)
+
+		if bucketedCommitTime.Sub(bucket.Time) > 0 {
+			// Next bucket
+			buckets[i] = finalizeBucket(bucket, opts.Mode)
+			for !bucketedCommitTime.Equal(bucket.Time) {
+				i += 1
+				bucket = buckets[i]
+			}
 		}
 
 		key := opts.Key(commit)
-		name, bucketedTime := toBucket(commit.Date)
-
-		if bucket.Time.IsZero() {
-			bucket = newBucket(name, bucketedTime)
-		} else if bucketedTime.Sub(bucket.Time) > 0 {
-			bucket = finalizeBucket(bucket, opts.Mode)
-			buckets = append(buckets, bucket)
-			bucket = newBucket(name, bucketedTime)
-		}
-
 		tally := bucket.tallies[key]
 
 		tally.AuthorName = commit.AuthorName
@@ -122,7 +194,7 @@ func TallyCommitsByDate(
 		tally.Commits += 1
 		tally.LastCommitTime = commit.Date
 
-		_, ok := bucket.filesets[key]
+		_, ok = bucket.filesets[key]
 		if !ok {
 			bucket.filesets[key] = map[string]bool{}
 		}
@@ -138,9 +210,10 @@ func TallyCommitsByDate(
 		}
 
 		bucket.tallies[key] = tally
+		buckets[i] = bucket
 	}
 
-	bucket = finalizeBucket(bucket, opts.Mode)
-	buckets = append(buckets, bucket)
+	buckets[i] = finalizeBucket(buckets[i], opts.Mode)
+
 	return buckets, nil
 }
