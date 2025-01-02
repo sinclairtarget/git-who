@@ -120,7 +120,7 @@ func tableCmd() command {
 	linesMode := flagSet.Bool("l", false, "Sort by lines added + removed")
 	filesMode := flagSet.Bool("f", false, "Sort by files changed")
 	lastModifiedMode := flagSet.Bool("m", false, "Sort by last modified")
-	limit := flagSet.Int("n", 0, "Limit rows in table")
+	limit := flagSet.Int("n", 10, "Limit rows in table (set to 0 for no limit)")
 
 	filterFlags := addFilterFlags(flagSet)
 

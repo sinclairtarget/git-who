@@ -105,7 +105,9 @@ func table(
 		return err
 	}
 
+	numFilteredOut := 0
 	if limit > 0 && limit < len(tallies) {
+		numFilteredOut = len(tallies) - limit
 		tallies = tallies[:limit]
 	}
 
@@ -116,7 +118,7 @@ func table(
 		}
 	} else {
 		colwidth := pickWidth(mode, showEmail)
-		writeTable(tallies, colwidth, showEmail, mode)
+		writeTable(tallies, colwidth, showEmail, mode, numFilteredOut)
 	}
 
 	return nil
@@ -184,6 +186,7 @@ func writeTable(
 	colwidth int,
 	showEmail bool,
 	mode tally.TallyMode,
+	numFilteredOut int,
 ) {
 	if len(tallies) == 0 {
 		return
@@ -261,6 +264,11 @@ func writeTable(
 				lines,
 			)
 		}
+	}
+
+	if numFilteredOut > 0 {
+		msg := fmt.Sprintf("...%d more...", numFilteredOut)
+		fmt.Printf("│%-*s│\n", colwidth-2, msg)
 	}
 
 	fmt.Printf("└%s┘\n", rule)
