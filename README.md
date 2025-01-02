@@ -1,12 +1,14 @@
 # git-who
+ ![Vanity screenshot](./screenshots/vanity.png)
+
 `git-who` is a command-line tool for answering that age-old question:
 
 > _This code is insane. Who wrote this??_
 
-Git already includes a command, `git blame`, that tells you who wrote a _line_
-of code. `git-who` is like `git blame` but for file trees, i.e. directories and
-their contents. You can use `git-who` to figure out who is responsible for an
-entire component or subsystem of your project.
+`git-who` is like `git blame` but for file trees, i.e. directories and their
+contents. Whereas `git blame` tells you who wrote a _line_ of code, `git-who`
+tries to identify the primary authors of an entire component or subsystem in a
+codebase.
 
 ## Usage
 _(In the following examples, `git-who` is invoked as `git who`, which requires
@@ -15,13 +17,13 @@ setting up a Git alias. See the alias section below.)_
 `git-who` has three subcommands. Each subcommand gives you a different view of
 authorship in your Git repository.
 
-### The Table Subcommand
+### The `table` Subcommand
 The `table` subcommand is the default subcommand. Because it is the default,
 you can invoke it explicitly as `git who table` or implicitly just as `git
 who`.
 
-The `table` subcommand prints a table showing all of the authors who have
-contributed to the repository sorted by number of commits:
+The `table` subcommand prints a table summarizing the contributions of every
+author who has made commits in the repository.
 
 ```
 $ git who
@@ -76,6 +78,12 @@ commit history, can take several seconds to run in large repositories. This is
 true only when running the command over the entire Git log--see the Filtering
 Commits section below for how to restrict `git-who` to a subset of the commit
 history.
+
+## The `tree` Subcommand
+TODO.
+
+## The `hist` Subcommand
+TODO.
 
 ## DEVELOPMENT
 ### Test Repository Submodule
