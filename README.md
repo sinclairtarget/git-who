@@ -3,7 +3,7 @@
 
 `git-who` is a command-line tool for answering that age-old question:
 
-> _This code is insane. Who wrote this??_
+> _Who wrote this code??_
 
 `git-who` is like `git blame` but for file trees, i.e. directories and their
 contents. Whereas `git blame` tells you who wrote a _line_ of code, `git-who`
