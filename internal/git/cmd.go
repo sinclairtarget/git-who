@@ -163,7 +163,13 @@ func RunLog(
 	}
 
 	filterArgs := filters.ToArgs()
-	args := slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
+
+	var args []string
+	if len(paths) > 0 {
+		args = slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
+	} else {
+		args = slices.Concat(baseArgs, filterArgs, revs)
+	}
 
 	subprocess, err := Run(ctx, args)
 	if err != nil {
@@ -189,7 +195,13 @@ func RunShortLog(
 	}
 
 	filterArgs := filters.ToArgs()
-	args := slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
+
+	var args []string
+	if len(paths) > 0 {
+		args = slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
+	} else {
+		args = slices.Concat(baseArgs, filterArgs, revs)
+	}
 
 	subprocess, err := Run(ctx, args)
 	if err != nil {

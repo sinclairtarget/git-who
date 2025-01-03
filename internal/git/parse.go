@@ -13,9 +13,11 @@ import (
 )
 
 var fileRenameRegexp *regexp.Regexp
+var commitHashRegexp *regexp.Regexp
 
 func init() {
 	fileRenameRegexp = regexp.MustCompile(`{(.*) => (.*)}`)
+	commitHashRegexp = regexp.MustCompile(`^[\^a-f0-9]+$`)
 }
 
 // Splits a path from git log --numstat on "/", while ignoring "/" surrounded
@@ -216,7 +218,8 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 				return
 			}
 
-			if len(line) == 0 {
+			done := linesThisCommit >= 6 && (len(line) == 0 || isRev(line))
+			if done {
 				commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
 				if !yield(commit, nil) {
 					return
@@ -225,7 +228,10 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 				commit = Commit{}
 				diffLookup = map[string]FileDiff{}
 				linesThisCommit = 0
-				continue
+
+				if len(line) == 0 {
+					continue
+				}
 			}
 
 			switch {
@@ -311,4 +317,12 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			yield(commit, nil)
 		}
 	}
+}
+
+// Returns true if this is a (full-length) Git revision hash, false otherwise.
+//
+// We also need to handle a hash with "^" in front.
+func isRev(s string) bool {
+	matched := commitHashRegexp.MatchString(s)
+	return matched && (len(s) == 40 || len(s) == 41)
 }
