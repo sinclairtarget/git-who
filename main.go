@@ -309,6 +309,8 @@ func dumpCmd() command {
 func parseCmd() command {
 	flagSet := flag.NewFlagSet("git-who parse", flag.ExitOnError)
 
+	short := flagSet.Bool("s", false, "Use short log")
+
 	filterFlags := addFilterFlags(flagSet)
 
 	return command{
@@ -321,6 +323,7 @@ func parseCmd() command {
 			return parse(
 				revs,
 				paths,
+				*short,
 				*filterFlags.since,
 				filterFlags.authors,
 				filterFlags.nauthors,

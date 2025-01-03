@@ -13,6 +13,7 @@ import (
 func parse(
 	revs []string,
 	paths []string,
+	short bool,
 	since string,
 	authors []string,
 	nauthors []string,
@@ -47,7 +48,7 @@ func parse(
 		Authors:  authors,
 		Nauthors: nauthors,
 	}
-	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, filters, true)
+	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, filters, short)
 	if err != nil {
 		return err
 	}
