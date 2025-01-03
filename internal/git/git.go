@@ -8,8 +8,10 @@ package git
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
+	"strconv"
 	"time"
 )
 
@@ -114,4 +116,44 @@ func Commits(ctx context.Context, revs []string, paths []string) (
 	error,
 ) {
 	return CommitsWithOpts(ctx, revs, paths, LogFilters{}, true)
+}
+
+func NumCommits(
+	revs []string,
+	paths []string,
+	filters LogFilters,
+) (_ int, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("error getting commit count: %w", err)
+		}
+	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	subprocess, err := RunRevList(ctx, revs, paths, filters, true)
+	if err != nil {
+		return 0, err
+	}
+
+	lines := subprocess.StdoutLines()
+	next, stop := iter.Pull2(lines)
+	defer stop()
+
+	line, err, ok := next()
+	if err != nil {
+		return 0, err
+	}
+	if !ok {
+		return 0, errors.New("no output from git rev-list")
+	}
+
+	count, err := strconv.Atoi(line)
+	if err != nil {
+		return 0, err
+	}
+
+	subprocess.Wait()
+	return count, nil
 }

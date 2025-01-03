@@ -52,6 +52,7 @@ func parse(
 		Authors:  authors,
 		Nauthors: nauthors,
 	}
+
 	commits, closer, err := git.CommitsWithOpts(
 		ctx,
 		revs,

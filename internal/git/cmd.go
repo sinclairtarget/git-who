@@ -82,6 +82,32 @@ func (s Subprocess) Wait() error {
 	return nil
 }
 
+func Run(ctx context.Context, args []string) (*Subprocess, error) {
+	cmd := exec.CommandContext(ctx, "git", args...)
+	logger().Debug("running subprocess", "cmd", cmd)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open stdout pipe: %w", err)
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open stderr pipe: %w", err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start subprocess: %w", err)
+	}
+
+	return &Subprocess{
+		cmd:    cmd,
+		stdout: stdout,
+		stderr: stderr,
+	}, nil
+}
+
 type LogFilters struct {
 	Since    string
 	Authors  []string
@@ -117,32 +143,6 @@ func (f LogFilters) ToArgs() []string {
 	}
 
 	return args
-}
-
-func Run(ctx context.Context, args []string) (*Subprocess, error) {
-	cmd := exec.CommandContext(ctx, "git", args...)
-	logger().Debug("running subprocess", "cmd", cmd)
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to open stdout pipe: %w", err)
-	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, fmt.Errorf("failed to open stderr pipe: %w", err)
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		return nil, fmt.Errorf("failed to start subprocess: %w", err)
-	}
-
-	return &Subprocess{
-		cmd:    cmd,
-		stdout: stdout,
-		stderr: stderr,
-	}, nil
 }
 
 // Runs git log
@@ -221,6 +221,40 @@ func RunRevParse(ctx context.Context, args []string) (*Subprocess, error) {
 	subprocess, err := Run(ctx, slices.Concat(baseArgs, args))
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git rev-parse: %w", err)
+	}
+
+	return subprocess, nil
+}
+
+// Runs git rev-list. When countOnly is true, passes --count, which is much
+// faster than printing then getting all the revisions when all you need is the
+// count.
+func RunRevList(
+	ctx context.Context,
+	revs []string,
+	paths []string,
+	filters LogFilters,
+	countOnly bool,
+) (*Subprocess, error) {
+	var baseArgs []string
+	if countOnly {
+		baseArgs = []string{"rev-list", "--count"}
+	} else {
+		baseArgs = []string{"rev-list"}
+	}
+
+	filterArgs := filters.ToArgs()
+
+	var args []string
+	if len(paths) > 0 {
+		args = slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
+	} else {
+		args = slices.Concat(baseArgs, filterArgs, revs)
+	}
+
+	subprocess, err := Run(ctx, args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run git rev-list: %w", err)
 	}
 
 	return subprocess, nil
