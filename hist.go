@@ -13,7 +13,7 @@ import (
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
-const barWidth = 50
+const barWidth = 36
 
 func hist(
 	revs []string,
