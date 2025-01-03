@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -30,6 +32,8 @@ func parse(
 		revs,
 		"paths",
 		paths,
+		"short",
+		short,
 		"since",
 		since,
 		"authors",
@@ -48,26 +52,37 @@ func parse(
 		Authors:  authors,
 		Nauthors: nauthors,
 	}
-	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, filters, short)
+	commits, closer, err := git.CommitsWithOpts(
+		ctx,
+		revs,
+		paths,
+		filters,
+		!short,
+	)
 	if err != nil {
 		return err
 	}
 
+	w := bufio.NewWriter(os.Stdout)
+
 	numCommits := 0
 	for commit, err := range commits {
 		if err != nil {
+			w.Flush()
 			return fmt.Errorf("Error iterating commits: %w", err)
 		}
 
-		fmt.Printf("%s\n", commit)
+		fmt.Fprintf(w, "%s\n", commit)
 		for _, diff := range commit.FileDiffs {
-			fmt.Printf("  %s\n", diff)
+			fmt.Fprintf(w, "  %s\n", diff)
 		}
 
-		fmt.Println()
+		fmt.Fprintln(w)
 
 		numCommits += 1
 	}
+
+	w.Flush()
 
 	fmt.Printf("Parsed %d commits.\n", numCommits)
 

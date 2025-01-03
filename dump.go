@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -60,14 +62,19 @@ func dump(
 		return err
 	}
 
+	w := bufio.NewWriter(os.Stdout)
+
 	lines := subprocess.StdoutLines()
 	for line, err := range lines {
 		if err != nil {
+			w.Flush()
 			return err
 		}
 
-		fmt.Println(line)
+		fmt.Fprintln(w, line)
 	}
+
+	w.Flush()
 
 	err = subprocess.Wait()
 	if err != nil {
