@@ -105,7 +105,7 @@ loop:
 
 	progStart = time.Now()
 	if err := cmd.run(subargs); err != nil {
-		fmt.Println(err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
