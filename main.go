@@ -235,6 +235,7 @@ func histCmd() command {
 
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
+	showEmail := flagSet.Bool("e", false, "Show email address of each author")
 
 	filterFlags := addFilterFlags(flagSet)
 
@@ -269,6 +270,7 @@ Usage: git-who hist [-e] [-l|-f] [filter opts...] [revision...] [[--] path]
 				revs,
 				paths,
 				mode,
+				*showEmail,
 				*filterFlags.since,
 				filterFlags.authors,
 				filterFlags.nauthors,

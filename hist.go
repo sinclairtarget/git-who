@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/ansi"
+	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
@@ -18,6 +19,7 @@ func hist(
 	revs []string,
 	paths []string,
 	mode tally.TallyMode,
+	showEmail bool,
 	since string,
 	authors []string,
 	nauthors []string,
@@ -62,9 +64,11 @@ func hist(
 		return err
 	}
 
-	tallyOpts := tally.TallyOpts{
-		Mode: mode,
-		Key:  func(c git.Commit) string { return c.AuthorName },
+	tallyOpts := tally.TallyOpts{Mode: mode}
+	if showEmail {
+		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
+	} else {
+		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 	buckets, err := tally.TallyCommitsByDate(commits, tallyOpts, time.Now())
 
@@ -80,11 +84,16 @@ func hist(
 		}
 	}
 
-	drawPlot(buckets, maxVal, mode)
+	drawPlot(buckets, maxVal, mode, showEmail)
 	return nil
 }
 
-func drawPlot(buckets []tally.TimeBucket, maxVal int, mode tally.TallyMode) {
+func drawPlot(
+	buckets []tally.TimeBucket,
+	maxVal int,
+	mode tally.TallyMode,
+	showEmail bool,
+) {
 	var lastAuthor string
 	for _, bucket := range buckets {
 		value := bucket.Value(mode)
@@ -97,6 +106,7 @@ func drawPlot(buckets []tally.TimeBucket, maxVal int, mode tally.TallyMode) {
 			tallyPart := fmtHistTally(
 				bucket.Tally,
 				mode,
+				showEmail,
 				bucket.Tally.AuthorName == lastAuthor,
 			)
 			fmt.Printf("%s ┤ %-*s %s\n", bucket.Name, barWidth, bar, tallyPart)
@@ -108,7 +118,12 @@ func drawPlot(buckets []tally.TimeBucket, maxVal int, mode tally.TallyMode) {
 	}
 }
 
-func fmtHistTally(t tally.Tally, mode tally.TallyMode, fade bool) string {
+func fmtHistTally(
+	t tally.Tally,
+	mode tally.TallyMode,
+	showEmail bool,
+	fade bool,
+) string {
 	var metric string
 	switch mode {
 	case tally.CommitMode:
@@ -129,15 +144,22 @@ func fmtHistTally(t tally.Tally, mode tally.TallyMode, fade bool) string {
 		panic("unrecognized tally mode in switch")
 	}
 
+	var author string
+	if showEmail {
+		author = format.Abbrev(format.GitEmail(t.AuthorEmail), 25)
+	} else {
+		author = format.Abbrev(t.AuthorName, 25)
+	}
+
 	if fade {
 		return fmt.Sprintf(
 			"%s%s %s%s",
 			ansi.Dim,
-			t.AuthorName,
+			author,
 			metric,
 			ansi.Reset,
 		)
 	} else {
-		return fmt.Sprintf("%s %s", t.AuthorName, metric)
+		return fmt.Sprintf("%s %s", author, metric)
 	}
 }
