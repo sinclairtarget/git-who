@@ -28,13 +28,13 @@ func TestParseArgs(t *testing.T) {
 			name:     "empty_args",
 			args:     []string{},
 			expRevs:  []string{"HEAD"},
-			expPaths: []string{"."},
+			expPaths: []string{},
 		},
 		{
 			name:     "commit",
 			args:     []string{safeTag},
 			expRevs:  []string{safeCommit},
-			expPaths: []string{"."},
+			expPaths: []string{},
 		},
 		{
 			name:     "commit_path",
@@ -64,7 +64,7 @@ func TestParseArgs(t *testing.T) {
 			name:     "trailing_separator",
 			args:     []string{safeTag, "--"},
 			expRevs:  []string{safeCommit},
-			expPaths: []string{"."},
+			expPaths: []string{},
 		},
 		{
 			name:     "leading_separator",
@@ -154,7 +154,7 @@ func TestParseArgsRange(t *testing.T) {
 		t.Errorf("expected revs to have length 2, but got: %v", revs)
 	}
 
-	expPaths := []string{"."}
+	expPaths := []string{}
 	if !slices.Equal(paths, expPaths) {
 		t.Errorf("expected %v as paths but got %v", expPaths, paths)
 	}

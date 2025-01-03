@@ -52,11 +52,6 @@ func ParseArgs(args []string) (revs []string, paths []string, err error) {
 		revs = append(revs, "HEAD")
 	}
 
-	if len(paths) == 0 {
-		// Default path
-		paths = append(paths, ".")
-	}
-
 	return revs, paths, nil
 }
 
