@@ -218,7 +218,6 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 
 			if len(line) == 0 {
 				commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
-				logger().Debug("yielding parsed commit", "hash", commit.Name())
 				if !yield(commit, nil) {
 					return
 				}
@@ -309,7 +308,6 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 
 		if linesThisCommit > 0 {
 			commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
-			logger().Debug("yielding parsed commit", "hash", commit.Name())
 			yield(commit, nil)
 		}
 	}
