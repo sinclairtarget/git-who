@@ -1,0 +1,4 @@
+package concurrent
+
+func work() {
+}
