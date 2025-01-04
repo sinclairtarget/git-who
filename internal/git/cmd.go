@@ -57,7 +57,7 @@ func (s Subprocess) StdoutLines() iter.Seq2[string, error] {
 }
 
 func (s Subprocess) Wait() error {
-	logger().Debug("Waiting for subprocess...")
+	logger().Debug("waiting for subprocess...")
 
 	stderr, err := io.ReadAll(s.stderr)
 	if err != nil {
