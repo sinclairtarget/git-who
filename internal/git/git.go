@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"iter"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -158,4 +159,34 @@ func NumCommits(
 
 	subprocess.Wait()
 	return count, nil
+}
+
+// Returns all paths in the working tree under the given paths.
+func WorkingTreeFiles(paths []string) (_ map[string]bool, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("error gettign tree files: %w", err)
+		}
+	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	wtreeset := map[string]bool{}
+
+	subprocess, err := RunLsFiles(ctx, paths)
+	if err != nil {
+		return wtreeset, err
+	}
+
+	lines := subprocess.StdoutLines()
+	for line, err := range lines {
+		if err != nil {
+			return wtreeset, err
+		}
+		wtreeset[strings.TrimSpace(line)] = true
+	}
+
+	subprocess.Wait()
+	return wtreeset, nil
 }
