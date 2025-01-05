@@ -260,3 +260,21 @@ func RunRevList(
 
 	return subprocess, nil
 }
+
+func RunLsFiles(ctx context.Context, paths []string) (*Subprocess, error) {
+	baseArgs := []string{"ls-files", "--exclude-standard"}
+
+	var args []string
+	if len(paths) > 0 {
+		args = slices.Concat(baseArgs, paths)
+	} else {
+		args = slices.Concat(baseArgs, []string{"--"}, paths)
+	}
+
+	subprocess, err := Run(ctx, args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run git ls-files: %w", err)
+	}
+
+	return subprocess, nil
+}
