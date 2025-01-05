@@ -154,12 +154,13 @@ func RunLog(
 ) (*Subprocess, error) {
 	var baseArgs = []string{
 		"log",
-		"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s",
+		"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
+		"--date=unix",
+		"--topo-order",
+		"--reverse",
 		"--numstat",
 		"--summary",
-		"--date=unix",
-		"--no-merges", // Ensures every commit has file diffs
-		"--reverse",   // Needed to handle file renaming
+		"--diff-merges=separate",
 	}
 
 	filterArgs := filters.ToArgs()
@@ -188,10 +189,10 @@ func RunShortLog(
 ) (*Subprocess, error) {
 	var baseArgs = []string{
 		"log",
-		"--pretty=format:%H%n%h%n%an%n%ae%n%ad%n%s%n",
+		"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
 		"--date=unix",
-		"--no-merges", // Ensures every commit has file diffs
-		"--reverse",   // Needed to handle file renaming
+		"--topo-order",
+		"--reverse",
 	}
 
 	filterArgs := filters.ToArgs()

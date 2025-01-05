@@ -18,6 +18,7 @@ import (
 type Commit struct {
 	Hash        string
 	ShortHash   string
+	IsMerge     bool
 	AuthorName  string
 	AuthorEmail string
 	Date        time.Time
@@ -37,12 +38,13 @@ func (c Commit) Name() string {
 
 func (c Commit) String() string {
 	return fmt.Sprintf(
-		"{ hash:%s author:%s <%s> date:%s subject:%s }",
+		"{ hash:%s author:%s <%s> date:%s subject:%s merge:%v }",
 		c.Name(),
 		c.AuthorName,
 		c.AuthorEmail,
 		c.Date.Format("Jan 2, 2006"),
 		c.Subject,
+		c.IsMerge,
 	)
 }
 

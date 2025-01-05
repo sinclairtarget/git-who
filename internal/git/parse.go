@@ -218,7 +218,7 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 				return
 			}
 
-			done := linesThisCommit >= 6 && (len(line) == 0 || isRev(line))
+			done := linesThisCommit >= 7 && (len(line) == 0 || isRev(line))
 			if done {
 				commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
 				if !yield(commit, nil) {
@@ -240,10 +240,13 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			case linesThisCommit == 1:
 				commit.ShortHash = line
 			case linesThisCommit == 2:
-				commit.AuthorName = line
+				parts := strings.Split(line, " ")
+				commit.IsMerge = len(parts) > 1
 			case linesThisCommit == 3:
-				commit.AuthorEmail = line
+				commit.AuthorName = line
 			case linesThisCommit == 4:
+				commit.AuthorEmail = line
+			case linesThisCommit == 5:
 				i, err := strconv.Atoi(line)
 				if err != nil {
 					yield(
@@ -258,9 +261,9 @@ func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 				}
 
 				commit.Date = time.Unix(int64(i), 0)
-			case linesThisCommit == 5:
+			case linesThisCommit == 6:
 				commit.Subject = line
-			case linesThisCommit >= 6 && line[0] != ' ':
+			case linesThisCommit >= 7 && line[0] != ' ':
 				diff, err := parseFileDiff(line)
 				if err != nil {
 					yield(
