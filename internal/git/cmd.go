@@ -181,7 +181,7 @@ func RunLog(
 }
 
 // Runs git log without --numstat or --summary, which is much faster.
-func RunShortLog(
+func RunLogDiffless(
 	ctx context.Context,
 	revs []string,
 	paths []string,

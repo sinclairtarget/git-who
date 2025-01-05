@@ -54,7 +54,7 @@ func dump(
 
 	var subprocess *git.Subprocess
 	if short {
-		subprocess, err = git.RunShortLog(ctx, revs, paths, filters)
+		subprocess, err = git.RunLogDiffless(ctx, revs, paths, filters)
 	} else {
 		subprocess, err = git.RunLog(ctx, revs, paths, filters)
 	}

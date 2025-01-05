@@ -96,7 +96,7 @@ func CommitsWithOpts(
 	if populateDiffs {
 		subprocess, err = RunLog(ctx, revs, paths, filters)
 	} else {
-		subprocess, err = RunShortLog(ctx, revs, paths, filters)
+		subprocess, err = RunLogDiffless(ctx, revs, paths, filters)
 	}
 
 	if err != nil {
