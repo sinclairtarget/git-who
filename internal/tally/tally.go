@@ -26,13 +26,14 @@ type TallyOpts struct {
 	Key  func(c git.Commit) string
 }
 
+// Metrics tallied while walking git log
 type Tally struct {
 	AuthorName     string
 	AuthorEmail    string
-	Commits        int
-	LinesAdded     int
-	LinesRemoved   int
-	FileCount      int
+	Commits        int // Num reachable commits by this author
+	LinesAdded     int // Num lines added to paths in tree by author
+	LinesRemoved   int // Num lines deleted from paths in tree by author
+	FileCount      int // Num of file paths in working dir touched by author
 	LastCommitTime time.Time
 }
 
@@ -61,13 +62,12 @@ func (a Tally) Compare(b Tally, mode TallyMode) int {
 		return 1
 	}
 
+	// Break ties with last edited
 	return a.LastCommitTime.Compare(b.LastCommitTime)
 }
 
-// Returns a slice of tallies in descending order by most commits / files /
-// lines.
-//
-// The commits must be in chronological order.
+// Returns a slice of tallies, each one for a different author, in descending
+// order by most commits / files / lines (depending on the tally mode).
 func TallyCommits(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
