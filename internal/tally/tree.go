@@ -11,19 +11,22 @@ import (
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
+// A file tree of edits to the repo
 type TreeNode struct {
 	Tally          Tally
 	Children       map[string]*TreeNode
 	tallies        map[string]Tally
 	lastCommitSeen string
 	isFile         bool // A file, rather than a directory
+	inWTree        bool // In working tree
 }
 
-func newNode(isFile bool) *TreeNode {
+func newNode(isFile bool, inWTree bool) *TreeNode {
 	return &TreeNode{
 		Children: map[string]*TreeNode{},
 		tallies:  map[string]Tally{},
 		isFile:   isFile,
+		inWTree:  inWTree,
 	}
 }
 
@@ -31,7 +34,7 @@ func (t *TreeNode) String() string {
 	return fmt.Sprintf("{ %d }", len(t.tallies))
 }
 
-func cleanPath(path string) (string, error) {
+func checkPath(path string) (string, error) {
 	if path == "" {
 		return "", errors.New("path cannot be empty")
 	}
@@ -40,7 +43,7 @@ func cleanPath(path string) (string, error) {
 		return "", errors.New("path cannot be absolute")
 	}
 
-	return filepath.Clean(path), nil
+	return path, nil
 }
 
 // Splits path into first dir and remainder.
@@ -58,6 +61,7 @@ func (t *TreeNode) edit(
 	path string,
 	commit git.Commit,
 	diff git.FileDiff,
+	inWTree bool,
 	opts TallyOpts,
 ) {
 	if path != "" {
@@ -65,11 +69,11 @@ func (t *TreeNode) edit(
 		p, nextP := splitPath(path)
 		child, ok := t.Children[p]
 		if !ok {
-			t.Children[p] = newNode(nextP == "")
+			t.Children[p] = newNode(nextP == "", true)
 			child = t.Children[p]
 		}
 
-		child.edit(nextP, commit, diff, opts)
+		child.edit(nextP, commit, diff, inWTree, opts)
 	}
 
 	// Add tally
@@ -94,6 +98,9 @@ func (t *TreeNode) edit(
 	nodeTally.FileCount = 0
 	if len(t.Children) > 0 {
 		for _, child := range t.Children {
+			if !child.inWTree {
+				continue
+			}
 			childTally, ok := child.tallies[key]
 			if ok {
 				nodeTally.FileCount += childTally.FileCount
@@ -129,7 +136,7 @@ func (t *TreeNode) insert(path string, node *TreeNode) error {
 		child, ok := cur.Children[p]
 		if !ok {
 			// Need to create interior node
-			cur.Children[p] = newNode(false)
+			cur.Children[p] = newNode(false, node.inWTree)
 			child = cur.Children[p]
 		}
 		cur = child
@@ -183,15 +190,14 @@ func (t *TreeNode) remove(path string) *TreeNode {
 *
 * Returns true if this node needs pruning.
  */
-func (t *TreeNode) prune(path string, wtreefiles map[string]bool) bool {
+func (t *TreeNode) prune(path string) bool {
 	if t.isFile {
-		exists := wtreefiles[path]
-		return !exists
+		return !t.inWTree
 	}
 
 	var hasChildren bool
 	for key, child := range t.Children {
-		if child.prune(filepath.Join(path, key), wtreefiles) {
+		if child.prune(filepath.Join(path, key)) {
 			delete(t.Children, key)
 		} else {
 			hasChildren = true
@@ -220,7 +226,7 @@ func TallyCommitsByPath(
 	wtreefiles map[string]bool,
 	opts TallyOpts,
 ) (*TreeNode, error) {
-	root := newNode(false)
+	root := newNode(false, true)
 
 	for commit, err := range commits {
 		if err != nil {
@@ -228,7 +234,7 @@ func TallyCommitsByPath(
 		}
 
 		for _, diff := range commit.FileDiffs {
-			path, err := cleanPath(diff.Path)
+			path, err := checkPath(diff.Path)
 			if err != nil {
 				return nil,
 					fmt.Errorf("error cleaning diff path: \"%s\"", diff.Path)
@@ -237,7 +243,7 @@ func TallyCommitsByPath(
 			if diff.Action == git.Rename {
 				// Handle renamed file
 				oldPath := path
-				newPath, err := cleanPath(diff.MoveDest)
+				newPath, err := checkPath(diff.MoveDest)
 				if err != nil {
 					return nil, fmt.Errorf(
 						"error cleaning diff path: \"%s\"",
@@ -265,14 +271,15 @@ func TallyCommitsByPath(
 					}
 				}
 
-				root.edit(newPath, commit, diff, opts)
+				root.edit(newPath, commit, diff, true, opts)
 			} else if !commit.IsMerge {
 				// Normal file update
-				root.edit(path, commit, diff, opts)
+				inWTree := wtreefiles[path]
+				root.edit(path, commit, diff, inWTree, opts)
 			}
 		}
 	}
 
-	root.prune(".", wtreefiles)
+	root.prune(".")
 	return root, nil
 }
