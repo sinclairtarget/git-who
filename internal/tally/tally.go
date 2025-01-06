@@ -165,14 +165,6 @@ func TallyCommits(
 	return sorted, nil
 }
 
-func moveFile(filesets map[string]map[string]bool, diff git.FileDiff) {
-	// File rename for everyone
-	for author, _ := range filesets {
-		filesets[author][diff.Path] = false
-		filesets[author][diff.MoveDest] = true
-	}
-}
-
 func countFiles(fileset map[string]bool) int {
 	sum := 0
 	for _, exists := range fileset {

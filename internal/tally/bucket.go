@@ -201,12 +201,7 @@ func TallyCommitsByDate(
 		for _, diff := range commit.FileDiffs {
 			tally.LinesAdded += diff.LinesAdded
 			tally.LinesRemoved += diff.LinesRemoved
-
-			if diff.MoveDest != "" {
-				moveFile(bucket.filesets, diff)
-			} else {
-				bucket.filesets[key][diff.Path] = true
-			}
+			bucket.filesets[key][diff.Path] = true
 		}
 
 		bucket.tallies[key] = tally
