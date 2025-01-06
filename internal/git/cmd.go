@@ -160,7 +160,7 @@ func RunLog(
 		"--reverse",
 		"--numstat",
 		"--summary",
-		"--diff-merges=separate",
+		"--diff-merges=first-parent",
 	}
 
 	filterArgs := filters.ToArgs()
