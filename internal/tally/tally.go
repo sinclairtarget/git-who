@@ -134,7 +134,7 @@ func TallyCommits(
 			}
 		}
 
-		if foundWTreePath || opts.AllowOutsideWorkTree {
+		if !commit.IsMerge && (foundWTreePath || opts.AllowOutsideWorkTree) {
 			authorTally.Commits += 1
 			authorTally.LastCommitTime = commit.Date
 			authorTallies[key] = authorTally
