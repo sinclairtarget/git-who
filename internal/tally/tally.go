@@ -70,55 +70,83 @@ func (a Tally) Compare(b Tally, mode TallyMode) int {
 // order by most commits / files / lines (depending on the tally mode).
 func TallyCommits(
 	commits iter.Seq2[git.Commit, error],
+	treefiles map[string]bool,
 	opts TallyOpts,
 ) ([]Tally, error) {
 	// Map of author to tally
-	tallies := map[string]Tally{}
+	authorTallies := map[string]Tally{}
 
-	// Map of author to fileset. Used to dedupe filepaths
-	filesets := make(map[string]map[string]bool)
+	// Map of author to map of path to tally. Tally lines per path
+	pathTallies := make(map[string]map[string]struct {
+		added   int
+		removed int
+	})
 
 	start := time.Now()
 
+	// Tally over commits
 	for commit, err := range commits {
 		if err != nil {
 			return nil, fmt.Errorf("error iterating commits: %w", err)
 		}
 
 		key := opts.Key(commit)
-		tally := tallies[key]
+		authorTally := authorTallies[key]
 
-		tally.AuthorName = commit.AuthorName
-		tally.AuthorEmail = commit.AuthorEmail
-		tally.Commits += 1
-		tally.LastCommitTime = commit.Date
+		authorTally.AuthorName = commit.AuthorName
+		authorTally.AuthorEmail = commit.AuthorEmail
+		authorTally.Commits += 1
+		authorTally.LastCommitTime = commit.Date
 
-		_, ok := filesets[key]
+		_, ok := pathTallies[key]
 		if !ok {
-			filesets[key] = make(map[string]bool)
+			pathTallies[key] = map[string]struct {
+				added   int
+				removed int
+			}{}
 		}
 		for _, diff := range commit.FileDiffs {
-			tally.LinesAdded += diff.LinesAdded
-			tally.LinesRemoved += diff.LinesRemoved
-			if diff.MoveDest != "" {
-				moveFile(filesets, diff)
-			} else {
-				filesets[key][diff.Path] = true
+			pathTally := pathTallies[key][diff.Path]
+
+			if !commit.IsMerge {
+				pathTally.added += diff.LinesAdded
+				pathTally.removed += diff.LinesRemoved
+				pathTallies[key][diff.Path] = pathTally
+			}
+
+			// If file move would create a file in the working tree, move it
+			// and its existing count of lines added/removed, potentially
+			// overwriting.
+			inWTree := treefiles[diff.MoveDest]
+			if inWTree {
+				for key, _ := range pathTallies {
+					pathTally := pathTallies[key][diff.Path]
+					delete(pathTallies[key], diff.Path)
+					pathTallies[key][diff.MoveDest] = pathTally
+				}
 			}
 		}
 
-		tallies[key] = tally
+		authorTallies[key] = authorTally
 	}
 
-	// Get count of unique files touched
-	for key, tally := range tallies {
-		fileset := filesets[key]
-		tally.FileCount = countFiles(fileset)
-		tallies[key] = tally
+	// Handle lines added and file count
+	for key, authorTally := range authorTallies {
+		for path, pathTally := range pathTallies[key] {
+			if exists := treefiles[path]; !exists {
+				continue
+			}
+
+			authorTally.LinesAdded += pathTally.added
+			authorTally.LinesRemoved += pathTally.removed
+			authorTally.FileCount += 1
+		}
+
+		authorTallies[key] = authorTally
 	}
 
 	// Sort list
-	sorted := sortTallies(tallies, opts.Mode)
+	sorted := sortTallies(authorTallies, opts.Mode)
 
 	elapsed := time.Now().Sub(start)
 	logger().Debug("tallied commits", "duration_ms", elapsed.Milliseconds())

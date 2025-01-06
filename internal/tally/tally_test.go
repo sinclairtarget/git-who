@@ -29,6 +29,11 @@ func TestTallyCommits(t *testing.T) {
 					LinesAdded:   8,
 					LinesRemoved: 2,
 				},
+				git.FileDiff{
+					Path:         "nim.txt",
+					LinesAdded:   2,
+					LinesRemoved: 1,
+				},
 			},
 		},
 		git.Commit{
@@ -47,19 +52,46 @@ func TestTallyCommits(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
+	wtreeset := map[string]bool{"bim.txt": true, "vim.txt": true}
 	opts := tally.TallyOpts{
-		Mode: tally.CommitMode,
+		Mode: tally.LinesMode,
 		Key: func(c git.Commit) string {
 			return c.AuthorEmail
 		},
 	}
-	tallies, err := tally.TallyCommits(seq, opts)
+	tallies, err := tally.TallyCommits(seq, wtreeset, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
 
 	if len(tallies) == 0 {
 		t.Fatalf("TallyCommits() returned empty slice")
+	}
+
+	bob := tallies[0]
+	expected := tally.Tally{
+		AuthorName:   "bob",
+		AuthorEmail:  "bob@mail.com",
+		Commits:      1,
+		LinesAdded:   12,
+		LinesRemoved: 2,
+		FileCount:    2, // Only two files in working tree
+	}
+	if diff := cmp.Diff(expected, bob); diff != "" {
+		t.Errorf("bob's tally is wrong:\n%s", diff)
+	}
+
+	jim := tallies[1]
+	expected = tally.Tally{
+		AuthorName:   "jim",
+		AuthorEmail:  "jim@mail.com",
+		Commits:      1,
+		LinesAdded:   3,
+		LinesRemoved: 1,
+		FileCount:    1,
+	}
+	if diff := cmp.Diff(expected, jim); diff != "" {
+		t.Errorf("jim's tally is wrong:\n%s", diff)
 	}
 }
 
@@ -71,10 +103,11 @@ func TestTallyCommitsRename(t *testing.T) {
 			AuthorName:  "bob",
 			AuthorEmail: "bob@mail.com",
 			FileDiffs: []git.FileDiff{
-				git.FileDiff{
-					Path:         "bim.txt",
-					LinesAdded:   4,
+				git.FileDiff{ // This diff should be lost, too many renames
+					Path:         "nim.txt",
+					LinesAdded:   1,
 					LinesRemoved: 1,
+					MoveDest:     "bim.txt",
 				},
 			},
 		},
@@ -108,13 +141,14 @@ func TestTallyCommitsRename(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
+	wtreeset := map[string]bool{"bar.txt": true}
 	opts := tally.TallyOpts{
 		Mode: tally.CommitMode,
 		Key: func(c git.Commit) string {
 			return c.AuthorEmail
 		},
 	}
-	tallies, err := tally.TallyCommits(seq, opts)
+	tallies, err := tally.TallyCommits(seq, wtreeset, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -128,9 +162,9 @@ func TestTallyCommitsRename(t *testing.T) {
 		AuthorName:   "bob",
 		AuthorEmail:  "bob@mail.com",
 		Commits:      2,
-		LinesAdded:   8,
-		LinesRemoved: 2,
-		FileCount:    1, // Should just be 1 since file was moved
+		LinesAdded:   4,
+		LinesRemoved: 1,
+		FileCount:    1, // Should just be 1, since it's only file in tree
 	}
 	if diff := cmp.Diff(expected, bob); diff != "" {
 		t.Errorf("bob's tally is wrong:\n%s", diff)
