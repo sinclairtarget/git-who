@@ -64,7 +64,9 @@ func TestTallyCommitsByPath(t *testing.T) {
 		Mode: tally.CommitMode,
 		Key:  func(c git.Commit) string { return c.AuthorEmail },
 	}
-	root, err := tally.TallyCommitsByPath(seq, opts)
+	wtreeset := map[string]bool{"foo/bim.txt": true, "foo/bar.txt": true}
+
+	root, err := tally.TallyCommitsByPath(seq, wtreeset, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -163,7 +165,8 @@ func TestTallyCommitsByPathRename(t *testing.T) {
 		Mode: tally.CommitMode,
 		Key:  func(c git.Commit) string { return c.AuthorEmail },
 	}
-	root, err := tally.TallyCommitsByPath(seq, opts)
+	wtreeset := map[string]bool{"foo/bar.txt": true}
+	root, err := tally.TallyCommitsByPath(seq, wtreeset, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -245,7 +248,8 @@ func TestTallyCommitsByPathRenameAcrossDirs(t *testing.T) {
 		Mode: tally.LinesMode,
 		Key:  func(c git.Commit) string { return c.AuthorEmail },
 	}
-	root, err := tally.TallyCommitsByPath(seq, opts)
+	wtreeset := map[string]bool{"zoo/hello.txt": true, "zoo/zar.txt": true}
+	root, err := tally.TallyCommitsByPath(seq, wtreeset, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}

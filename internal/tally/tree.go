@@ -178,18 +178,20 @@ func (t *TreeNode) remove(path string) *TreeNode {
 /*
 * Prunes the following types of nodes from the tree:
 *
-* 1. Interior nodes (directories) with no children.
+* 1. Nodes that don't exist in the working tree.
+* 2. Interior nodes (directories) with no children.
 *
 * Returns true if this node needs pruning.
  */
-func (t *TreeNode) prune() bool {
+func (t *TreeNode) prune(path string, wtreefiles map[string]bool) bool {
 	if t.isFile {
-		return false
+		exists := wtreefiles[path]
+		return !exists
 	}
 
 	var hasChildren bool
 	for key, child := range t.Children {
-		if child.prune() {
+		if child.prune(filepath.Join(path, key), wtreefiles) {
 			delete(t.Children, key)
 		} else {
 			hasChildren = true
@@ -203,22 +205,19 @@ func (t *TreeNode) prune() bool {
 * TallyCommitsByPath() returns a tree of nodes mirroring the working directory
 * with a tally for each node.
 *
-* Handling renamed files is tricky.
-*
 * When a file is renamed, we move the leaf node and its attached tally objects
 * to a new place in the tree. We do not update any interior nodes.
 *
 * Because no interior nodes are updated, this can lead to situations where, say,
 * the tree records more commits happening in a directory than on the files in
 * that directory (this could happen if a file were moved out of a directory).
-* However, the commit count for the directory still relfects the number of
-* commits that would be listed if you were to run `git log` on that directory.
 *
-* As for the new leaf node, it reports commits, lines added, etc. as if
-* `git log --follow` had been used on that filepath.
+* We prune all paths from the tree that are not in the given working tree before
+* returning. We also only allow renames to paths in the working tree.
  */
 func TallyCommitsByPath(
 	commits iter.Seq2[git.Commit, error],
+	wtreefiles map[string]bool,
 	opts TallyOpts,
 ) (*TreeNode, error) {
 	root := newNode(false)
@@ -246,12 +245,16 @@ func TallyCommitsByPath(
 					)
 				}
 
+				isWTreeDest := wtreefiles[newPath]
+				if !isWTreeDest {
+					continue
+				}
+
 				node := root.remove(oldPath)
 				if node != nil {
 					err = root.insert(newPath, node)
 					if err != nil {
-						// Don't fail, just warn. Git allows files to be
-						// renamed to existing filenames sometimes.
+						// Don't fail, just warn.
 						logger().Debug(
 							"WARNING: path exists in tree",
 							"error",
@@ -263,15 +266,13 @@ func TallyCommitsByPath(
 				}
 
 				root.edit(newPath, commit, diff, opts)
-			} else if diff.Action == git.Delete {
-				root.remove(path)
-			} else {
+			} else if !commit.IsMerge {
 				// Normal file update
 				root.edit(path, commit, diff, opts)
 			}
 		}
 	}
 
-	root.prune()
+	root.prune(".", wtreefiles)
 	return root, nil
 }

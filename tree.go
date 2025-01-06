@@ -81,6 +81,11 @@ func tree(
 		return err
 	}
 
+	wtreeset, err := git.WorkingTreeFiles(paths)
+	if err != nil {
+		return err
+	}
+
 	tallyOpts := tally.TallyOpts{Mode: mode}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
@@ -88,7 +93,7 @@ func tree(
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
-	root, err := tally.TallyCommitsByPath(commits, tallyOpts)
+	root, err := tally.TallyCommitsByPath(commits, wtreeset, tallyOpts)
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}
