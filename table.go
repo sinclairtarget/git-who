@@ -71,7 +71,8 @@ func table(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	populateDiffs := mode == tally.FilesMode || mode == tally.LinesMode
+	needDiffMode := mode == tally.FilesMode || mode == tally.LinesMode
+	populateDiffs := needDiffMode || len(paths) > 0
 	filters := git.LogFilters{
 		Since:    since,
 		Authors:  authors,
@@ -93,7 +94,10 @@ func table(
 		return err
 	}
 
-	tallyOpts := tally.TallyOpts{Mode: mode}
+	tallyOpts := tally.TallyOpts{
+		Mode:                 mode,
+		AllowOutsideWorkTree: len(paths) == 0,
+	}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
 	} else {

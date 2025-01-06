@@ -143,7 +143,7 @@ func TestTallyCommitsRename(t *testing.T) {
 	seq := iterutils.WithoutErrors(slices.Values(commits))
 	wtreeset := map[string]bool{"bar.txt": true}
 	opts := tally.TallyOpts{
-		Mode: tally.CommitMode,
+		Mode: tally.LinesMode,
 		Key: func(c git.Commit) string {
 			return c.AuthorEmail
 		},
@@ -153,15 +153,15 @@ func TestTallyCommitsRename(t *testing.T) {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
 
-	if len(tallies) == 0 {
-		t.Fatal("TallyCommits() returned empty slice")
+	if len(tallies) != 2 {
+		t.Fatal("TallyCommits() returned wrong number of tallies")
 	}
 
 	bob := tallies[0]
 	expected := tally.Tally{
 		AuthorName:   "bob",
 		AuthorEmail:  "bob@mail.com",
-		Commits:      2,
+		Commits:      1,
 		LinesAdded:   4,
 		LinesRemoved: 1,
 		FileCount:    1, // Should just be 1, since it's only file in tree

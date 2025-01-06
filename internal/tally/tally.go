@@ -22,15 +22,16 @@ const (
 )
 
 type TallyOpts struct {
-	Mode TallyMode
-	Key  func(c git.Commit) string
+	Mode                 TallyMode
+	Key                  func(c git.Commit) string // Unique ID for author
+	AllowOutsideWorkTree bool                      // Count edits to paths outside work tree?
 }
 
 // Metrics tallied while walking git log
 type Tally struct {
 	AuthorName     string
 	AuthorEmail    string
-	Commits        int // Num reachable commits by this author
+	Commits        int // Num commits editing paths in tree by this author
 	LinesAdded     int // Num lines added to paths in tree by author
 	LinesRemoved   int // Num lines deleted from paths in tree by author
 	FileCount      int // Num of file paths in working dir touched by author
@@ -95,8 +96,6 @@ func TallyCommits(
 
 		authorTally.AuthorName = commit.AuthorName
 		authorTally.AuthorEmail = commit.AuthorEmail
-		authorTally.Commits += 1
-		authorTally.LastCommitTime = commit.Date
 
 		_, ok := pathTallies[key]
 		if !ok {
@@ -105,7 +104,13 @@ func TallyCommits(
 				removed int
 			}{}
 		}
+
+		foundWTreePath := false
 		for _, diff := range commit.FileDiffs {
+			if exists := treefiles[diff.Path]; exists {
+				foundWTreePath = true
+			}
+
 			pathTally := pathTallies[key][diff.Path]
 
 			if !commit.IsMerge {
@@ -117,8 +122,10 @@ func TallyCommits(
 			// If file move would create a file in the working tree, move it
 			// and its existing count of lines added/removed, potentially
 			// overwriting.
-			inWTree := treefiles[diff.MoveDest]
-			if inWTree {
+			destInWTree := treefiles[diff.MoveDest]
+			if destInWTree {
+				foundWTreePath = true
+
 				for key, _ := range pathTallies {
 					pathTally := pathTallies[key][diff.Path]
 					delete(pathTallies[key], diff.Path)
@@ -127,13 +134,17 @@ func TallyCommits(
 			}
 		}
 
-		authorTallies[key] = authorTally
+		if foundWTreePath || opts.AllowOutsideWorkTree {
+			authorTally.Commits += 1
+			authorTally.LastCommitTime = commit.Date
+			authorTallies[key] = authorTally
+		}
 	}
 
 	// Handle lines added and file count
 	for key, authorTally := range authorTallies {
 		for path, pathTally := range pathTallies[key] {
-			if exists := treefiles[path]; !exists {
+			if exists := treefiles[path]; !exists && !opts.AllowOutsideWorkTree {
 				continue
 			}
 
