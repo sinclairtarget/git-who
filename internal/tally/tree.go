@@ -86,12 +86,16 @@ func (t *TreeNode) edit(
 		}
 	}
 
-	nodeTally.LinesAdded += diff.LinesAdded
-	nodeTally.LinesRemoved += diff.LinesRemoved
+	if path == "" || inWTree {
+		nodeTally.LinesAdded += diff.LinesAdded
+		nodeTally.LinesRemoved += diff.LinesRemoved
+	}
 
 	if commit.Hash != t.lastCommitSeen {
-		nodeTally.Commits += 1
-		nodeTally.LastCommitTime = commit.Date
+		if path == "" || inWTree {
+			nodeTally.Commits += 1
+			nodeTally.LastCommitTime = commit.Date
+		}
 		t.lastCommitSeen = commit.Hash
 	}
 
