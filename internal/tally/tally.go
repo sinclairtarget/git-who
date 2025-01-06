@@ -22,9 +22,8 @@ const (
 )
 
 type TallyOpts struct {
-	Mode                 TallyMode
-	Key                  func(c git.Commit) string // Unique ID for author
-	AllowOutsideWorkTree bool                      // Count edits to paths outside work tree?
+	Mode TallyMode
+	Key  func(c git.Commit) string // Unique ID for author
 }
 
 // Metrics tallied while walking git log
@@ -72,6 +71,7 @@ func (a Tally) Compare(b Tally, mode TallyMode) int {
 func TallyCommits(
 	commits iter.Seq2[git.Commit, error],
 	treefiles map[string]bool,
+	allowOutsideWorktree bool,
 	opts TallyOpts,
 ) ([]Tally, error) {
 	// Map of author to tally
@@ -134,7 +134,7 @@ func TallyCommits(
 			}
 		}
 
-		if !commit.IsMerge && (foundWTreePath || opts.AllowOutsideWorkTree) {
+		if !commit.IsMerge && (foundWTreePath || allowOutsideWorktree) {
 			authorTally.Commits += 1
 			authorTally.LastCommitTime = commit.Date
 			authorTallies[key] = authorTally
@@ -144,7 +144,7 @@ func TallyCommits(
 	// Handle lines added and file count
 	for key, authorTally := range authorTallies {
 		for path, pathTally := range pathTallies[key] {
-			if exists := treefiles[path]; !exists && !opts.AllowOutsideWorkTree {
+			if exists := treefiles[path]; !exists && !allowOutsideWorktree {
 				continue
 			}
 

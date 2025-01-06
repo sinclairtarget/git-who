@@ -94,17 +94,20 @@ func table(
 		return err
 	}
 
-	tallyOpts := tally.TallyOpts{
-		Mode:                 mode,
-		AllowOutsideWorkTree: len(paths) == 0,
-	}
+	tallyOpts := tally.TallyOpts{Mode: mode}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
 	} else {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
-	tallies, err := tally.TallyCommits(commits, wtreeset, tallyOpts)
+	allowOutsideWorktree := len(paths) == 0
+	tallies, err := tally.TallyCommits(
+		commits,
+		wtreeset,
+		allowOutsideWorktree,
+		tallyOpts,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}

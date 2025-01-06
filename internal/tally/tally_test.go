@@ -59,7 +59,7 @@ func TestTallyCommits(t *testing.T) {
 			return c.AuthorEmail
 		},
 	}
-	tallies, err := tally.TallyCommits(seq, wtreeset, opts)
+	tallies, err := tally.TallyCommits(seq, wtreeset, false, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestTallyCommitsRename(t *testing.T) {
 			return c.AuthorEmail
 		},
 	}
-	tallies, err := tally.TallyCommits(seq, wtreeset, opts)
+	tallies, err := tally.TallyCommits(seq, wtreeset, false, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
