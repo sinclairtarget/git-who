@@ -133,7 +133,10 @@ func TallyCommits(
 			authorTally.AuthorName = commit.AuthorName
 			authorTally.AuthorEmail = commit.AuthorEmail
 			authorTally.Commits += 1
-			authorTally.LastCommitTime = commit.Date
+			authorTally.LastCommitTime = timeutils.Max(
+				commit.Date,
+				authorTally.LastCommitTime,
+			)
 
 			authorTallies[key] = authorTally
 		}

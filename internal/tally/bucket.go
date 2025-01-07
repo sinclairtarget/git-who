@@ -1,6 +1,7 @@
 package tally
 
 import (
+	"errors"
 	"fmt"
 	"iter"
 	"time"
@@ -139,6 +140,10 @@ func TallyCommitsByDate(
 		}
 	}()
 
+	if opts.Mode == LastModifiedMode {
+		return nil, errors.New("Last modified mode not currently implemented")
+	}
+
 	buckets := []TimeBucket{}
 
 	next, stop := iter.Pull2(commits)
@@ -192,7 +197,6 @@ func TallyCommitsByDate(
 		tally.AuthorName = commit.AuthorName
 		tally.AuthorEmail = commit.AuthorEmail
 		tally.Commits += 1
-		tally.LastCommitTime = commit.Date
 
 		_, ok = bucket.filesets[key]
 		if !ok {
