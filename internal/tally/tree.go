@@ -69,12 +69,15 @@ func (t *TreeNode) edit(
 		p, nextP := splitPath(path)
 		child, ok := t.Children[p]
 		if !ok {
-			t.Children[p] = newNode(nextP == "", true)
+			t.Children[p] = newNode(nextP == "", inWTree)
 			child = t.Children[p]
 		}
 
 		child.edit(nextP, commit, diff, inWTree, opts)
 	}
+
+	// Update whether in working directory
+	t.inWTree = inWTree
 
 	// Add tally
 	key := opts.Key(commit)
@@ -194,14 +197,18 @@ func (t *TreeNode) remove(path string) *TreeNode {
 *
 * Returns true if this node needs pruning.
  */
-func (t *TreeNode) prune(path string) bool {
+func (t *TreeNode) prune() bool {
+	if !t.inWTree {
+		return true
+	}
+
 	if t.isFile {
-		return !t.inWTree
+		return false
 	}
 
 	var hasChildren bool
 	for key, child := range t.Children {
-		if child.prune(filepath.Join(path, key)) {
+		if child.prune() {
 			delete(t.Children, key)
 		} else {
 			hasChildren = true
@@ -284,6 +291,6 @@ func TallyCommitsByPath(
 		}
 	}
 
-	root.prune(".")
+	root.prune()
 	return root, nil
 }
