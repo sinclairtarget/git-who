@@ -1,11 +1,9 @@
 package tally
 
 import (
-	"errors"
 	"fmt"
 	"iter"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -13,37 +11,85 @@ import (
 
 // A file tree of edits to the repo
 type TreeNode struct {
-	Tally          Tally
-	Children       map[string]*TreeNode
-	tallies        map[string]Tally
-	lastCommitSeen string
-	isFile         bool // A file, rather than a directory
-	inWTree        bool // In working tree
+	Tally         Tally // Winning tally
+	Children      map[string]*TreeNode
+	intermediates map[string]intermediateTally
 }
 
-func newNode(isFile bool, inWTree bool) *TreeNode {
+func newNode() *TreeNode {
 	return &TreeNode{
-		Children: map[string]*TreeNode{},
-		tallies:  map[string]Tally{},
-		isFile:   isFile,
-		inWTree:  inWTree,
+		Children:      map[string]*TreeNode{},
+		intermediates: map[string]intermediateTally{},
 	}
 }
 
 func (t *TreeNode) String() string {
-	return fmt.Sprintf("{ %d }", len(t.tallies))
+	return fmt.Sprintf("{ %d }", len(t.intermediates))
 }
 
-func checkPath(path string) (string, error) {
-	if path == "" {
-		return "", errors.New("path cannot be empty")
+// Stores per-path tallies for a single author
+type authorPaths struct {
+	name  string
+	email string
+	paths map[string]intermediateTally
+}
+
+// Tally metrics per author per path
+func tallyByPaths(
+	commits iter.Seq2[git.Commit, error],
+	wtreefiles map[string]bool,
+	opts TallyOpts,
+) (map[string]authorPaths, error) {
+	authors := map[string]authorPaths{}
+
+	// Tally over commits
+	for commit, err := range commits {
+		if err != nil {
+			return nil, fmt.Errorf("error iterating commits: %w", err)
+		}
+
+		key := opts.Key(commit)
+		author, ok := authors[key]
+		if !ok {
+			author = authorPaths{
+				name:  commit.AuthorName,
+				email: commit.AuthorEmail,
+				paths: map[string]intermediateTally{},
+			}
+			authors[key] = author
+		}
+
+		for _, diff := range commit.FileDiffs {
+			if !commit.IsMerge {
+				pathTally, ok := author.paths[diff.Path]
+				if !ok {
+					pathTally = newTally(1)
+				}
+
+				pathTally.commitset[commit.ShortHash] = true
+				pathTally.added += diff.LinesAdded
+				pathTally.removed += diff.LinesRemoved
+				pathTally.lastCommitTime = commit.Date
+
+				author.paths[diff.Path] = pathTally
+			}
+
+			// If file move would create a file in the working tree, move tally
+			// to that path, potentially overwriting.
+			destInWTree := wtreefiles[diff.MoveDest]
+			if destInWTree {
+				for key, _ := range authors {
+					pathTally, ok := authors[key].paths[diff.Path]
+					if ok {
+						delete(authors[key].paths, diff.Path)
+						authors[key].paths[diff.MoveDest] = pathTally
+					}
+				}
+			}
+		}
 	}
 
-	if filepath.IsAbs(path) {
-		return "", errors.New("path cannot be absolute")
-	}
-
-	return path, nil
+	return authors, nil
 }
 
 // Splits path into first dir and remainder.
@@ -56,241 +102,100 @@ func splitPath(path string) (string, string) {
 	return dir, subpath
 }
 
-// Inserts an edit into the tally tree.
-func (t *TreeNode) edit(
-	path string,
-	commit git.Commit,
-	diff git.FileDiff,
-	inWTree bool,
-	opts TallyOpts,
-) {
-	if path != "" {
-		// Insert child
-		p, nextP := splitPath(path)
-		child, ok := t.Children[p]
-		if !ok {
-			t.Children[p] = newNode(nextP == "", inWTree)
-			child = t.Children[p]
-		}
-
-		child.edit(nextP, commit, diff, inWTree, opts)
+// Inserts an intermediate tally into the tally tree.
+func (t *TreeNode) insert(path string, key string, tally intermediateTally) {
+	if path == "" {
+		// Leaf
+		t.intermediates[key] = tally
+		return
 	}
 
-	// Update whether in working directory
-	t.inWTree = inWTree
-
-	// Add tally
-	key := opts.Key(commit)
-	nodeTally, ok := t.tallies[key]
+	// Insert child
+	p, nextP := splitPath(path)
+	child, ok := t.Children[p]
 	if !ok {
-		nodeTally = Tally{
-			AuthorName:  commit.AuthorName,
-			AuthorEmail: commit.AuthorEmail,
-		}
+		t.Children[p] = newNode()
+		child = t.Children[p]
 	}
 
-	if path == "" || inWTree {
-		nodeTally.LinesAdded += diff.LinesAdded
-		nodeTally.LinesRemoved += diff.LinesRemoved
+	child.insert(nextP, key, tally)
+}
+
+func (t *TreeNode) tally(
+	authors map[string]authorPaths,
+	mode TallyMode,
+) *TreeNode {
+	for p, child := range t.Children {
+		t.Children[p] = child.tally(authors, mode)
 	}
 
-	if commit.Hash != t.lastCommitSeen {
-		if path == "" || inWTree {
-			nodeTally.Commits += 1
-			nodeTally.LastCommitTime = commit.Date
-		}
-		t.lastCommitSeen = commit.Hash
-	}
+	authorTallies := map[string]Tally{}
 
-	nodeTally.FileCount = 0
-	if len(t.Children) > 0 {
-		for _, child := range t.Children {
-			if !child.inWTree {
+	for key, author := range authors {
+		authorTally := authorTallies[key]
+		authorTally.AuthorName = author.name
+		authorTally.AuthorEmail = author.email
+
+		var intermediate intermediateTally
+		if len(t.Children) > 0 {
+			intermediate = newTally(0)
+			for _, child := range t.Children {
+				childIntermediate, ok := child.intermediates[key]
+				if ok {
+					intermediate = intermediate.Add(childIntermediate)
+				}
+			}
+			if intermediate.numTallied == 0 {
+				continue // Author didn't edit any children
+			}
+
+			t.intermediates[key] = intermediate
+		} else {
+			var ok bool
+			intermediate, ok = t.intermediates[key]
+			if !ok {
 				continue
 			}
-			childTally, ok := child.tallies[key]
-			if ok {
-				nodeTally.FileCount += childTally.FileCount
-			}
 		}
-	} else {
-		nodeTally.FileCount = 1
-	}
 
-	t.tallies[key] = nodeTally
+		authorTally.Commits = intermediate.Commits()
+		authorTally.LinesAdded = intermediate.added
+		authorTally.LinesRemoved = intermediate.removed
+		authorTally.LastCommitTime = intermediate.lastCommitTime
+		authorTally.FileCount = intermediate.numTallied
+
+		authorTallies[key] = authorTally
+	}
 
 	// Pick best tally for the node according to the tally mode
-	sorted := sortTallies(t.tallies, opts.Mode)
+	sorted := sortTallies(authorTallies, mode)
 	t.Tally = sorted[0]
-}
-
-func (t *TreeNode) insert(path string, node *TreeNode) error {
-	if node == nil {
-		panic("cannot insert nil node into tally tree")
-	}
-
-	// Find parent
-	cur := t
-	var p string
-	nextP := path
-
-	for {
-		p, nextP = splitPath(nextP)
-		if nextP == "" {
-			break
-		}
-
-		child, ok := cur.Children[p]
-		if !ok {
-			// Need to create interior node
-			cur.Children[p] = newNode(false, node.inWTree)
-			child = cur.Children[p]
-		}
-		cur = child
-	}
-
-	_, ok := cur.Children[p]
-	if ok {
-		return fmt.Errorf("path already exists in tree: \"%s\"", path)
-	}
-
-	cur.Children[p] = node
-	return nil
-}
-
-// Removes the node at the given path from the tree. Returns a nil node if there
-// is no node at that path.
-func (t *TreeNode) remove(path string) *TreeNode {
-	// Find parent of target node
-	cur := t
-	var p string
-	nextP := path
-
-	for {
-		p, nextP = splitPath(nextP)
-		if nextP == "" {
-			break
-		}
-
-		var ok bool
-		cur, ok = cur.Children[p]
-		if !ok {
-			return nil
-		}
-	}
-
-	// Remove child node from children map
-	child, ok := cur.Children[p]
-	if !ok {
-		return nil
-	}
-
-	delete(cur.Children, p)
-	return child
+	return t
 }
 
 /*
-* Prunes the following types of nodes from the tree:
-*
-* 1. Nodes that don't exist in the working tree.
-* 2. Interior nodes (directories) with no children.
-*
-* Returns true if this node needs pruning.
- */
-func (t *TreeNode) prune() bool {
-	if !t.inWTree {
-		return true
-	}
-
-	if t.isFile {
-		return false
-	}
-
-	var hasChildren bool
-	for key, child := range t.Children {
-		if child.prune() {
-			delete(t.Children, key)
-		} else {
-			hasChildren = true
-		}
-	}
-
-	return !hasChildren
-}
-
-/*
-* TallyCommitsByPath() returns a tree of nodes mirroring the working directory
+* TallyCommitsTree() returns a tree of nodes mirroring the working directory
 * with a tally for each node.
-*
-* When a file is renamed, we move the leaf node and its attached tally objects
-* to a new place in the tree. We do not update any interior nodes.
-*
-* Because no interior nodes are updated, this can lead to situations where, say,
-* the tree records more commits happening in a directory than on the files in
-* that directory (this could happen if a file were moved out of a directory).
-*
-* We prune all paths from the tree that are not in the given working tree before
-* returning. We also only allow renames to paths in the working tree.
  */
-func TallyCommitsByPath(
+func TallyCommitsTree(
 	commits iter.Seq2[git.Commit, error],
 	wtreefiles map[string]bool,
 	opts TallyOpts,
 ) (*TreeNode, error) {
-	root := newNode(false, true)
+	root := newNode()
 
-	for commit, err := range commits {
-		if err != nil {
-			return nil, fmt.Errorf("error iterating commits: %w", err)
-		}
+	authors, err := tallyByPaths(commits, wtreefiles, opts)
+	if err != nil {
+		return root, err
+	}
 
-		for _, diff := range commit.FileDiffs {
-			path, err := checkPath(diff.Path)
-			if err != nil {
-				return nil,
-					fmt.Errorf("error cleaning diff path: \"%s\"", diff.Path)
-			}
-
-			if diff.Action == git.Rename {
-				// Handle renamed file
-				oldPath := path
-				newPath, err := checkPath(diff.MoveDest)
-				if err != nil {
-					return nil, fmt.Errorf(
-						"error cleaning diff path: \"%s\"",
-						diff.Path,
-					)
-				}
-
-				isWTreeDest := wtreefiles[newPath]
-				if !isWTreeDest {
-					continue
-				}
-
-				node := root.remove(oldPath)
-				if node != nil {
-					err = root.insert(newPath, node)
-					if err != nil {
-						// Don't fail, just warn.
-						logger().Debug(
-							"WARNING: path exists in tree",
-							"error",
-							err.Error(),
-							"commit",
-							commit.Name(),
-						)
-					}
-				}
-
-				root.edit(newPath, commit, diff, true, opts)
-			} else if !commit.IsMerge {
-				// Normal file update
-				inWTree := wtreefiles[path]
-				root.edit(path, commit, diff, inWTree, opts)
+	for key, author := range authors {
+		for path, pathTally := range author.paths {
+			if inWTree := wtreefiles[path]; inWTree {
+				root.insert(path, key, pathTally)
 			}
 		}
 	}
 
-	root.prune()
-	return root, nil
+	return root.tally(authors, opts.Mode), nil
 }

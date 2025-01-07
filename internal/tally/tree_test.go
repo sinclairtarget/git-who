@@ -11,7 +11,7 @@ import (
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
-func TestTallyCommitsByPath(t *testing.T) {
+func TestTallyCommitsTree(t *testing.T) {
 	commits := []git.Commit{
 		git.Commit{
 			Hash:        "baa",
@@ -66,7 +66,7 @@ func TestTallyCommitsByPath(t *testing.T) {
 	}
 	wtreeset := map[string]bool{"foo/bim.txt": true, "foo/bar.txt": true}
 
-	root, err := tally.TallyCommitsByPath(seq, wtreeset, opts)
+	root, err := tally.TallyCommitsTree(seq, wtreeset, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestTallyCommitsByPath(t *testing.T) {
 	}
 }
 
-func TestTallyCommitsByPathRename(t *testing.T) {
+func TestTallyCommitsTreeRename(t *testing.T) {
 	commits := []git.Commit{
 		git.Commit{
 			Hash:        "baa",
@@ -166,7 +166,7 @@ func TestTallyCommitsByPathRename(t *testing.T) {
 		Key:  func(c git.Commit) string { return c.AuthorEmail },
 	}
 	wtreeset := map[string]bool{"foo/bar.txt": true}
-	root, err := tally.TallyCommitsByPath(seq, wtreeset, opts)
+	root, err := tally.TallyCommitsTree(seq, wtreeset, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestTallyCommitsByPathRename(t *testing.T) {
 	}
 }
 
-func TestTallyCommitsByPathRenameAcrossDirs(t *testing.T) {
+func TestTallyCommitsTreeRenameAcrossDirs(t *testing.T) {
 	commits := []git.Commit{
 		git.Commit{
 			Hash:        "baa",
@@ -249,7 +249,7 @@ func TestTallyCommitsByPathRenameAcrossDirs(t *testing.T) {
 		Key:  func(c git.Commit) string { return c.AuthorEmail },
 	}
 	wtreeset := map[string]bool{"zoo/hello.txt": true, "zoo/zar.txt": true}
-	root, err := tally.TallyCommitsByPath(seq, wtreeset, opts)
+	root, err := tally.TallyCommitsTree(seq, wtreeset, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -277,14 +277,6 @@ func TestTallyCommitsByPathRenameAcrossDirs(t *testing.T) {
 	zooNode, ok := root.Children["zoo"]
 	if !ok {
 		t.Error("root node has no \"zoo\" child")
-	}
-	expected = tally.Tally{
-		AuthorName:   "jim",
-		AuthorEmail:  "jim@mail.com",
-		Commits:      1,
-		LinesAdded:   4,
-		LinesRemoved: 0,
-		FileCount:    2,
 	}
 	if diff := cmp.Diff(expected, zooNode.Tally); diff != "" {
 		t.Errorf("zoo tally is wrong:\n%s", diff)

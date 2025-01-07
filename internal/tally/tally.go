@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/timeutils"
 )
 
 // Whether we rank authors by commit, lines, or files.
@@ -66,94 +67,98 @@ func (a Tally) Compare(b Tally, mode TallyMode) int {
 	return a.LastCommitTime.Compare(b.LastCommitTime)
 }
 
+// A tally that can be combined with other tallies
+type intermediateTally struct {
+	commitset      map[string]bool
+	added          int
+	removed        int
+	lastCommitTime time.Time
+	numTallied     int
+}
+
+func newTally(numTallied int) intermediateTally {
+	return intermediateTally{
+		commitset:  map[string]bool{},
+		numTallied: numTallied,
+	}
+}
+
+func (t intermediateTally) Commits() int {
+	return len(t.commitset)
+}
+
+func (a intermediateTally) Add(b intermediateTally) intermediateTally {
+	union := a.commitset
+	for commit, _ := range b.commitset {
+		union[commit] = true
+	}
+
+	return intermediateTally{
+		commitset:      union,
+		added:          a.added + b.added,
+		removed:        a.removed + b.removed,
+		lastCommitTime: timeutils.Max(a.lastCommitTime, b.lastCommitTime),
+		numTallied:     a.numTallied + b.numTallied,
+	}
+}
+
 // Returns a slice of tallies, each one for a different author, in descending
 // order by most commits / files / lines (depending on the tally mode).
 func TallyCommits(
 	commits iter.Seq2[git.Commit, error],
-	treefiles map[string]bool,
+	wtreefiles map[string]bool,
 	allowOutsideWorktree bool,
 	opts TallyOpts,
 ) ([]Tally, error) {
-	// Map of author to tally
+	// Map of author to final tally
 	authorTallies := map[string]Tally{}
-
-	// Map of author to map of path to tally. Tally lines per path
-	pathTallies := make(map[string]map[string]struct {
-		added   int
-		removed int
-	})
 
 	start := time.Now()
 
-	// Tally over commits
-	for commit, err := range commits {
-		if err != nil {
-			return nil, fmt.Errorf("error iterating commits: %w", err)
-		}
-
-		key := opts.Key(commit)
-		authorTally := authorTallies[key]
-
-		authorTally.AuthorName = commit.AuthorName
-		authorTally.AuthorEmail = commit.AuthorEmail
-
-		_, ok := pathTallies[key]
-		if !ok {
-			pathTallies[key] = map[string]struct {
-				added   int
-				removed int
-			}{}
-		}
-
-		foundWTreePath := false
-		for _, diff := range commit.FileDiffs {
-			if exists := treefiles[diff.Path]; exists {
-				foundWTreePath = true
+	if opts.Mode == CommitMode && allowOutsideWorktree {
+		// Just sum over commits
+		for commit, err := range commits {
+			if err != nil {
+				return nil, fmt.Errorf("error iterating commits: %w", err)
 			}
 
-			pathTally := pathTallies[key][diff.Path]
+			key := opts.Key(commit)
 
-			if !commit.IsMerge {
-				pathTally.added += diff.LinesAdded
-				pathTally.removed += diff.LinesRemoved
-				pathTallies[key][diff.Path] = pathTally
-			}
-
-			// If file move would create a file in the working tree, move it
-			// and its existing count of lines added/removed, potentially
-			// overwriting.
-			destInWTree := treefiles[diff.MoveDest]
-			if destInWTree {
-				foundWTreePath = true
-
-				for key, _ := range pathTallies {
-					pathTally := pathTallies[key][diff.Path]
-					delete(pathTallies[key], diff.Path)
-					pathTallies[key][diff.MoveDest] = pathTally
-				}
-			}
-		}
-
-		if !commit.IsMerge && (foundWTreePath || allowOutsideWorktree) {
+			authorTally := authorTallies[key]
+			authorTally.AuthorName = commit.AuthorName
+			authorTally.AuthorEmail = commit.AuthorEmail
 			authorTally.Commits += 1
 			authorTally.LastCommitTime = commit.Date
+
 			authorTallies[key] = authorTally
 		}
-	}
-
-	// Handle lines added and file count
-	for key, authorTally := range authorTallies {
-		for path, pathTally := range pathTallies[key] {
-			if exists := treefiles[path]; !exists && !allowOutsideWorktree {
-				continue
-			}
-
-			authorTally.LinesAdded += pathTally.added
-			authorTally.LinesRemoved += pathTally.removed
-			authorTally.FileCount += 1
+	} else {
+		pathTallies, err := tallyByPaths(commits, wtreefiles, opts)
+		if err != nil {
+			return nil, err
 		}
 
-		authorTallies[key] = authorTally
+		// Sum over paths
+		for key, author := range pathTallies {
+			authorTally := authorTallies[key]
+			authorTally.AuthorName = author.name
+			authorTally.AuthorEmail = author.email
+
+			runningTally := newTally(0)
+			for path, pathTally := range author.paths {
+				if inWTree := wtreefiles[path]; inWTree || allowOutsideWorktree {
+					runningTally = runningTally.Add(pathTally)
+				}
+			}
+
+			authorTally.Commits = runningTally.Commits()
+			authorTally.LinesAdded = runningTally.added
+			authorTally.LinesRemoved = runningTally.removed
+			authorTally.FileCount = runningTally.numTallied
+			authorTally.LastCommitTime = runningTally.lastCommitTime
+
+			authorTallies[key] = authorTally
+		}
 	}
 
 	// Sort list
