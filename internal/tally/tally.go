@@ -27,6 +27,11 @@ type TallyOpts struct {
 	Key  func(c git.Commit) string // Unique ID for author
 }
 
+// Whether we need --stat and --summary data from git log for this tally mode
+func (opts TallyOpts) NeedsDiffs() bool {
+	return opts.Mode == FilesMode || opts.Mode == LinesMode
+}
+
 // Metrics tallied while walking git log
 type Tally struct {
 	AuthorName     string
@@ -115,7 +120,7 @@ func TallyCommits(
 
 	start := time.Now()
 
-	if opts.Mode == CommitMode && allowOutsideWorktree {
+	if !opts.NeedsDiffs() && allowOutsideWorktree {
 		// Just sum over commits
 		for commit, err := range commits {
 			if err != nil {

@@ -47,7 +47,14 @@ func hist(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	populateDiffs := mode == tally.FilesMode || mode == tally.LinesMode
+	tallyOpts := tally.TallyOpts{Mode: mode}
+	if showEmail {
+		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
+	} else {
+		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
+	}
+
+	populateDiffs := tallyOpts.NeedsDiffs()
 	filters := git.LogFilters{
 		Since:    since,
 		Authors:  authors,
@@ -64,12 +71,6 @@ func hist(
 		return err
 	}
 
-	tallyOpts := tally.TallyOpts{Mode: mode}
-	if showEmail {
-		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
-	} else {
-		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
-	}
 	buckets, err := tally.TallyCommitsByDate(commits, tallyOpts, time.Now())
 
 	err = closer()
