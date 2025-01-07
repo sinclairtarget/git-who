@@ -112,7 +112,7 @@ func finalizeBucket(bucket TimeBucket, mode TallyMode) TimeBucket {
 	// Get count of unique files touched
 	for key, tally := range bucket.tallies {
 		fileset := bucket.filesets[key]
-		tally.FileCount = countFiles(fileset)
+		tally.FileCount = len(fileset)
 		bucket.tallies[key] = tally
 	}
 

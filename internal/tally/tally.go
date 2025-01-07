@@ -165,17 +165,6 @@ func TallyCommits(
 	return sorted, nil
 }
 
-func countFiles(fileset map[string]bool) int {
-	sum := 0
-	for _, exists := range fileset {
-		if exists {
-			sum += 1
-		}
-	}
-
-	return sum
-}
-
 func sortTallies(tallies map[string]Tally, mode TallyMode) []Tally {
 	sorted := slices.SortedFunc(maps.Values(tallies), func(a, b Tally) int {
 		return -a.Compare(b, mode)
