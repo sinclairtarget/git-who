@@ -68,6 +68,11 @@ func table(
 		nauthors,
 	)
 
+	wtreeset, err := git.WorkingTreeFiles(paths)
+	if err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -85,11 +90,6 @@ func table(
 		filters,
 		populateDiffs,
 	)
-	if err != nil {
-		return err
-	}
-
-	wtreeset, err := git.WorkingTreeFiles(paths)
 	if err != nil {
 		return err
 	}

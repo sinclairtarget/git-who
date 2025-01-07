@@ -68,6 +68,11 @@ func tree(
 		nauthors,
 	)
 
+	wtreeset, err := git.WorkingTreeFiles(paths)
+	if err != nil {
+		return err
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -77,11 +82,6 @@ func tree(
 		Nauthors: nauthors,
 	}
 	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, filters, true)
-	if err != nil {
-		return err
-	}
-
-	wtreeset, err := git.WorkingTreeFiles(paths)
 	if err != nil {
 		return err
 	}
