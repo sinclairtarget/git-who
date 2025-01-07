@@ -14,7 +14,13 @@ func TestCommitsFileRename(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitsSeq, closer, err := git.Commits(ctx, []string{"HEAD"}, []string{path})
+	commitsSeq, closer, err := git.CommitsWithOpts(
+		ctx,
+		[]string{"HEAD"},
+		[]string{path},
+		git.LogFilters{},
+		true,
+	)
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
 	}
@@ -74,7 +80,13 @@ func TestCommitsFileRenameNewDir(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitsSeq, closer, err := git.Commits(ctx, []string{"HEAD"}, []string{path})
+	commitsSeq, closer, err := git.CommitsWithOpts(
+		ctx,
+		[]string{"HEAD"},
+		[]string{path},
+		git.LogFilters{},
+		true,
+	)
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
 	}
@@ -134,7 +146,13 @@ func TestCommitsRenameDeepDir(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitsSeq, closer, err := git.Commits(ctx, []string{"HEAD"}, []string{path})
+	commitsSeq, closer, err := git.CommitsWithOpts(
+		ctx,
+		[]string{"HEAD"},
+		[]string{path},
+		git.LogFilters{},
+		true,
+	)
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
 	}
@@ -191,7 +209,13 @@ func TestParseWholeLog(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitsSeq, closer, err := git.Commits(ctx, []string{"HEAD"}, []string{"."})
+	commitsSeq, closer, err := git.CommitsWithOpts(
+		ctx,
+		[]string{"HEAD"},
+		[]string{"."},
+		git.LogFilters{},
+		true,
+	)
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
 	}

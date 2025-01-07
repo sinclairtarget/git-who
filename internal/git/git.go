@@ -106,14 +106,6 @@ func CommitsWithOpts(
 	return commits, closer, nil
 }
 
-func Commits(ctx context.Context, revs []string, paths []string) (
-	iter.Seq2[Commit, error],
-	func() error,
-	error,
-) {
-	return CommitsWithOpts(ctx, revs, paths, LogFilters{}, true)
-}
-
 func NumCommits(
 	revs []string,
 	paths []string,
