@@ -150,7 +150,11 @@ func NumCommits(
 		return 0, err
 	}
 
-	subprocess.Wait()
+	err = subprocess.Wait()
+	if err != nil {
+		return count, nil
+	}
+
 	return count, nil
 }
 
@@ -180,6 +184,10 @@ func WorkingTreeFiles(paths []string) (_ map[string]bool, err error) {
 		wtreeset[strings.TrimSpace(line)] = true
 	}
 
-	subprocess.Wait()
+	err = subprocess.Wait()
+	if err != nil {
+		return wtreeset, err
+	}
+
 	return wtreeset, nil
 }
