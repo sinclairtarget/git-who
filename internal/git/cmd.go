@@ -36,6 +36,7 @@ func (err SubprocessErr) Unwrap() error {
 
 type Subprocess struct {
 	cmd    *exec.Cmd
+	stdin  io.WriteCloser
 	stdout io.ReadCloser
 	stderr io.ReadCloser
 }
@@ -83,7 +84,11 @@ func (s Subprocess) Wait() error {
 	return nil
 }
 
-func Run(ctx context.Context, args []string) (*Subprocess, error) {
+func run(
+	ctx context.Context,
+	args []string,
+	needStdin bool,
+) (*Subprocess, error) {
 	cmd := exec.CommandContext(ctx, "git", args...)
 	logger().Debug("running subprocess", "cmd", cmd)
 
@@ -97,6 +102,14 @@ func Run(ctx context.Context, args []string) (*Subprocess, error) {
 		return nil, fmt.Errorf("failed to open stderr pipe: %w", err)
 	}
 
+	var stdin io.WriteCloser
+	if needStdin {
+		stdin, err = cmd.StdinPipe()
+		if err != nil {
+			return nil, fmt.Errorf("failed to open stdin pipe: %w", err)
+		}
+	}
+
 	err = cmd.Start()
 	if err != nil {
 		return nil, fmt.Errorf("failed to start subprocess: %w", err)
@@ -104,6 +117,7 @@ func Run(ctx context.Context, args []string) (*Subprocess, error) {
 
 	return &Subprocess{
 		cmd:    cmd,
+		stdin:  stdin,
 		stdout: stdout,
 		stderr: stderr,
 	}, nil
@@ -186,9 +200,42 @@ func RunLog(
 		args = slices.Concat(baseArgs, filterArgs, revs)
 	}
 
-	subprocess, err := Run(ctx, args)
+	subprocess, err := run(ctx, args, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git log: %w", err)
+	}
+
+	return subprocess, nil
+}
+
+// Runs git log --stdin
+func RunStdinLog(ctx context.Context, needDiffs bool) (*Subprocess, error) {
+	var args []string
+	if needDiffs {
+		args = []string{
+			"log",
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
+			"--date=unix",
+			"--stdin",
+			"--no-walk",
+			"--numstat",
+			"--summary",
+			"--diff-merges=first-parent",
+		}
+	} else {
+		// Runs git log without --numstat or --summary, which is much faster.
+		args = []string{
+			"log",
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n", // Extra newline!
+			"--date=unix",
+			"--stdin",
+			"--no-walk",
+		}
+	}
+
+	subprocess, err := run(ctx, args, true)
+	if err != nil {
+		return nil, fmt.Errorf("error running git log --stdin: %w", err)
 	}
 
 	return subprocess, nil
@@ -201,7 +248,7 @@ func RunRevParse(ctx context.Context, args []string) (*Subprocess, error) {
 		"--no-flags",
 	}
 
-	subprocess, err := Run(ctx, slices.Concat(baseArgs, args))
+	subprocess, err := run(ctx, slices.Concat(baseArgs, args), false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git rev-parse: %w", err)
 	}
@@ -243,7 +290,7 @@ func RunRevList(
 		args = slices.Concat(baseArgs, filterArgs, revs)
 	}
 
-	subprocess, err := Run(ctx, args)
+	subprocess, err := run(ctx, args, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git rev-list: %w", err)
 	}
@@ -261,7 +308,7 @@ func RunLsFiles(ctx context.Context, paths []string) (*Subprocess, error) {
 		args = slices.Concat(baseArgs, []string{"--"}, paths)
 	}
 
-	subprocess, err := Run(ctx, args)
+	subprocess, err := run(ctx, args, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run git ls-files: %w", err)
 	}
