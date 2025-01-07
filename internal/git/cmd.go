@@ -151,48 +151,29 @@ func RunLog(
 	revs []string,
 	paths []string,
 	filters LogFilters,
+	needDiffs bool,
 ) (*Subprocess, error) {
-	var baseArgs = []string{
-		"log",
-		"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
-		"--date=unix",
-		"--topo-order",
-		"--reverse",
-		"--numstat",
-		"--summary",
-		"--diff-merges=first-parent",
-	}
-
-	filterArgs := filters.ToArgs()
-
-	var args []string
-	if len(paths) > 0 {
-		args = slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
+	var baseArgs []string
+	if needDiffs {
+		baseArgs = []string{
+			"log",
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
+			"--date=unix",
+			"--topo-order",
+			"--reverse",
+			"--numstat",
+			"--summary",
+			"--diff-merges=first-parent",
+		}
 	} else {
-		args = slices.Concat(baseArgs, filterArgs, revs)
-	}
-
-	subprocess, err := Run(ctx, args)
-	if err != nil {
-		return nil, fmt.Errorf("failed to run git log: %w", err)
-	}
-
-	return subprocess, nil
-}
-
-// Runs git log without --numstat or --summary, which is much faster.
-func RunLogDiffless(
-	ctx context.Context,
-	revs []string,
-	paths []string,
-	filters LogFilters,
-) (*Subprocess, error) {
-	var baseArgs = []string{
-		"log",
-		"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
-		"--date=unix",
-		"--topo-order",
-		"--reverse",
+		// Runs git log without --numstat or --summary, which is much faster.
+		baseArgs = []string{
+			"log",
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n", // Extra newline!
+			"--date=unix",
+			"--topo-order",
+			"--reverse",
+		}
 	}
 
 	filterArgs := filters.ToArgs()
