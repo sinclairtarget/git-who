@@ -41,6 +41,12 @@ type Subprocess struct {
 	stderr io.ReadCloser
 }
 
+func (s Subprocess) StdinWriter() (_ *bufio.Writer, closer func() error) {
+	return bufio.NewWriter(s.stdin), func() error {
+		return s.stdin.Close()
+	}
+}
+
 // Returns a single-use iterator over the output of the command, line by line.
 func (s Subprocess) StdoutLines() iter.Seq2[string, error] {
 	scanner := bufio.NewScanner(s.stdout)

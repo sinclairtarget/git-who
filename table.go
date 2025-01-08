@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/ansi"
+	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
@@ -83,37 +84,63 @@ func table(
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
+	allowOutsideWorktree := len(paths) == 0
 	populateDiffs := tallyOpts.NeedsDiffs() || len(paths) > 0
 	filters := git.LogFilters{
 		Since:    since,
 		Authors:  authors,
 		Nauthors: nauthors,
 	}
-	commits, closer, err := git.CommitsWithOpts(
-		ctx,
-		revs,
-		paths,
-		filters,
-		populateDiffs,
-	)
+
+	nWorkers, err := concurrent.GetNWorkers(revs, paths, filters, populateDiffs)
 	if err != nil {
 		return err
 	}
 
-	allowOutsideWorktree := len(paths) == 0
-	tallies, err := tally.TallyCommits(
-		commits,
-		wtreeset,
-		allowOutsideWorktree,
-		tallyOpts,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to tally commits: %w", err)
-	}
+	var tallies []tally.Tally
+	if nWorkers > 1 {
+		whop := concurrent.Whoperation[map[string]tally.Tally, []tally.Tally]{
+			Revs:          revs,
+			Paths:         paths,
+			Filters:       filters,
+			PopulateDiffs: populateDiffs,
+			NWorkers:      nWorkers,
+		}
+		whop.Apply, whop.Merge, whop.Finalize = tally.TallyCommitsApplyMerge(
+			wtreeset,
+			allowOutsideWorktree,
+			tallyOpts,
+		)
+		tallies, err = concurrent.Tally(ctx, whop)
+		if err != nil {
+			return err
+		}
+	} else {
+		commits, closer, err := git.CommitsWithOpts(
+			ctx,
+			revs,
+			paths,
+			filters,
+			populateDiffs,
+		)
+		if err != nil {
+			return err
+		}
 
-	err = closer()
-	if err != nil {
-		return err
+		tallies, err = tally.TallyCommits(
+			commits,
+			wtreeset,
+			allowOutsideWorktree,
+			tallyOpts,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to tally commits: %w", err)
+		}
+
+		err = closer()
+		if err != nil {
+			return err
+		}
 	}
 
 	numFilteredOut := 0

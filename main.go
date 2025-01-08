@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"runtime"
 	"strings"
 	"time"
 
@@ -42,11 +41,6 @@ func main() {
 
 	versionFlag := mainFlagSet.Bool("version", false, "Print version and exit")
 	verboseFlag := mainFlagSet.Bool("v", false, "Enables debug logging")
-	workersFlag := mainFlagSet.Int(
-		"w",
-		0,
-		"Limit to N concurrent workers (set to 0 for no limit)",
-	)
 
 	mainFlagSet.Usage = func() {
 		fmt.Println("Usage: git-who [options...] [subcommand]")
@@ -92,11 +86,6 @@ loop:
 		logger().Debug("log level set to DEBUG")
 	} else {
 		configureLogging(slog.LevelInfo)
-	}
-
-	if *workersFlag > 0 {
-		runtime.GOMAXPROCS(*workersFlag)
-		logger().Debug("set max concurrent workers", "value", *workersFlag)
 	}
 
 	args := os.Args[subcmdIndex:]

@@ -115,6 +115,71 @@ func TallyCommits(
 	allowOutsideWorktree bool,
 	opts TallyOpts,
 ) ([]Tally, error) {
+	authorTallies, err := tallyCommits(
+		commits,
+		wtreefiles,
+		allowOutsideWorktree,
+		opts,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Sort list
+	sorted := sortTallies(authorTallies, opts.Mode)
+	return sorted, nil
+}
+
+func TallyCommitsApplyMerge(
+	wtreeset map[string]bool,
+	allowOutsideWorktree bool,
+	opts TallyOpts,
+) (
+	TallyFunc[map[string]Tally],
+	MergeFunc[map[string]Tally],
+	FinalizeFunc[map[string]Tally, []Tally],
+) {
+	apply := func(commits iter.Seq2[git.Commit, error]) (
+		map[string]Tally,
+		error,
+	) {
+		return tallyCommits(
+			commits,
+			wtreeset,
+			allowOutsideWorktree,
+			opts,
+		)
+	}
+
+	merge := func(a, b map[string]Tally) map[string]Tally {
+		union := b
+		for k, at := range a {
+			bt := union[k]
+
+			at.Commits += bt.Commits
+			at.LastCommitTime = timeutils.Max(
+				at.LastCommitTime,
+				bt.LastCommitTime,
+			)
+
+			union[k] = at
+		}
+		return union
+	}
+
+	finalize := func(tallies map[string]Tally) []Tally {
+		return sortTallies(tallies, opts.Mode)
+	}
+
+	return apply, merge, finalize
+}
+
+func tallyCommits(
+	commits iter.Seq2[git.Commit, error],
+	wtreefiles map[string]bool,
+	allowOutsideWorktree bool,
+	opts TallyOpts,
+) (map[string]Tally, error) {
 	// Map of author to final tally
 	authorTallies := map[string]Tally{}
 
@@ -169,13 +234,10 @@ func TallyCommits(
 		}
 	}
 
-	// Sort list
-	sorted := sortTallies(authorTallies, opts.Mode)
-
 	elapsed := time.Now().Sub(start)
 	logger().Debug("tallied commits", "duration_ms", elapsed.Milliseconds())
 
-	return sorted, nil
+	return authorTallies, nil
 }
 
 func sortTallies(tallies map[string]Tally, mode TallyMode) []Tally {

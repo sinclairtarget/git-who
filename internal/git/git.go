@@ -98,12 +98,48 @@ func CommitsWithOpts(
 	}
 
 	lines := subprocess.StdoutLines()
-	commits := parseCommits(lines)
+	commits := ParseCommits(lines)
 
 	closer := func() error {
 		return subprocess.Wait()
 	}
 	return commits, closer, nil
+}
+
+func RevList(
+	ctx context.Context,
+	revranges []string,
+	paths []string,
+	filters LogFilters,
+) (_ []string, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("error getting full rev list: %w", err)
+		}
+	}()
+
+	revs := []string{}
+
+	subprocess, err := RunRevList(ctx, revranges, paths, filters, false)
+	if err != nil {
+		return revs, err
+	}
+
+	lines := subprocess.StdoutLines()
+	for line, err := range lines {
+		if err != nil {
+			return revs, err
+		}
+
+		revs = append(revs, line)
+	}
+
+	err = subprocess.Wait()
+	if err != nil {
+		return revs, err
+	}
+
+	return revs, nil
 }
 
 func NumCommits(

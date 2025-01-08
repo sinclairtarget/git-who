@@ -199,7 +199,7 @@ func parseFileAction(line string) (_ FileAction, _ string, err error) {
 }
 
 // Turns an iterator over lines from git log into an iterator of commits
-func parseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
+func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 	return func(yield func(Commit, error) bool) {
 		var commit Commit
 		diffLookup := map[string]FileDiff{}
