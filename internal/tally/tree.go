@@ -28,10 +28,23 @@ func (t *TreeNode) String() string {
 }
 
 // Stores per-path tallies for a single author
-type authorPaths struct {
+type AuthorPaths struct {
 	name  string
 	email string
 	paths map[string]intermediateTally
+}
+
+func (a AuthorPaths) Union(b AuthorPaths) AuthorPaths {
+	union := b
+	for p, at := range a.paths {
+		bt, ok := b.paths[p]
+		if ok {
+			at = at.Add(bt)
+		}
+		union.paths[p] = at
+	}
+
+	return union
 }
 
 // Tally metrics per author per path
@@ -39,8 +52,8 @@ func tallyByPaths(
 	commits iter.Seq2[git.Commit, error],
 	wtreefiles map[string]bool,
 	opts TallyOpts,
-) (map[string]authorPaths, error) {
-	authors := map[string]authorPaths{}
+) (map[string]AuthorPaths, error) {
+	authors := map[string]AuthorPaths{}
 
 	// Tally over commits
 	for commit, err := range commits {
@@ -51,7 +64,7 @@ func tallyByPaths(
 		key := opts.Key(commit)
 		author, ok := authors[key]
 		if !ok {
-			author = authorPaths{
+			author = AuthorPaths{
 				name:  commit.AuthorName,
 				email: commit.AuthorEmail,
 				paths: map[string]intermediateTally{},
@@ -122,7 +135,7 @@ func (t *TreeNode) insert(path string, key string, tally intermediateTally) {
 }
 
 func (t *TreeNode) tally(
-	authors map[string]authorPaths,
+	authors map[string]AuthorPaths,
 	mode TallyMode,
 ) *TreeNode {
 	for p, child := range t.Children {

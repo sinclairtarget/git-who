@@ -54,7 +54,7 @@ func hist(
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
-	populateDiffs := tallyOpts.NeedsDiffs()
+	populateDiffs := tallyOpts.IsDiffMode()
 	filters := git.LogFilters{
 		Since:    since,
 		Authors:  authors,

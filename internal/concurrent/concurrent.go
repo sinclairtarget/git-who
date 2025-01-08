@@ -127,6 +127,8 @@ func Tally[T any, R any](
 			i,
 			"firstRev",
 			workload.revs[0],
+			"nRevs",
+			len(workload.revs),
 		)
 
 		subprocess, err := git.RunStdinLog(ctx, whop.PopulateDiffs)

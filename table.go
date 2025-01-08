@@ -85,7 +85,7 @@ func table(
 	}
 
 	allowOutsideWorktree := len(paths) == 0
-	populateDiffs := tallyOpts.NeedsDiffs() || len(paths) > 0
+	populateDiffs := tallyOpts.IsDiffMode() || !allowOutsideWorktree
 	filters := git.LogFilters{
 		Since:    since,
 		Authors:  authors,
@@ -99,19 +99,38 @@ func table(
 
 	var tallies []tally.Tally
 	if nWorkers > 1 {
-		whop := concurrent.Whoperation[map[string]tally.Tally, []tally.Tally]{
-			Revs:          revs,
-			Paths:         paths,
-			Filters:       filters,
-			PopulateDiffs: populateDiffs,
-			NWorkers:      nWorkers,
+		if tallyOpts.IsDiffMode() {
+			whop := concurrent.Whoperation[
+				map[string]tally.AuthorPaths,
+				[]tally.Tally,
+			]{
+				Revs:          revs,
+				Paths:         paths,
+				Filters:       filters,
+				PopulateDiffs: populateDiffs,
+				NWorkers:      nWorkers,
+			}
+			whop.Apply, whop.Merge, whop.Finalize = tally.TallyCommitsDiffApplyMerge(
+				wtreeset,
+				allowOutsideWorktree,
+				tallyOpts,
+			)
+			tallies, err = concurrent.Tally(ctx, whop)
+		} else {
+			whop := concurrent.Whoperation[map[string]tally.Tally, []tally.Tally]{
+				Revs:          revs,
+				Paths:         paths,
+				Filters:       filters,
+				PopulateDiffs: populateDiffs,
+				NWorkers:      nWorkers,
+			}
+			whop.Apply, whop.Merge, whop.Finalize = tally.TallyCommitsApplyMerge(
+				wtreeset,
+				allowOutsideWorktree,
+				tallyOpts,
+			)
+			tallies, err = concurrent.Tally(ctx, whop)
 		}
-		whop.Apply, whop.Merge, whop.Finalize = tally.TallyCommitsApplyMerge(
-			wtreeset,
-			allowOutsideWorktree,
-			tallyOpts,
-		)
-		tallies, err = concurrent.Tally(ctx, whop)
 		if err != nil {
 			return err
 		}

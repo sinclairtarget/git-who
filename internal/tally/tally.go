@@ -2,6 +2,7 @@
 package tally
 
 import (
+	"errors"
 	"fmt"
 	"iter"
 	"maps"
@@ -28,7 +29,7 @@ type TallyOpts struct {
 }
 
 // Whether we need --stat and --summary data from git log for this tally mode
-func (opts TallyOpts) NeedsDiffs() bool {
+func (opts TallyOpts) IsDiffMode() bool {
 	return opts.Mode == FilesMode || opts.Mode == LinesMode
 }
 
@@ -130,6 +131,7 @@ func TallyCommits(
 	return sorted, nil
 }
 
+// Concurrent pipeline for simple tallying of commits
 func TallyCommitsApplyMerge(
 	wtreeset map[string]bool,
 	allowOutsideWorktree bool,
@@ -143,6 +145,10 @@ func TallyCommitsApplyMerge(
 		map[string]Tally,
 		error,
 	) {
+		if opts.IsDiffMode() {
+			return nil, errors.New("unsupported tally mode")
+		}
+
 		return tallyCommits(
 			commits,
 			wtreeset,
@@ -174,6 +180,44 @@ func TallyCommitsApplyMerge(
 	return apply, merge, finalize
 }
 
+// Concurrent pipeline for tallying commits using diffs (lines, files)
+func TallyCommitsDiffApplyMerge(
+	wtreeset map[string]bool,
+	allowOutsideWorktree bool,
+	opts TallyOpts,
+) (
+	TallyFunc[map[string]AuthorPaths],
+	MergeFunc[map[string]AuthorPaths],
+	FinalizeFunc[map[string]AuthorPaths, []Tally],
+) {
+	apply := func(commits iter.Seq2[git.Commit, error]) (
+		map[string]AuthorPaths,
+		error,
+	) {
+		return tallyByPaths(commits, wtreeset, opts)
+	}
+
+	merge := func(a, b map[string]AuthorPaths) map[string]AuthorPaths {
+		union := b
+		for key, aAuthor := range a {
+			bAuthor, ok := b[key]
+			if ok {
+				aAuthor = aAuthor.Union(bAuthor)
+			}
+			union[key] = aAuthor
+		}
+
+		return union
+	}
+
+	finalize := func(authors map[string]AuthorPaths) []Tally {
+		tallies := sumOverPaths(authors, wtreeset, allowOutsideWorktree)
+		return sortTallies(tallies, opts.Mode)
+	}
+
+	return apply, merge, finalize
+}
+
 func tallyCommits(
 	commits iter.Seq2[git.Commit, error],
 	wtreefiles map[string]bool,
@@ -181,11 +225,13 @@ func tallyCommits(
 	opts TallyOpts,
 ) (map[string]Tally, error) {
 	// Map of author to final tally
-	authorTallies := map[string]Tally{}
+	var authorTallies map[string]Tally
 
 	start := time.Now()
 
-	if !opts.NeedsDiffs() && allowOutsideWorktree {
+	if !opts.IsDiffMode() && allowOutsideWorktree {
+		authorTallies = map[string]Tally{}
+
 		// Just sum over commits
 		for commit, err := range commits {
 			if err != nil {
@@ -211,27 +257,11 @@ func tallyCommits(
 			return nil, err
 		}
 
-		// Sum over paths
-		for key, author := range pathTallies {
-			authorTally := authorTallies[key]
-			authorTally.AuthorName = author.name
-			authorTally.AuthorEmail = author.email
-
-			runningTally := newTally(0)
-			for path, pathTally := range author.paths {
-				if inWTree := wtreefiles[path]; inWTree || allowOutsideWorktree {
-					runningTally = runningTally.Add(pathTally)
-				}
-			}
-
-			authorTally.Commits = runningTally.Commits()
-			authorTally.LinesAdded = runningTally.added
-			authorTally.LinesRemoved = runningTally.removed
-			authorTally.FileCount = runningTally.numTallied
-			authorTally.LastCommitTime = runningTally.lastCommitTime
-
-			authorTallies[key] = authorTally
-		}
+		authorTallies = sumOverPaths(
+			pathTallies,
+			wtreefiles,
+			allowOutsideWorktree,
+		)
 	}
 
 	elapsed := time.Now().Sub(start)
@@ -246,4 +276,35 @@ func sortTallies(tallies map[string]Tally, mode TallyMode) []Tally {
 	})
 
 	return sorted
+}
+
+func sumOverPaths(
+	authors map[string]AuthorPaths,
+	wtreefiles map[string]bool,
+	allowOutsideWorktree bool,
+) map[string]Tally {
+	authorTallies := map[string]Tally{}
+
+	for key, author := range authors {
+		authorTally := authorTallies[key]
+		authorTally.AuthorName = author.name
+		authorTally.AuthorEmail = author.email
+
+		runningTally := newTally(0)
+		for path, pathTally := range author.paths {
+			if inWTree := wtreefiles[path]; inWTree || allowOutsideWorktree {
+				runningTally = runningTally.Add(pathTally)
+			}
+		}
+
+		authorTally.Commits = runningTally.Commits()
+		authorTally.LinesAdded = runningTally.added
+		authorTally.LinesRemoved = runningTally.removed
+		authorTally.FileCount = runningTally.numTallied
+		authorTally.LastCommitTime = runningTally.lastCommitTime
+
+		authorTallies[key] = authorTally
+	}
+
+	return authorTallies
 }
