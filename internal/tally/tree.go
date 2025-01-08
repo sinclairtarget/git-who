@@ -5,6 +5,7 @@ import (
 	"iter"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 )
@@ -55,6 +56,8 @@ func tallyByPaths(
 ) (map[string]AuthorPaths, error) {
 	authors := map[string]AuthorPaths{}
 
+	start := time.Now()
+
 	// Tally over commits
 	for commit, err := range commits {
 		if err != nil {
@@ -101,6 +104,13 @@ func tallyByPaths(
 			}
 		}
 	}
+
+	elapsed := time.Now().Sub(start)
+	logger().Debug(
+		"tallied commits by path",
+		"duration_ms",
+		elapsed.Milliseconds(),
+	)
 
 	return authors, nil
 }
