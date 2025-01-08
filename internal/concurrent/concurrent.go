@@ -161,8 +161,8 @@ func Tally[T any, R any](
 				if err != nil {
 					return noResult, fmt.Errorf(
 						"error from writer goroutine for workload %d: %w",
-						err,
 						i,
+						err,
 					)
 				}
 			case err, ok := <-workload.tallyError:
@@ -173,8 +173,8 @@ func Tally[T any, R any](
 				if err != nil {
 					return noResult, fmt.Errorf(
 						"error from writer goroutine for workload %d: %w",
-						err,
 						i,
+						err,
 					)
 				}
 			case r := <-workload.result:
