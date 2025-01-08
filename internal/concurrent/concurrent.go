@@ -121,7 +121,13 @@ func Tally[T any, R any](
 
 	workloads := splitWork[T](revs, whop.NWorkers)
 	for i, workload := range workloads {
-		logger().Debug("launching workers for workload", "id", i)
+		logger().Debug(
+			"launching workers for workload",
+			"id",
+			i,
+			"firstRev",
+			workload.revs[0],
+		)
 
 		subprocess, err := git.RunStdinLog(ctx, whop.PopulateDiffs)
 		if err != nil {
