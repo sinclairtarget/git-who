@@ -198,6 +198,20 @@ func parseFileAction(line string) (_ FileAction, _ string, err error) {
 	}
 }
 
+func allowCommit(commit Commit) bool {
+	if commit.AuthorName == "" && commit.AuthorEmail == "" {
+		logger().Debug(
+			"skipping commit with no author",
+			"commit",
+			commit.Name(),
+		)
+
+		return false
+	}
+
+	return true
+}
+
 // Turns an iterator over lines from git log into an iterator of commits
 func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 	return func(yield func(Commit, error) bool) {
@@ -221,8 +235,10 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			done := linesThisCommit >= 7 && (len(line) == 0 || isRev(line))
 			if done {
 				commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
-				if !yield(commit, nil) {
-					return
+				if allowCommit(commit) {
+					if !yield(commit, nil) {
+						return
+					}
 				}
 
 				commit = Commit{}
@@ -315,7 +331,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			linesThisCommit += 1
 		}
 
-		if linesThisCommit > 0 {
+		if linesThisCommit > 0 && allowCommit(commit) {
 			commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
 			yield(commit, nil)
 		}
