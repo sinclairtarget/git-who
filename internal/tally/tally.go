@@ -189,7 +189,9 @@ func TallyCommits(
 				}
 			}
 
-			tallies[key] = runningTally
+			if runningTally.numTallied > 0 {
+				tallies[key] = runningTally
+			}
 		}
 	}
 
@@ -229,14 +231,13 @@ func tallyByPath(
 		}
 
 		key := opts.Key(commit)
-		pathTallies, ok := tallies[key]
-		if !ok {
-			pathTallies = map[string]Tally{}
-			tallies[key] = pathTallies
-		}
-
 		for _, diff := range commit.FileDiffs {
 			if !commit.IsMerge {
+				pathTallies, ok := tallies[key]
+				if !ok {
+					pathTallies = map[string]Tally{}
+				}
+
 				tally, ok := pathTallies[diff.Path]
 				if !ok {
 					tally.name = commit.AuthorName
@@ -251,6 +252,7 @@ func tallyByPath(
 				tally.lastCommitTime = commit.Date
 
 				pathTallies[diff.Path] = tally
+				tallies[key] = pathTallies
 			}
 
 			// If file move would create a file in the working tree, move tally
