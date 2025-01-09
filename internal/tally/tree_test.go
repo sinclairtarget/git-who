@@ -61,12 +61,12 @@ func TestTallyCommitsTree(t *testing.T) {
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
 	opts := tally.TallyOpts{
-		Mode: tally.CommitMode,
-		Key:  func(c git.Commit) string { return c.AuthorEmail },
+		Mode:        tally.CommitMode,
+		Key:         func(c git.Commit) string { return c.AuthorEmail },
+		WorktreeSet: map[string]bool{"foo/bim.txt": true, "foo/bar.txt": true},
 	}
-	wtreeset := map[string]bool{"foo/bim.txt": true, "foo/bar.txt": true}
 
-	root, err := tally.TallyCommitsTree(seq, wtreeset, opts)
+	root, err := tally.TallyCommitsTree(seq, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -164,11 +164,11 @@ func TestTallyCommitsTreeRename(t *testing.T) {
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
 	opts := tally.TallyOpts{
-		Mode: tally.CommitMode,
-		Key:  func(c git.Commit) string { return c.AuthorEmail },
+		Mode:        tally.CommitMode,
+		Key:         func(c git.Commit) string { return c.AuthorEmail },
+		WorktreeSet: map[string]bool{"foo/bar.txt": true},
 	}
-	wtreeset := map[string]bool{"foo/bar.txt": true}
-	root, err := tally.TallyCommitsTree(seq, wtreeset, opts)
+	root, err := tally.TallyCommitsTree(seq, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -249,11 +249,11 @@ func TestTallyCommitsTreeRenameAcrossDirs(t *testing.T) {
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
 	opts := tally.TallyOpts{
-		Mode: tally.LinesMode,
-		Key:  func(c git.Commit) string { return c.AuthorEmail },
+		Mode:        tally.LinesMode,
+		Key:         func(c git.Commit) string { return c.AuthorEmail },
+		WorktreeSet: map[string]bool{"zoo/hello.txt": true, "zoo/zar.txt": true},
 	}
-	wtreeset := map[string]bool{"zoo/hello.txt": true, "zoo/zar.txt": true}
-	root, err := tally.TallyCommitsTree(seq, wtreeset, opts)
+	root, err := tally.TallyCommitsTree(seq, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}

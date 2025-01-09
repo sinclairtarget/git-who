@@ -22,8 +22,10 @@ const (
 )
 
 type TallyOpts struct {
-	Mode TallyMode
-	Key  func(c git.Commit) string // Unique ID for author
+	Mode                 TallyMode
+	Key                  func(c git.Commit) string // Unique ID for author
+	WorktreeSet          map[string]bool           // Filepaths in the worktree
+	AllowOutsideWorktree bool                      // Whether to allow filepaths outside worktree
 }
 
 // Whether we need --stat and --summary data from git log for this tally mode
@@ -142,8 +144,6 @@ func (t Tally) Final() FinalTally {
 
 func TallyCommits(
 	commits iter.Seq2[git.Commit, error],
-	wtreefiles map[string]bool,
-	allowOutsideWorktree bool,
 	opts TallyOpts,
 ) (map[string]Tally, error) {
 	// Map of author to tally
@@ -151,7 +151,7 @@ func TallyCommits(
 
 	start := time.Now()
 
-	if !opts.IsDiffMode() && allowOutsideWorktree {
+	if !opts.IsDiffMode() && opts.AllowOutsideWorktree {
 		// Don't need info about file paths, just count commits and commit time
 		for commit, err := range commits {
 			if err != nil {
@@ -179,7 +179,7 @@ func TallyCommits(
 			tallies[key] = tally
 		}
 	} else {
-		talliesByPath, err := tallyByPath(commits, wtreefiles, opts)
+		talliesByPath, err := tallyByPath(commits, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -191,8 +191,8 @@ func TallyCommits(
 			runningTally.commitset = map[string]bool{}
 
 			for path, tally := range pathTallies {
-				inWTree := wtreefiles[path]
-				if inWTree || allowOutsideWorktree {
+				inWTree := opts.WorktreeSet[path]
+				if inWTree || opts.AllowOutsideWorktree {
 					runningTally = runningTally.Combine(tally)
 				}
 			}
@@ -227,7 +227,6 @@ func Rank(tallies map[string]Tally, mode TallyMode) []FinalTally {
 // Only handle renames into working tree though.
 func tallyByPath(
 	commits iter.Seq2[git.Commit, error],
-	wtreefiles map[string]bool,
 	opts TallyOpts,
 ) (map[string]map[string]Tally, error) {
 	tallies := map[string]map[string]Tally{}
@@ -265,7 +264,7 @@ func tallyByPath(
 
 			// If file move would create a file in the working tree, move tally
 			// to that path, potentially overwriting, for all authors.
-			destInWTree := wtreefiles[diff.MoveDest]
+			destInWTree := opts.WorktreeSet[diff.MoveDest]
 			if destInWTree {
 				for _, pathTallies := range tallies {
 					oldTally, ok := pathTallies[diff.Path]

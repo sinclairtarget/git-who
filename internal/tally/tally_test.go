@@ -52,14 +52,15 @@ func TestTallyCommits(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
-	wtreeset := map[string]bool{"bim.txt": true, "vim.txt": true}
 	opts := tally.TallyOpts{
 		Mode: tally.LinesMode,
 		Key: func(c git.Commit) string {
 			return c.AuthorEmail
 		},
+		WorktreeSet:          map[string]bool{"bim.txt": true, "vim.txt": true},
+		AllowOutsideWorktree: false,
 	}
-	tallies, err := tally.TallyCommits(seq, wtreeset, false, opts)
+	tallies, err := tally.TallyCommits(seq, opts)
 	rankedTallies := tally.Rank(tallies, opts.Mode)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
@@ -142,14 +143,15 @@ func TestTallyCommitsRename(t *testing.T) {
 	}
 
 	seq := iterutils.WithoutErrors(slices.Values(commits))
-	wtreeset := map[string]bool{"bar.txt": true}
 	opts := tally.TallyOpts{
 		Mode: tally.LinesMode,
 		Key: func(c git.Commit) string {
 			return c.AuthorEmail
 		},
+		WorktreeSet:          map[string]bool{"bar.txt": true},
+		AllowOutsideWorktree: false,
 	}
-	tallies, err := tally.TallyCommits(seq, wtreeset, false, opts)
+	tallies, err := tally.TallyCommits(seq, opts)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}

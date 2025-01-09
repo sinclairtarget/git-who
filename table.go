@@ -76,7 +76,11 @@ func table(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tallyOpts := tally.TallyOpts{Mode: mode}
+	tallyOpts := tally.TallyOpts{
+		Mode: mode,
+		AllowOutsideWorktree: len(paths) == 0,
+		WorktreeSet: wtreeset,
+	}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
 	} else {
