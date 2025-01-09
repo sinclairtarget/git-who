@@ -261,7 +261,7 @@ func writeTable(
 
 		if mode == tally.CommitMode || mode == tally.LastModifiedMode {
 			fmt.Printf(
-				"│%-*s %11s %7d│\n",
+				"│%-*s %-11s %7d│\n",
 				colwidth-22,
 				format.Abbrev(author, colwidth-22),
 				format.RelativeTime(progStart, t.LastCommitTime),
