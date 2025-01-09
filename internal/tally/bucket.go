@@ -10,10 +10,11 @@ import (
 )
 
 type TimeBucket struct {
-	Name    string
-	Time    time.Time
-	Tally   FinalTally
-	tallies map[string]Tally
+	Name       string
+	Time       time.Time
+	Tally      FinalTally
+	TotalTally FinalTally
+	tallies    map[string]Tally
 }
 
 func newBucket(name string, t time.Time) TimeBucket {
@@ -37,10 +38,30 @@ func (b TimeBucket) Value(mode TallyMode) int {
 	}
 }
 
+func (b TimeBucket) TotalValue(mode TallyMode) int {
+	switch mode {
+	case CommitMode:
+		return b.TotalTally.Commits
+	case FilesMode:
+		return b.TotalTally.FileCount
+	case LinesMode:
+		return b.TotalTally.LinesAdded + b.TotalTally.LinesRemoved
+	default:
+		panic("unrecognized tally mode in switch")
+	}
+}
+
 func (b TimeBucket) Rank(mode TallyMode) TimeBucket {
 	if len(b.tallies) > 0 {
 		b.Tally = Rank(b.tallies, mode)[0]
+
+		var runningTally Tally
+		for _, tally := range b.tallies {
+			runningTally = runningTally.Combine(tally)
+		}
+		b.TotalTally = runningTally.Final()
 	}
+
 	return b
 }
 

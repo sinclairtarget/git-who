@@ -89,8 +89,8 @@ func hist(
 	// -- Draw bar plot --
 	maxVal := barWidth
 	for _, bucket := range buckets {
-		if bucket.Value(mode) > maxVal {
-			maxVal = bucket.Value(mode)
+		if bucket.TotalValue(mode) > maxVal {
+			maxVal = bucket.TotalValue(mode)
 		}
 	}
 
@@ -108,9 +108,16 @@ func drawPlot(
 	for _, bucket := range buckets {
 		value := bucket.Value(mode)
 		clampedValue := int(math.Ceil(
-			(float64(value) / float64(maxVal)) * float64(barWidth-1),
+			(float64(value) / float64(maxVal)) * float64(barWidth),
 		))
-		bar := strings.Repeat("#", clampedValue)
+
+		total := bucket.TotalValue(mode)
+		clampedTotal := int(math.Ceil(
+			(float64(total) / float64(maxVal)) * float64(barWidth),
+		))
+
+		valueBar := strings.Repeat("#", clampedValue)
+		totalBar := strings.Repeat("-", clampedTotal-clampedValue)
 
 		if value > 0 {
 			tallyPart := fmtHistTally(
@@ -119,7 +126,16 @@ func drawPlot(
 				showEmail,
 				bucket.Tally.AuthorName == lastAuthor,
 			)
-			fmt.Printf("%s ┤ %-*s %s\n", bucket.Name, barWidth, bar, tallyPart)
+			fmt.Printf(
+				"%s ┤ %s%s%-*s%s  %s\n",
+				bucket.Name,
+				valueBar,
+				ansi.Dim,
+				barWidth-clampedValue,
+				totalBar,
+				ansi.Reset,
+				tallyPart,
+			)
 
 			lastAuthor = bucket.Tally.AuthorName
 		} else {
