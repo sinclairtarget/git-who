@@ -10,11 +10,18 @@ import (
 )
 
 type TimeBucket struct {
-	Name     string
-	Time     time.Time
-	Tally    Tally
-	tallies  map[string]Tally
-	filesets map[string]map[string]bool
+	Name    string
+	Time    time.Time
+	Tally   FinalTally
+	tallies map[string]Tally
+}
+
+func newBucket(name string, t time.Time) TimeBucket {
+	return TimeBucket{
+		Name:    name,
+		Time:    t,
+		tallies: map[string]Tally{},
+	}
 }
 
 func (b TimeBucket) Value(mode TallyMode) int {
@@ -30,13 +37,11 @@ func (b TimeBucket) Value(mode TallyMode) int {
 	}
 }
 
-func newBucket(name string, t time.Time) TimeBucket {
-	return TimeBucket{
-		Name:     name,
-		Time:     t,
-		tallies:  map[string]Tally{},
-		filesets: map[string]map[string]bool{},
+func (b TimeBucket) Rank(mode TallyMode) TimeBucket {
+	if len(b.tallies) > 0 {
+		b.Tally = Rank(b.tallies, mode)[0]
 	}
+	return b
 }
 
 // Resolution for a time series.
@@ -109,22 +114,6 @@ func calcResolution(start time.Time, end time.Time) resolution {
 	}
 }
 
-func finalizeBucket(bucket TimeBucket, mode TallyMode) TimeBucket {
-	// Get count of unique files touched
-	for key, tally := range bucket.tallies {
-		fileset := bucket.filesets[key]
-		tally.FileCount = len(fileset)
-		bucket.tallies[key] = tally
-	}
-
-	if len(bucket.tallies) > 0 {
-		sorted := sortTallies(bucket.tallies, mode)
-		bucket.Tally = sorted[0]
-	}
-
-	return bucket
-}
-
 // Returns a list of "time buckets," with a winning tally for each date.
 //
 // The resolution / size of the buckets is determined based on the duration
@@ -141,7 +130,7 @@ func TallyCommitsByDate(
 	}()
 
 	if opts.Mode == LastModifiedMode {
-		return nil, errors.New("Last modified mode not currently implemented")
+		return nil, errors.New("Last modified mode not implemented")
 	}
 
 	buckets := []TimeBucket{}
@@ -179,12 +168,10 @@ func TallyCommitsByDate(
 			break
 		}
 
-		bucket := buckets[i]
 		bucketedCommitTime := resolution.apply(commit.Date)
-
-		if bucketedCommitTime.Sub(bucket.Time) > 0 {
-			// Next bucket
-			buckets[i] = finalizeBucket(bucket, opts.Mode)
+		bucket := buckets[i]
+		if bucketedCommitTime.After(bucket.Time) {
+			// Next bucket, might have to skip some empty ones
 			for !bucketedCommitTime.Equal(bucket.Time) {
 				i += 1
 				bucket = buckets[i]
@@ -192,27 +179,25 @@ func TallyCommitsByDate(
 		}
 
 		key := opts.Key(commit)
-		tally := bucket.tallies[key]
 
-		tally.AuthorName = commit.AuthorName
-		tally.AuthorEmail = commit.AuthorEmail
-		tally.Commits += 1
-
-		_, ok = bucket.filesets[key]
+		tally, ok := bucket.tallies[key]
 		if !ok {
-			bucket.filesets[key] = map[string]bool{}
+			tally.name = commit.AuthorName
+			tally.email = commit.AuthorEmail
+			tally.fileset = map[string]bool{}
 		}
+
+		tally.numTallied += 1
+
 		for _, diff := range commit.FileDiffs {
-			tally.LinesAdded += diff.LinesAdded
-			tally.LinesRemoved += diff.LinesRemoved
-			bucket.filesets[key][diff.Path] = true
+			tally.added += diff.LinesAdded
+			tally.removed += diff.LinesRemoved
+			tally.fileset[diff.Path] = true
 		}
 
 		bucket.tallies[key] = tally
 		buckets[i] = bucket
 	}
-
-	buckets[i] = finalizeBucket(buckets[i], opts.Mode)
 
 	return buckets, nil
 }

@@ -72,12 +72,21 @@ func hist(
 	}
 
 	buckets, err := tally.TallyCommitsByDate(commits, tallyOpts, time.Now())
+	if err != nil {
+		return err
+	}
 
 	err = closer()
 	if err != nil {
 		return err
 	}
 
+	// -- Pick winner in each bucket --
+	for i, bucket := range buckets {
+		buckets[i] = bucket.Rank(mode)
+	}
+
+	// -- Draw bar plot --
 	maxVal := barWidth
 	for _, bucket := range buckets {
 		if bucket.Value(mode) > maxVal {
@@ -120,7 +129,7 @@ func drawPlot(
 }
 
 func fmtHistTally(
-	t tally.Tally,
+	t tally.FinalTally,
 	mode tally.TallyMode,
 	showEmail bool,
 	fade bool,

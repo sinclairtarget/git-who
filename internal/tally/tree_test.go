@@ -71,6 +71,8 @@ func TestTallyCommitsTree(t *testing.T) {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
 
+	root = root.Rank(opts.Mode)
+
 	if len(root.Children) == 0 {
 		t.Fatalf("root node has no children")
 	}
@@ -90,7 +92,7 @@ func TestTallyCommitsTree(t *testing.T) {
 		t.Errorf("\"foo\" node has no \"bar.txt\" child")
 	}
 
-	expected := tally.Tally{
+	expected := tally.FinalTally{
 		AuthorName:   "bob",
 		AuthorEmail:  "bob@mail.com",
 		Commits:      2,
@@ -102,7 +104,7 @@ func TestTallyCommitsTree(t *testing.T) {
 		t.Errorf("bob's tally is wrong:\n%s", diff)
 	}
 
-	expected = tally.Tally{
+	expected = tally.FinalTally{
 		AuthorName:   "bob",
 		AuthorEmail:  "bob@mail.com",
 		Commits:      2,
@@ -171,7 +173,9 @@ func TestTallyCommitsTreeRename(t *testing.T) {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
 
-	expected := tally.Tally{
+	root = root.Rank(opts.Mode)
+
+	expected := tally.FinalTally{
 		AuthorName:   "bob",
 		AuthorEmail:  "bob@mail.com",
 		Commits:      2,
@@ -254,8 +258,10 @@ func TestTallyCommitsTreeRenameAcrossDirs(t *testing.T) {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
 
+	root = root.Rank(opts.Mode)
+
 	// Check root
-	expected := tally.Tally{
+	expected := tally.FinalTally{
 		AuthorName:   "bob",
 		AuthorEmail:  "bob@mail.com",
 		Commits:      1,
@@ -287,7 +293,7 @@ func TestTallyCommitsTreeRenameAcrossDirs(t *testing.T) {
 	if !ok {
 		t.Errorf("zoo node has no \"hello.txt\" child")
 	}
-	expected = tally.Tally{
+	expected = tally.FinalTally{
 		AuthorName:   "jim",
 		AuthorEmail:  "jim@mail.com",
 		Commits:      1,
@@ -304,7 +310,7 @@ func TestTallyCommitsTreeRenameAcrossDirs(t *testing.T) {
 	if !ok {
 		t.Errorf("zoo node has no \"zar.txt\" child")
 	}
-	expected = tally.Tally{
+	expected = tally.FinalTally{
 		AuthorName:   "bob",
 		AuthorEmail:  "bob@mail.com",
 		Commits:      1,

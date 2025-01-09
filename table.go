@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/ansi"
-	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
@@ -92,96 +91,54 @@ func table(
 		Nauthors: nauthors,
 	}
 
-	nWorkers, err := concurrent.GetNWorkers(revs, paths, filters, populateDiffs)
+	commits, closer, err := git.CommitsWithOpts(
+		ctx,
+		revs,
+		paths,
+		filters,
+		populateDiffs,
+	)
 	if err != nil {
 		return err
 	}
 
-	var tallies []tally.Tally
-	if nWorkers > 1 {
-		if tallyOpts.IsDiffMode() {
-			whop := concurrent.Whoperation[
-				map[string]tally.AuthorPaths,
-				[]tally.Tally,
-			]{
-				Revs:          revs,
-				Paths:         paths,
-				Filters:       filters,
-				PopulateDiffs: populateDiffs,
-				NWorkers:      nWorkers,
-			}
-			whop.Apply, whop.Merge, whop.Finalize = tally.TallyCommitsDiffApplyMerge(
-				wtreeset,
-				allowOutsideWorktree,
-				tallyOpts,
-			)
-			tallies, err = concurrent.Tally(ctx, whop)
-		} else {
-			whop := concurrent.Whoperation[map[string]tally.Tally, []tally.Tally]{
-				Revs:          revs,
-				Paths:         paths,
-				Filters:       filters,
-				PopulateDiffs: populateDiffs,
-				NWorkers:      nWorkers,
-			}
-			whop.Apply, whop.Merge, whop.Finalize = tally.TallyCommitsApplyMerge(
-				wtreeset,
-				allowOutsideWorktree,
-				tallyOpts,
-			)
-			tallies, err = concurrent.Tally(ctx, whop)
-		}
-		if err != nil {
-			return err
-		}
-	} else {
-		commits, closer, err := git.CommitsWithOpts(
-			ctx,
-			revs,
-			paths,
-			filters,
-			populateDiffs,
-		)
-		if err != nil {
-			return err
-		}
-
-		tallies, err = tally.TallyCommits(
-			commits,
-			wtreeset,
-			allowOutsideWorktree,
-			tallyOpts,
-		)
-		if err != nil {
-			return fmt.Errorf("failed to tally commits: %w", err)
-		}
-
-		err = closer()
-		if err != nil {
-			return err
-		}
+	tallies, err := tally.TallyCommits(
+		commits,
+		wtreeset,
+		allowOutsideWorktree,
+		tallyOpts,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to tally commits: %w", err)
 	}
 
+	err = closer()
+	if err != nil {
+		return err
+	}
+
+	rankedTallies := tally.Rank(tallies, mode)
+
 	numFilteredOut := 0
-	if limit > 0 && limit < len(tallies) {
-		numFilteredOut = len(tallies) - limit
-		tallies = tallies[:limit]
+	if limit > 0 && limit < len(rankedTallies) {
+		numFilteredOut = len(rankedTallies) - limit
+		rankedTallies = rankedTallies[:limit]
 	}
 
 	if useCsv {
-		err := writeCsv(tallies, showEmail)
+		err := writeCsv(rankedTallies, showEmail)
 		if err != nil {
 			return err
 		}
 	} else {
 		colwidth := pickWidth(mode, showEmail)
-		writeTable(tallies, colwidth, showEmail, mode, numFilteredOut)
+		writeTable(rankedTallies, colwidth, showEmail, mode, numFilteredOut)
 	}
 
 	return nil
 }
 
-func toRecord(t tally.Tally, showEmail bool) []string {
+func toRecord(t tally.FinalTally, showEmail bool) []string {
 	record := []string{t.AuthorName}
 
 	if showEmail {
@@ -198,7 +155,7 @@ func toRecord(t tally.Tally, showEmail bool) []string {
 	)
 }
 
-func writeCsv(tallies []tally.Tally, showEmail bool) error {
+func writeCsv(tallies []tally.FinalTally, showEmail bool) error {
 	w := csv.NewWriter(os.Stdout)
 
 	// Write header
@@ -239,7 +196,7 @@ func writeCsv(tallies []tally.Tally, showEmail bool) error {
 }
 
 func writeTable(
-	tallies []tally.Tally,
+	tallies []tally.FinalTally,
 	colwidth int,
 	showEmail bool,
 	mode tally.TallyMode,

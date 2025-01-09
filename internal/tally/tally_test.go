@@ -60,16 +60,17 @@ func TestTallyCommits(t *testing.T) {
 		},
 	}
 	tallies, err := tally.TallyCommits(seq, wtreeset, false, opts)
+	rankedTallies := tally.Rank(tallies, opts.Mode)
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
 
-	if len(tallies) == 0 {
+	if len(rankedTallies) == 0 {
 		t.Fatalf("TallyCommits() returned empty slice")
 	}
 
-	bob := tallies[0]
-	expected := tally.Tally{
+	bob := rankedTallies[0]
+	expected := tally.FinalTally{
 		AuthorName:   "bob",
 		AuthorEmail:  "bob@mail.com",
 		Commits:      1,
@@ -81,8 +82,8 @@ func TestTallyCommits(t *testing.T) {
 		t.Errorf("bob's tally is wrong:\n%s", diff)
 	}
 
-	jim := tallies[1]
-	expected = tally.Tally{
+	jim := rankedTallies[1]
+	expected = tally.FinalTally{
 		AuthorName:   "jim",
 		AuthorEmail:  "jim@mail.com",
 		Commits:      1,
@@ -153,12 +154,13 @@ func TestTallyCommitsRename(t *testing.T) {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
 
-	if len(tallies) != 2 {
+	rankedTallies := tally.Rank(tallies, opts.Mode)
+	if len(rankedTallies) != 2 {
 		t.Fatal("TallyCommits() returned wrong number of tallies")
 	}
 
-	bob := tallies[0]
-	expected := tally.Tally{
+	bob := rankedTallies[0]
+	expected := tally.FinalTally{
 		AuthorName:   "bob",
 		AuthorEmail:  "bob@mail.com",
 		Commits:      1,
@@ -170,8 +172,8 @@ func TestTallyCommitsRename(t *testing.T) {
 		t.Errorf("bob's tally is wrong:\n%s", diff)
 	}
 
-	jim := tallies[1]
-	expected = tally.Tally{
+	jim := rankedTallies[1]
+	expected = tally.FinalTally{
 		AuthorName:   "jim",
 		AuthorEmail:  "jim@mail.com",
 		Commits:      1,

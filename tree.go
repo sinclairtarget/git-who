@@ -27,7 +27,7 @@ type treeOutputLine struct {
 	indent    string
 	path      string
 	metric    string
-	tally     tally.Tally
+	tally     tally.FinalTally
 	isDir     bool
 	showTally bool
 }
@@ -103,6 +103,8 @@ func tree(
 		return err
 	}
 
+	root = root.Rank(mode)
+
 	maxDepth := depth
 	if depth == 0 {
 		maxDepth = defaultMaxDepth
@@ -117,6 +119,7 @@ func tree(
 	return nil
 }
 
+// Recursively descend tree, turning tree nodes into output lines.
 func toLines(
 	node *tally.TreeNode,
 	path string,
@@ -212,7 +215,7 @@ func toLines(
 	return lines
 }
 
-func fmtTallyMetric(t tally.Tally, opts printTreeOpts) string {
+func fmtTallyMetric(t tally.FinalTally, opts printTreeOpts) string {
 	switch opts.mode {
 	case tally.CommitMode:
 		return fmt.Sprintf("(%d)", t.Commits)
