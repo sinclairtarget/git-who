@@ -121,6 +121,14 @@ func (t Tally) Final() FinalTally {
 		files = len(t.fileset)
 	}
 
+	if t.name == "" {
+		panic("tally finalized but has no name")
+	}
+
+	if t.email == "" {
+		panic("tally finalized but has no email")
+	}
+
 	return FinalTally{
 		AuthorName:     t.name,
 		AuthorEmail:    t.email,
