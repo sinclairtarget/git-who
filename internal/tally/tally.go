@@ -150,6 +150,10 @@ func TallyCommits(
 				return nil, fmt.Errorf("error iterating commits: %w", err)
 			}
 
+			if commit.IsMerge {
+				continue
+			}
+
 			key := opts.Key(commit)
 
 			tally, ok := tallies[key]
