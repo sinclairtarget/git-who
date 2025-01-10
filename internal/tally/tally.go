@@ -22,10 +22,8 @@ const (
 )
 
 type TallyOpts struct {
-	Mode                 TallyMode
-	Key                  func(c git.Commit) string // Unique ID for author
-	WorktreeSet          map[string]bool           // Filepaths in the worktree
-	AllowOutsideWorktree bool                      // Whether to allow filepaths outside worktree
+	Mode TallyMode
+	Key  func(c git.Commit) string // Unique ID for author
 }
 
 // Whether we need --stat and --summary data from git log for this tally mode
@@ -99,6 +97,20 @@ func or(a, b string) string {
 	return a
 }
 
+func unionInPlace(a, b map[string]bool) map[string]bool {
+	if a == nil {
+		return b
+	}
+
+	union := a
+
+	for k, _ := range b {
+		union[k] = true
+	}
+
+	return union
+}
+
 func (a Tally) Combine(b Tally) Tally {
 	return Tally{
 		name:           or(a.name, b.name),
@@ -147,11 +159,13 @@ func TallyCommits(
 	opts TallyOpts,
 ) (map[string]Tally, error) {
 	// Map of author to tally
-	tallies := map[string]Tally{}
+	var tallies map[string]Tally
 
 	start := time.Now()
 
-	if !opts.IsDiffMode() && opts.AllowOutsideWorktree {
+	if !opts.IsDiffMode() {
+		tallies = map[string]Tally{}
+
 		// Don't need info about file paths, just count commits and commit time
 		for commit, err := range commits {
 			if err != nil {
@@ -179,28 +193,12 @@ func TallyCommits(
 			tallies[key] = tally
 		}
 	} else {
-		talliesByPath, err := tallyByPath(commits, opts)
+		talliesByPath, err := TallyCommitsByPath(commits, opts)
 		if err != nil {
 			return nil, err
 		}
 
-		// Reduce by-path tallies to a single tally for each author, skipping
-		// paths outside the worktree if they aren't allowed
-		for key, pathTallies := range talliesByPath {
-			var runningTally Tally
-			runningTally.commitset = map[string]bool{}
-
-			for path, tally := range pathTallies {
-				inWTree := opts.WorktreeSet[path]
-				if inWTree || opts.AllowOutsideWorktree {
-					runningTally = runningTally.Combine(tally)
-				}
-			}
-
-			if runningTally.numTallied > 0 {
-				tallies[key] = runningTally
-			}
-		}
+		tallies = Reduce(talliesByPath)
 	}
 
 	elapsed := time.Now().Sub(start)
@@ -209,23 +207,8 @@ func TallyCommits(
 	return tallies, nil
 }
 
-func Rank(tallies map[string]Tally, mode TallyMode) []FinalTally {
-	final := []FinalTally{}
-	for _, t := range tallies {
-		final = append(final, t.Final())
-	}
-
-	slices.SortFunc(final, func(a, b FinalTally) int {
-		return -a.Compare(b, mode)
-	})
-	return final
-}
-
-// Tally metrics per author per path, regardless of whether in working tree or
-// not.
-//
-// Only handle renames into working tree though.
-func tallyByPath(
+// Tally metrics per author per path.
+func TallyCommitsByPath(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
 ) (map[string]map[string]Tally, error) {
@@ -261,35 +244,41 @@ func tallyByPath(
 				pathTallies[diff.Path] = tally
 				tallies[key] = pathTallies
 			}
-
-			// If file move would create a file in the working tree, move tally
-			// to that path, potentially overwriting, for all authors.
-			destInWTree := opts.WorktreeSet[diff.MoveDest]
-			if destInWTree {
-				for _, pathTallies := range tallies {
-					oldTally, ok := pathTallies[diff.Path]
-					if ok {
-						delete(pathTallies, diff.Path)
-						pathTallies[diff.MoveDest] = oldTally
-					}
-				}
-			}
 		}
 	}
 
 	return tallies, nil
 }
 
-func unionInPlace(a, b map[string]bool) map[string]bool {
-	if a == nil {
-		return b
+// Reduce by-path tallies to a single tally for each author.
+func Reduce(talliesByPath map[string]map[string]Tally) map[string]Tally {
+	tallies := map[string]Tally{}
+
+	for key, pathTallies := range talliesByPath {
+		var runningTally Tally
+		runningTally.commitset = map[string]bool{}
+
+		for _, tally := range pathTallies {
+			runningTally = runningTally.Combine(tally)
+		}
+
+		if runningTally.numTallied > 0 {
+			tallies[key] = runningTally
+		}
 	}
 
-	union := a
+	return tallies
+}
 
-	for k, _ := range b {
-		union[k] = true
+// Sort tallies according to mode.
+func Rank(tallies map[string]Tally, mode TallyMode) []FinalTally {
+	final := []FinalTally{}
+	for _, t := range tallies {
+		final = append(final, t.Final())
 	}
 
-	return union
+	slices.SortFunc(final, func(a, b FinalTally) int {
+		return -a.Compare(b, mode)
+	})
+	return final
 }

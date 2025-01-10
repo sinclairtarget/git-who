@@ -90,11 +90,13 @@ func (t *TreeNode) Rank(mode TallyMode) *TreeNode {
 func TallyCommitsTree(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
+	worktreePaths map[string]bool,
+	allowOutsideWorktree bool,
 ) (*TreeNode, error) {
 	root := newNode()
 
 	// Tally paths
-	talliesByPath, err := tallyByPath(commits, opts)
+	talliesByPath, err := TallyCommitsByPath(commits, opts)
 	if err != nil {
 		return root, err
 	}
@@ -102,7 +104,8 @@ func TallyCommitsTree(
 	// Build tree
 	for key, pathTallies := range talliesByPath {
 		for path, tally := range pathTallies {
-			if inWTree := opts.WorktreeSet[path]; inWTree {
+			inWTree := worktreePaths[path]
+			if inWTree || allowOutsideWorktree {
 				root.insert(path, key, tally)
 			}
 		}

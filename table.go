@@ -68,27 +68,17 @@ func table(
 		nauthors,
 	)
 
-	wtreeset, err := git.WorkingTreeFiles(paths)
-	if err != nil {
-		return err
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tallyOpts := tally.TallyOpts{
-		Mode: mode,
-		AllowOutsideWorktree: len(paths) == 0,
-		WorktreeSet: wtreeset,
-	}
+	tallyOpts := tally.TallyOpts{Mode: mode}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
 	} else {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
-	allowOutsideWorktree := len(paths) == 0
-	populateDiffs := tallyOpts.IsDiffMode() || !allowOutsideWorktree
+	populateDiffs := tallyOpts.IsDiffMode()
 	filters := git.LogFilters{
 		Since:    since,
 		Authors:  authors,
@@ -106,12 +96,7 @@ func table(
 		return err
 	}
 
-	tallies, err := tally.TallyCommits(
-		commits,
-		wtreeset,
-		allowOutsideWorktree,
-		tallyOpts,
-	)
+	tallies, err := tally.TallyCommits(commits, tallyOpts)
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}

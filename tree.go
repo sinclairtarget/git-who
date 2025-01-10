@@ -86,18 +86,14 @@ func tree(
 		return err
 	}
 
-	tallyOpts := tally.TallyOpts{
-		Mode:                 mode,
-		AllowOutsideWorktree: false,
-		WorktreeSet:          wtreeset,
-	}
+	tallyOpts := tally.TallyOpts{Mode: mode}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
 	} else {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
-	root, err := tally.TallyCommitsTree(commits, tallyOpts)
+	root, err := tally.TallyCommitsTree(commits, tallyOpts, wtreeset, false)
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}

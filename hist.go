@@ -47,10 +47,7 @@ func hist(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tallyOpts := tally.TallyOpts{
-		Mode:                 mode,
-		AllowOutsideWorktree: true,
-	}
+	tallyOpts := tally.TallyOpts{Mode: mode}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
 	} else {
