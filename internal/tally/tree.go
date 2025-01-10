@@ -11,15 +11,17 @@ import (
 
 // A file tree of edits to the repo
 type TreeNode struct {
-	Tally    FinalTally
-	Children map[string]*TreeNode
-	tallies  map[string]Tally
+	Tally      FinalTally
+	Children   map[string]*TreeNode
+	InWorkTree bool // In git working tree/directory
+	tallies    map[string]Tally
 }
 
-func newNode() *TreeNode {
+func newNode(inWTree bool) *TreeNode {
 	return &TreeNode{
-		Children: map[string]*TreeNode{},
-		tallies:  map[string]Tally{},
+		Children:   map[string]*TreeNode{},
+		InWorkTree: inWTree,
+		tallies:    map[string]Tally{},
 	}
 }
 
@@ -37,8 +39,7 @@ func splitPath(path string) (string, string) {
 	return dir, subpath
 }
 
-// Inserts an intermediate tally into the tally tree.
-func (t *TreeNode) insert(path string, key string, tally Tally) {
+func (t *TreeNode) insert(path string, key string, tally Tally, inWTree bool) {
 	if path == "" {
 		// Leaf
 		t.tallies[key] = tally
@@ -49,11 +50,11 @@ func (t *TreeNode) insert(path string, key string, tally Tally) {
 	p, nextP := splitPath(path)
 	child, ok := t.Children[p]
 	if !ok {
-		t.Children[p] = newNode()
+		t.Children[p] = newNode(inWTree)
 		child = t.Children[p]
 	}
 
-	child.insert(nextP, key, tally)
+	child.insert(nextP, key, tally, inWTree)
 }
 
 func (t *TreeNode) Rank(mode TallyMode) *TreeNode {
@@ -93,7 +94,7 @@ func TallyCommitsTree(
 	worktreePaths map[string]bool,
 	allowOutsideWorktree bool,
 ) (*TreeNode, error) {
-	root := newNode()
+	root := newNode(true)
 
 	// Tally paths
 	talliesByPath, err := TallyCommitsByPath(commits, opts)
@@ -106,7 +107,7 @@ func TallyCommitsTree(
 		for path, tally := range pathTallies {
 			inWTree := worktreePaths[path]
 			if inWTree || allowOutsideWorktree {
-				root.insert(path, key, tally)
+				root.insert(path, key, tally, inWTree)
 			}
 		}
 	}

@@ -176,6 +176,7 @@ func treeCmd() command {
 	flagSet := flag.NewFlagSet("git-who tree", flag.ExitOnError)
 
 	showEmail := flagSet.Bool("e", false, "Show email address of each author")
+	showHidden := flagSet.Bool("a", false, "Show files not in working tree")
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
 	useLastModified := flagSet.Bool(
@@ -189,7 +190,7 @@ func treeCmd() command {
 
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
-Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [filter opts...] [revision...] [[--] path]
+Usage: git-who tree [-e] [-a] [-l|-f|-m] [-d <depth>] [filter opts...] [revision...] [[--] path]
 		`))
 		fmt.Println("Print out a tree summarizing authorship")
 		flagSet.PrintDefaults()
@@ -222,6 +223,7 @@ Usage: git-who tree [-e] [-l|-f|-m] [-d <depth>] [filter opts...] [revision...] 
 				mode,
 				*depth,
 				*showEmail,
+				*showHidden,
 				*filterFlags.since,
 				filterFlags.authors,
 				filterFlags.nauthors,

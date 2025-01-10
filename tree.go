@@ -30,6 +30,7 @@ type treeOutputLine struct {
 	tally     tally.FinalTally
 	isDir     bool
 	showTally bool
+	dimPath   bool
 }
 
 func tree(
@@ -38,6 +39,7 @@ func tree(
 	mode tally.TallyMode,
 	depth int,
 	showEmail bool,
+	showHidden bool,
 	since string,
 	authors []string,
 	nauthors []string,
@@ -81,7 +83,13 @@ func tree(
 		Authors:  authors,
 		Nauthors: nauthors,
 	}
-	commits, closer, err := git.CommitsWithOpts(ctx, revs, paths, filters, true)
+	commits, closer, err := git.CommitsWithOpts(
+		ctx,
+		revs,
+		paths,
+		filters,
+		true,
+	)
 	if err != nil {
 		return err
 	}
@@ -93,7 +101,7 @@ func tree(
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
-	root, err := tally.TallyCommitsTree(commits, tallyOpts, wtreeset, false)
+	root, err := tally.TallyCommitsTree(commits, tallyOpts, wtreeset, showHidden)
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}
@@ -179,6 +187,7 @@ func toLines(
 	line.metric = fmtTallyMetric(node.Tally, opts)
 	line.isDir = len(node.Children) > 0
 	line.showTally = node.Tally.AuthorEmail != lastAuthor
+	line.dimPath = !node.InWorkTree
 
 	lines = append(lines, line)
 
@@ -254,8 +263,15 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 	tallyStart := longest + 4 // Use at least 4 "." to separate path from tally
 
 	for _, line := range lines {
+		var path string
+		if line.dimPath {
+			path = fmt.Sprintf("%s%s%s", ansi.Dim, line.path, ansi.Reset)
+		} else {
+			path = line.path
+		}
+
 		if !line.showTally {
-			fmt.Printf("%s%s\n", line.indent, line.path)
+			fmt.Printf("%s%s\n", line.indent, path)
 			continue
 		}
 
@@ -275,7 +291,7 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 			fmt.Printf(
 				"%s%s%s%s%s%s %s\n",
 				line.indent,
-				line.path,
+				path,
 				ansi.Dim,
 				separator,
 				ansi.Reset,
@@ -286,7 +302,7 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 			fmt.Printf(
 				"%s%s%s%s%s %s%s\n",
 				line.indent,
-				line.path,
+				path,
 				ansi.Dim,
 				separator,
 				author,
