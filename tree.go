@@ -19,8 +19,9 @@ import (
 const defaultMaxDepth = 100
 
 type printTreeOpts struct {
-	mode     tally.TallyMode
-	maxDepth int
+	mode       tally.TallyMode
+	maxDepth   int
+	showHidden bool
 }
 
 type treeOutputLine struct {
@@ -28,8 +29,9 @@ type treeOutputLine struct {
 	path      string
 	metric    string
 	tally     tally.FinalTally
-	isDir     bool
+	showLine  bool
 	showTally bool
+	dimTally  bool
 	dimPath   bool
 }
 
@@ -101,7 +103,7 @@ func tree(
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
-	root, err := tally.TallyCommitsTree(commits, tallyOpts, wtreeset, showHidden)
+	root, err := tally.TallyCommitsTree(commits, tallyOpts, wtreeset)
 	if err != nil {
 		return fmt.Errorf("failed to tally commits: %w", err)
 	}
@@ -119,8 +121,9 @@ func tree(
 	}
 
 	opts := printTreeOpts{
-		maxDepth: maxDepth,
-		mode:     mode,
+		maxDepth:   maxDepth,
+		mode:       mode,
+		showHidden: showHidden,
 	}
 	lines := toLines(root, ".", 0, "", []bool{}, opts, []treeOutputLine{})
 	printTree(lines, showEmail)
@@ -185,9 +188,12 @@ func toLines(
 
 	line.tally = node.Tally
 	line.metric = fmtTallyMetric(node.Tally, opts)
-	line.isDir = len(node.Children) > 0
-	line.showTally = node.Tally.AuthorEmail != lastAuthor
+	line.showLine = node.InWorkTree || opts.showHidden
+	line.dimTally = len(node.Children) > 0
 	line.dimPath = !node.InWorkTree
+
+	newAuthor := node.Tally.AuthorEmail != lastAuthor
+	line.showTally = opts.showHidden || newAuthor || len(node.Children) > 0
 
 	lines = append(lines, line)
 
@@ -263,6 +269,10 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 	tallyStart := longest + 4 // Use at least 4 "." to separate path from tally
 
 	for _, line := range lines {
+		if !line.showLine {
+			continue
+		}
+
 		var path string
 		if line.dimPath {
 			path = fmt.Sprintf("%s%s%s", ansi.Dim, line.path, ansi.Reset)
@@ -275,11 +285,6 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 			continue
 		}
 
-		indentLen := utf8.RuneCountInString(line.indent)
-		pathLen := utf8.RuneCountInString(line.path)
-
-		separator := strings.Repeat(".", tallyStart-indentLen-pathLen)
-
 		var author string
 		if showEmail {
 			author = format.Abbrev(format.GitEmail(line.tally.AuthorEmail), 25)
@@ -287,7 +292,11 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 			author = format.Abbrev(line.tally.AuthorName, 25)
 		}
 
-		if line.isDir {
+		indentLen := utf8.RuneCountInString(line.indent)
+		pathLen := utf8.RuneCountInString(line.path)
+		separator := strings.Repeat(".", tallyStart-indentLen-pathLen)
+
+		if line.dimTally {
 			fmt.Printf(
 				"%s%s%s%s%s%s %s\n",
 				line.indent,

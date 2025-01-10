@@ -50,9 +50,10 @@ func (t *TreeNode) insert(path string, key string, tally Tally, inWTree bool) {
 	p, nextP := splitPath(path)
 	child, ok := t.Children[p]
 	if !ok {
-		t.Children[p] = newNode(inWTree)
-		child = t.Children[p]
+		child = newNode(inWTree)
 	}
+	child.InWorkTree = child.InWorkTree || inWTree
+	t.Children[p] = child
 
 	child.insert(nextP, key, tally, inWTree)
 }
@@ -92,7 +93,6 @@ func TallyCommitsTree(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
 	worktreePaths map[string]bool,
-	allowOutsideWorktree bool,
 ) (*TreeNode, error) {
 	root := newNode(true)
 
@@ -106,9 +106,7 @@ func TallyCommitsTree(
 	for key, pathTallies := range talliesByPath {
 		for path, tally := range pathTallies {
 			inWTree := worktreePaths[path]
-			if inWTree || allowOutsideWorktree {
-				root.insert(path, key, tally, inWTree)
-			}
+			root.insert(path, key, tally, inWTree)
 		}
 	}
 
