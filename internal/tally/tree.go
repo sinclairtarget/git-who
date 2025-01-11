@@ -94,13 +94,20 @@ func TallyCommitsTree(
 	opts TallyOpts,
 	worktreePaths map[string]bool,
 ) (*TreeNode, error) {
-	root := newNode(true)
-
 	// Tally paths
 	talliesByPath, err := TallyCommitsByPath(commits, opts)
 	if err != nil {
-		return root, err
+		return nil, err
 	}
+
+	return TallyCommitsTreeFromPaths(talliesByPath, worktreePaths)
+}
+
+func TallyCommitsTreeFromPaths(
+	talliesByPath TalliesByPath,
+	worktreePaths map[string]bool,
+) (*TreeNode, error) {
+	root := newNode(true)
 
 	// Build tree
 	for key, pathTallies := range talliesByPath {

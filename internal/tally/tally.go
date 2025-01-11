@@ -154,6 +154,46 @@ func (t Tally) Final() FinalTally {
 	}
 }
 
+type TalliesByPath map[string]map[string]Tally
+
+func (left TalliesByPath) Combine(right TalliesByPath) TalliesByPath {
+	for key, leftPathTallies := range left {
+		rightPathTallies, ok := right[key]
+		if !ok {
+			rightPathTallies = map[string]Tally{}
+		}
+
+		for path, leftTally := range leftPathTallies {
+			rightTally := rightPathTallies[path]
+			rightPathTallies[path] = leftTally.Combine(rightTally)
+		}
+
+		right[key] = rightPathTallies
+	}
+
+	return right
+}
+
+// Reduce by-path tallies to a single tally for each author.
+func (byPath TalliesByPath) Reduce() map[string]Tally {
+	tallies := map[string]Tally{}
+
+	for key, pathTallies := range byPath {
+		var runningTally Tally
+		runningTally.commitset = map[string]bool{}
+
+		for _, tally := range pathTallies {
+			runningTally = runningTally.Combine(tally)
+		}
+
+		if runningTally.numTallied > 0 {
+			tallies[key] = runningTally
+		}
+	}
+
+	return tallies
+}
+
 func TallyCommits(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
@@ -198,7 +238,7 @@ func TallyCommits(
 			return nil, err
 		}
 
-		tallies = Reduce(talliesByPath)
+		tallies = talliesByPath.Reduce()
 	}
 
 	elapsed := time.Now().Sub(start)
@@ -211,8 +251,8 @@ func TallyCommits(
 func TallyCommitsByPath(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
-) (map[string]map[string]Tally, error) {
-	tallies := map[string]map[string]Tally{}
+) (TalliesByPath, error) {
+	tallies := TalliesByPath{}
 
 	// Tally over commits
 	for commit, err := range commits {
@@ -248,26 +288,6 @@ func TallyCommitsByPath(
 	}
 
 	return tallies, nil
-}
-
-// Reduce by-path tallies to a single tally for each author.
-func Reduce(talliesByPath map[string]map[string]Tally) map[string]Tally {
-	tallies := map[string]Tally{}
-
-	for key, pathTallies := range talliesByPath {
-		var runningTally Tally
-		runningTally.commitset = map[string]bool{}
-
-		for _, tally := range pathTallies {
-			runningTally = runningTally.Combine(tally)
-		}
-
-		if runningTally.numTallied > 0 {
-			tallies[key] = runningTally
-		}
-	}
-
-	return tallies
 }
 
 // Sort tallies according to mode.

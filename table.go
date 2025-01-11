@@ -5,11 +5,13 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/ansi"
+	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
@@ -85,25 +87,40 @@ func table(
 		Nauthors: nauthors,
 	}
 
-	commits, closer, err := git.CommitsWithOpts(
-		ctx,
-		revs,
-		paths,
-		filters,
-		populateDiffs,
-	)
-	if err != nil {
-		return err
-	}
+	var tallies map[string]tally.Tally
+	if populateDiffs && runtime.GOMAXPROCS(0) > 1 {
+		tallies, err = concurrent.TallyCommits(
+			ctx,
+			revs,
+			paths,
+			filters,
+			tallyOpts,
+		)
+		if err != nil {
+			return err
+		}
+	} else {
+		// This is fast in the no-diff case even if we don't parallelize it
+		commits, closer, err := git.CommitsWithOpts(
+			ctx,
+			revs,
+			paths,
+			filters,
+			populateDiffs,
+		)
+		if err != nil {
+			return err
+		}
 
-	tallies, err := tally.TallyCommits(commits, tallyOpts)
-	if err != nil {
-		return fmt.Errorf("failed to tally commits: %w", err)
-	}
+		tallies, err = tally.TallyCommits(commits, tallyOpts)
+		if err != nil {
+			return fmt.Errorf("failed to tally commits: %w", err)
+		}
 
-	err = closer()
-	if err != nil {
-		return err
+		err = closer()
+		if err != nil {
+			return err
+		}
 	}
 
 	rankedTallies := tally.Rank(tallies, mode)

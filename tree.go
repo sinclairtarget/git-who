@@ -6,11 +6,13 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/sinclairtarget/git-who/internal/ansi"
+	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
@@ -85,16 +87,6 @@ func tree(
 		Authors:  authors,
 		Nauthors: nauthors,
 	}
-	commits, closer, err := git.CommitsWithOpts(
-		ctx,
-		revs,
-		paths,
-		filters,
-		true,
-	)
-	if err != nil {
-		return err
-	}
 
 	tallyOpts := tally.TallyOpts{Mode: mode}
 	if showEmail {
@@ -103,14 +95,39 @@ func tree(
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
-	root, err := tally.TallyCommitsTree(commits, tallyOpts, wtreeset)
-	if err != nil {
-		return fmt.Errorf("failed to tally commits: %w", err)
-	}
+	var root *tally.TreeNode
+	if runtime.GOMAXPROCS(0) > 1 {
+		root, err = concurrent.TallyCommitsTree(
+			ctx,
+			revs,
+			paths,
+			filters,
+			tallyOpts,
+			wtreeset,
+		)
+		if err != nil {
+			return err
+		}
+	} else {
+		commits, closer, err := git.CommitsWithOpts(
+			ctx,
+			revs,
+			paths,
+			filters,
+			true,
+		)
+		if err != nil {
+			return err
+		}
+		root, err = tally.TallyCommitsTree(commits, tallyOpts, wtreeset)
+		if err != nil {
+			return fmt.Errorf("failed to tally commits: %w", err)
+		}
 
-	err = closer()
-	if err != nil {
-		return err
+		err = closer()
+		if err != nil {
+			return err
+		}
 	}
 
 	root = root.Rank(mode)
@@ -214,6 +231,13 @@ func toLines(
 		},
 	)
 
+	var nChildren int
+	for _, child := range node.Children {
+		if child.InWorkTree || opts.showHidden {
+			nChildren += 1
+		}
+	}
+
 	for i, p := range childPaths {
 		child := node.Children[p]
 		lines = toLines(
@@ -221,7 +245,7 @@ func toLines(
 			p,
 			depth+1,
 			node.Tally.AuthorEmail,
-			append(isFinalChild, i == len(childPaths)-1),
+			append(isFinalChild, i == nChildren-1),
 			opts,
 			lines,
 		)
@@ -269,10 +293,6 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 	tallyStart := longest + 4 // Use at least 4 "." to separate path from tally
 
 	for _, line := range lines {
-		if !line.showLine {
-			continue
-		}
-
 		var path string
 		if line.dimPath {
 			path = fmt.Sprintf("%s%s%s", ansi.Dim, line.path, ansi.Reset)
