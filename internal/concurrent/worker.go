@@ -47,6 +47,7 @@ func runSpawner[T combinable[T]](
 			return
 		case revs, ok = <-q:
 			if !ok {
+				// Channel closed, no more work
 				return
 			}
 		}
@@ -104,6 +105,7 @@ func runWaiter(
 			return
 		case w, ok = <-workers:
 			if !ok {
+				// Channel closed, no more workers
 				return
 			}
 		}
@@ -114,8 +116,8 @@ func runWaiter(
 		case err, ok := <-w.err:
 			if ok && err != nil {
 				errs <- err
+				return // Exit on the first error
 			}
-			return
 		}
 	}
 }
