@@ -116,7 +116,7 @@ func tallyCommitsByPath(
 					go func() {
 						defer close(w.err)
 
-						err := runWorker(ctx, w.id, in, results, opts)
+						err := runWorker(ctx, w.id, in, results, paths, opts)
 						if err != nil {
 							w.err <- err
 						}

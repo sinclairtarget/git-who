@@ -215,10 +215,14 @@ func RunLog(
 }
 
 // Runs git log --stdin
-func RunStdinLog(ctx context.Context, needDiffs bool) (*Subprocess, error) {
-	var args []string
+func RunStdinLog(
+	ctx context.Context,
+	paths []string, // Doesn't limit commits, but limits diffs!
+	needDiffs bool,
+) (*Subprocess, error) {
+	var baseArgs []string
 	if needDiffs {
-		args = []string{
+		baseArgs = []string{
 			"log",
 			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
 			"--date=unix",
@@ -230,13 +234,20 @@ func RunStdinLog(ctx context.Context, needDiffs bool) (*Subprocess, error) {
 		}
 	} else {
 		// Runs git log without --numstat or --summary, which is much faster.
-		args = []string{
+		baseArgs = []string{
 			"log",
 			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n", // Extra newline!
 			"--date=unix",
 			"--stdin",
 			"--no-walk",
 		}
+	}
+
+	var args []string
+	if len(paths) > 0 {
+		args = slices.Concat(baseArgs, []string{"--"}, paths)
+	} else {
+		args = baseArgs
 	}
 
 	subprocess, err := run(ctx, args, true)

@@ -15,6 +15,7 @@ func runWorker(
 	id int,
 	in <-chan []string,
 	results chan<- tally.TalliesByPath,
+	paths []string,
 	opts tally.TallyOpts,
 ) (err error) {
 	logger := logger().With("workerId", id)
@@ -45,7 +46,7 @@ loop:
 			nRevs := len(revs)
 			logger.Debug("read revs", "count", nRevs)
 
-			subprocess, err := git.RunStdinLog(ctx, true)
+			subprocess, err := git.RunStdinLog(ctx, paths, true)
 			if err != nil {
 				return err
 			}
