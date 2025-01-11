@@ -6,19 +6,131 @@ import (
 	"fmt"
 
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
-// A tally worker that manages its own git log subprocess.
-func runWorker(
+// Write chunks of work to our work queue to be handled by workers downstream.
+func runWriter(ctx context.Context, revs []string, q chan<- []string) {
+	logger().Debug("writer started")
+	defer logger().Debug("writer exited")
+
+	i := 0
+	for i < len(revs) {
+		select {
+		case <-ctx.Done():
+			return
+		case q <- revs[i:min(i+chunkSize, len(revs))]:
+			i += chunkSize
+		}
+	}
+}
+
+// Spawner. Creates new workers while we have free CPUs and work to do.
+func runSpawner[T combinable[T]](
+	ctx context.Context,
+	whop whoperation[T],
+	q <-chan []string,
+	q2 chan []string,
+	workers chan<- worker,
+	results chan<- T,
+) {
+	logger().Debug("spawner started")
+	defer logger().Debug("spawner exited")
+
+	nWorkers := 0
+
+	for {
+		var revs []string
+		var ok bool
+
+		select {
+		case <-ctx.Done():
+			return
+		case revs, ok = <-q:
+			if !ok {
+				return
+			}
+		}
+
+		// Spawn worker if we are still under count
+		if nWorkers < nCPU {
+			nWorkers += 1
+
+			w := worker{
+				id:  nWorkers,
+				err: make(chan error, 1),
+			}
+			go func() {
+				defer close(w.err)
+
+				err := runWorker[T](
+					ctx,
+					w.id,
+					whop,
+					q2,
+					results,
+				)
+				if err != nil {
+					w.err <- err
+				}
+			}()
+
+			workers <- w
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case q2 <- revs: // Forward work to workers
+		}
+	}
+}
+
+// Waiter. Waits for done or error for each one in turn. Forwards
+// errors to errs channel.
+func runWaiter(
+	ctx context.Context,
+	workers <-chan worker,
+	errs chan<- error,
+) {
+	logger().Debug("waiter started")
+	defer logger().Debug("waiter exited")
+
+	for {
+		var w worker
+		var ok bool
+
+		select {
+		case <-ctx.Done():
+			return
+		case w, ok = <-workers:
+			if !ok {
+				return
+			}
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case err, ok := <-w.err:
+			if ok && err != nil {
+				errs <- err
+			}
+			return
+		}
+	}
+}
+
+// A tally worker that runs git log for each chunk of work.
+func runWorker[T combinable[T]](
 	ctx context.Context,
 	id int,
+	whop whoperation[T],
 	in <-chan []string,
-	results chan<- tally.TalliesByPath,
-	paths []string,
-	opts tally.TallyOpts,
+	results chan<- T,
 ) (err error) {
 	logger := logger().With("workerId", id)
+	logger.Debug("worker started")
+
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("error in worker %d: %w", id, err)
@@ -26,8 +138,6 @@ func runWorker(
 
 		logger.Debug("worker exited")
 	}()
-
-	logger.Debug("worker started")
 
 loop:
 	for {
@@ -43,10 +153,7 @@ loop:
 				break loop // We're done, input channel is closed
 			}
 
-			nRevs := len(revs)
-			logger.Debug("read revs", "count", nRevs)
-
-			subprocess, err := git.RunStdinLog(ctx, paths, true)
+			subprocess, err := git.RunStdinLog(ctx, whop.paths, true)
 			if err != nil {
 				return err
 			}
@@ -67,7 +174,7 @@ loop:
 			// Read parsed commits
 			lines := subprocess.StdoutLines()
 			commits := git.ParseCommits(lines)
-			result, err := tally.TallyCommitsByPath(commits, opts)
+			result, err := whop.tally(commits, whop.opts)
 			if err != nil {
 				return err
 			}
