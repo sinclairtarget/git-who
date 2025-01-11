@@ -238,6 +238,15 @@ func toLines(
 		}
 	}
 
+	// Find last non-hidden child
+	finalChildIndex := 0
+	for i, p := range childPaths {
+		child := node.Children[p]
+		if child.InWorkTree || opts.showHidden {
+			finalChildIndex = i
+		}
+	}
+
 	for i, p := range childPaths {
 		child := node.Children[p]
 		lines = toLines(
@@ -245,7 +254,7 @@ func toLines(
 			p,
 			depth+1,
 			node.Tally.AuthorEmail,
-			append(isFinalChild, i == nChildren-1),
+			append(isFinalChild, i == finalChildIndex),
 			opts,
 			lines,
 		)
@@ -293,6 +302,10 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 	tallyStart := longest + 4 // Use at least 4 "." to separate path from tally
 
 	for _, line := range lines {
+		if !line.showLine {
+			continue
+		}
+
 		var path string
 		if line.dimPath {
 			path = fmt.Sprintf("%s%s%s", ansi.Dim, line.path, ansi.Reset)
