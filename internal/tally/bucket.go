@@ -138,11 +138,11 @@ func calcResolution(start time.Time, end time.Time) resolution {
 // Returns a list of "time buckets," with a winning tally for each date.
 //
 // The resolution / size of the buckets is determined based on the duration
-// between the first commit and now.
+// between the first commit and end time.
 func TallyCommitsByDate(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
-	now time.Time,
+	end time.Time,
 ) (_ []TimeBucket, err error) {
 	defer func() {
 		if err != nil {
@@ -168,11 +168,11 @@ func TallyCommitsByDate(
 		return buckets, nil // Iterator is empty
 	}
 
-	resolution := calcResolution(firstCommit.Date, now)
+	resolution := calcResolution(firstCommit.Date, end)
 
 	// Init buckets/timeseries
 	t := resolution.apply(firstCommit.Date)
-	for now.Sub(t) > 0 {
+	for end.After(t) {
 		bucket := newBucket(resolution.label(t), resolution.apply(t))
 		buckets = append(buckets, bucket)
 		t = resolution.next(t)
