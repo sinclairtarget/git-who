@@ -231,13 +231,6 @@ func toLines(
 		},
 	)
 
-	var nChildren int
-	for _, child := range node.Children {
-		if child.InWorkTree || opts.showHidden {
-			nChildren += 1
-		}
-	}
-
 	// Find last non-hidden child
 	finalChildIndex := 0
 	for i, p := range childPaths {
