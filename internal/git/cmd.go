@@ -180,7 +180,6 @@ func RunLog(
 			"log",
 			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
 			"--date=unix",
-			"--topo-order",
 			"--reverse",
 			"--numstat",
 			"--summary",
@@ -192,7 +191,6 @@ func RunLog(
 			"log",
 			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n", // Extra newline!
 			"--date=unix",
-			"--topo-order",
 			"--reverse",
 		}
 	}
@@ -295,7 +293,6 @@ func RunRevList(
 	} else {
 		baseArgs = []string{
 			"rev-list",
-			"--topo-order",
 			"--reverse",
 		}
 	}
