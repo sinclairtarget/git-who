@@ -117,6 +117,7 @@ func tableCmd() command {
 
 	useCsv := flagSet.Bool("csv", false, "Output as csv")
 	showEmail := flagSet.Bool("e", false, "Show email address of each author")
+	countMerges := flagSet.Bool("merges", false, "Count merge commits")
 	linesMode := flagSet.Bool("l", false, "Sort by lines added + removed")
 	filesMode := flagSet.Bool("f", false, "Sort by files changed")
 	lastModifiedMode := flagSet.Bool("m", false, "Sort by last modified")
@@ -163,6 +164,7 @@ Usage: git-who table [--csv] [-e] [-n <n>] [-l|-f|-m] [filter opts...] [revision
 				mode,
 				*useCsv,
 				*showEmail,
+				*countMerges,
 				*limit,
 				*filterFlags.since,
 				filterFlags.authors,
@@ -177,6 +179,7 @@ func treeCmd() command {
 
 	showEmail := flagSet.Bool("e", false, "Show email address of each author")
 	showHidden := flagSet.Bool("a", false, "Show files not in working tree")
+	countMerges := flagSet.Bool("merges", false, "Count merge commits")
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
 	useLastModified := flagSet.Bool(
@@ -224,6 +227,7 @@ Usage: git-who tree [-e] [-a] [-l|-f|-m] [-d <depth>] [filter opts...] [revision
 				*depth,
 				*showEmail,
 				*showHidden,
+				*countMerges,
 				*filterFlags.since,
 				filterFlags.authors,
 				filterFlags.nauthors,
@@ -238,6 +242,7 @@ func histCmd() command {
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
 	showEmail := flagSet.Bool("e", false, "Show email address of each author")
+	countMerges := flagSet.Bool("merges", false, "Count merge commits")
 
 	filterFlags := addFilterFlags(flagSet)
 
@@ -273,6 +278,7 @@ Usage: git-who hist [-e] [-l|-f] [filter opts...] [revision...] [[--] path]
 				paths,
 				mode,
 				*showEmail,
+				*countMerges,
 				*filterFlags.since,
 				filterFlags.authors,
 				filterFlags.nauthors,

@@ -37,6 +37,7 @@ func table(
 	mode tally.TallyMode,
 	useCsv bool,
 	showEmail bool,
+	countMerges bool,
 	limit int,
 	since string,
 	authors []string,
@@ -60,6 +61,8 @@ func table(
 		useCsv,
 		"showEmail",
 		showEmail,
+		"countMerges",
+		countMerges,
 		"limit",
 		limit,
 		"since",
@@ -73,7 +76,7 @@ func table(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tallyOpts := tally.TallyOpts{Mode: mode}
+	tallyOpts := tally.TallyOpts{Mode: mode, CountMerges: countMerges}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
 	} else {

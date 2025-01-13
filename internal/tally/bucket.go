@@ -245,8 +245,8 @@ func TallyCommitsByDate(
 			)
 		}
 
-		// Skip merge commits and weird commits outside time range
-		if !commit.IsMerge && ok {
+		skipMerge := commit.IsMerge && !opts.CountMerges
+		if !skipMerge && ok {
 			key := opts.Key(commit)
 
 			tally, ok := bucket.tallies[key]
@@ -258,10 +258,12 @@ func TallyCommitsByDate(
 
 			tally.numTallied += 1
 
-			for _, diff := range commit.FileDiffs {
-				tally.added += diff.LinesAdded
-				tally.removed += diff.LinesRemoved
-				tally.fileset[diff.Path] = true
+			if !commit.IsMerge {
+				for _, diff := range commit.FileDiffs {
+					tally.added += diff.LinesAdded
+					tally.removed += diff.LinesRemoved
+					tally.fileset[diff.Path] = true
+				}
 			}
 
 			bucket.tallies[key] = tally

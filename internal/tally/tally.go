@@ -21,9 +21,12 @@ const (
 	LastModifiedMode
 )
 
+const NoDiffPathname = ".git-who-no-diff-commits"
+
 type TallyOpts struct {
-	Mode TallyMode
-	Key  func(c git.Commit) string // Unique ID for author
+	Mode        TallyMode
+	Key         func(c git.Commit) string // Unique ID for author
+	CountMerges bool
 }
 
 // Whether we need --stat and --summary data from git log for this tally mode
@@ -208,7 +211,7 @@ func TallyCommits(
 				return nil, fmt.Errorf("error iterating commits: %w", err)
 			}
 
-			if commit.IsMerge {
+			if commit.IsMerge && !opts.CountMerges {
 				continue
 			}
 
@@ -256,31 +259,61 @@ func TallyCommitsByPath(
 			return nil, fmt.Errorf("error iterating commits: %w", err)
 		}
 
-		key := opts.Key(commit)
-		for _, diff := range commit.FileDiffs {
-			if !commit.IsMerge {
-				pathTallies, ok := tallies[key]
-				if !ok {
-					pathTallies = map[string]Tally{}
-				}
+		if commit.IsMerge && !opts.CountMerges {
+			continue
+		}
 
+		key := opts.Key(commit)
+
+		pathTallies, ok := tallies[key]
+		if !ok {
+			pathTallies = map[string]Tally{}
+		}
+
+		if len(commit.FileDiffs) == 0 {
+			// We still want to count commits that introduce no diff.
+			// This could happen with a merge commit that has no diff with its
+			// first parent. Have also seen this happen with an SVN-imported
+			// commit.
+			//
+			// We count these commits under a special pathname we hope never
+			// collides.
+			tally, ok := pathTallies[NoDiffPathname]
+			if !ok {
+				tally.name = commit.AuthorName
+				tally.email = commit.AuthorEmail
+				tally.commitset = map[string]bool{}
+				tally.numTallied = 0 // Don't count toward files changed
+			}
+
+			tally.commitset[commit.ShortHash] = true
+			tally.lastCommitTime = commit.Date
+
+			pathTallies[NoDiffPathname] = tally
+		} else {
+			for _, diff := range commit.FileDiffs {
 				tally, ok := pathTallies[diff.Path]
 				if !ok {
 					tally.name = commit.AuthorName
 					tally.email = commit.AuthorEmail
 					tally.commitset = map[string]bool{}
-					tally.numTallied = 1
 				}
 
 				tally.commitset[commit.ShortHash] = true
-				tally.added += diff.LinesAdded
-				tally.removed += diff.LinesRemoved
 				tally.lastCommitTime = commit.Date
 
+				if !commit.IsMerge {
+					// Only non-merge commits contribute to files / lines
+					tally.numTallied = 1
+					tally.added += diff.LinesAdded
+					tally.removed += diff.LinesRemoved
+				}
+
 				pathTallies[diff.Path] = tally
-				tallies[key] = pathTallies
 			}
 		}
+
+		tallies[key] = pathTallies
 	}
 
 	return tallies, nil

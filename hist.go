@@ -22,6 +22,7 @@ func hist(
 	paths []string,
 	mode tally.TallyMode,
 	showEmail bool,
+	countMerges bool,
 	since string,
 	authors []string,
 	nauthors []string,
@@ -38,6 +39,12 @@ func hist(
 		revs,
 		"paths",
 		paths,
+		"mode",
+		mode,
+		"showEmail",
+		showEmail,
+		"countMerges",
+		countMerges,
 		"since",
 		since,
 		"authors",
@@ -49,7 +56,7 @@ func hist(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tallyOpts := tally.TallyOpts{Mode: mode}
+	tallyOpts := tally.TallyOpts{Mode: mode, CountMerges: countMerges}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
 	} else {

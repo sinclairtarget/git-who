@@ -44,6 +44,7 @@ func tree(
 	depth int,
 	showEmail bool,
 	showHidden bool,
+	countMerges bool,
 	since string,
 	authors []string,
 	nauthors []string,
@@ -66,6 +67,10 @@ func tree(
 		depth,
 		"showEmail",
 		showEmail,
+		"showHidden",
+		showHidden,
+		"countMerges",
+		countMerges,
 		"since",
 		since,
 		"authors",
@@ -88,7 +93,7 @@ func tree(
 		Nauthors: nauthors,
 	}
 
-	tallyOpts := tally.TallyOpts{Mode: mode}
+	tallyOpts := tally.TallyOpts{Mode: mode, CountMerges: countMerges}
 	if showEmail {
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorEmail }
 	} else {
@@ -157,6 +162,10 @@ func toLines(
 	opts printTreeOpts,
 	lines []treeOutputLine,
 ) []treeOutputLine {
+	if path == tally.NoDiffPathname {
+		return lines
+	}
+
 	if depth > opts.maxDepth {
 		return lines
 	}
