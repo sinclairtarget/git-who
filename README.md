@@ -6,9 +6,9 @@
 > _Who wrote this code?!_
 
 Unlike `git blame`, which can tell you who wrote a _line_ of code, `git-who`
-helps you identify the primary authors behind entire components or subsystems
-of a codebase. You can think of `git-who` sort of like `git-blame` but for
-file trees rather than individual files.
+can help you identify the people responsible for entire components or
+subsystems in a codebase. You can think of `git-who` sort of like `git-blame`
+but for file trees rather than individual files.
 
 ## Installation
 TBD.
@@ -21,7 +21,7 @@ setting up a Git alias. See the [Git Alias](#git-alias) section below.)_
 authorship in your Git repository.
 
 ### The `table` Subcommand
-The `table` subcommand is the default subcommand. You can invoke it explicitly 
+The `table` subcommand is the default subcommand. You can invoke it explicitly
 as `git who table` or implicitly just as `git who`.
 
 The `table` subcommand prints a table summarizing the contributions of every
@@ -67,7 +67,7 @@ touched files under the given path:
 └─────────────────────────────────────────────────────┘
 ```
 
-You can also specify a branch name, tag name, or any "commit-ish" to 
+You can also specify a branch name, tag name, or any "commit-ish" to
 filter the results to commits reachable from the specified commit:
 ```
 ~/repos/cpython$ git who v3.7.1
