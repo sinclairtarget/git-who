@@ -228,6 +228,7 @@ func RunStdinLog(
 			"--date=unix",
 			"--stdin",
 			"--no-walk",
+			"--reverse",
 			"--numstat",
 			"--summary",
 			"--diff-merges=first-parent",
@@ -240,6 +241,7 @@ func RunStdinLog(
 			"--date=unix",
 			"--stdin",
 			"--no-walk",
+			"--reverse",
 		}
 	}
 
