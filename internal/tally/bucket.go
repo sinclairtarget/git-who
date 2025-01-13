@@ -230,35 +230,37 @@ func TallyCommitsByDate(
 	i := 0
 	commit := firstCommit
 	for {
-		bucketedCommitTime := resolution.apply(commit.Date)
-		bucket := buckets[i]
-		if bucketedCommitTime.After(bucket.Time) {
-			// Next bucket, might have to skip some empty ones
-			for !bucketedCommitTime.Equal(bucket.Time) {
-				i += 1
-				bucket = buckets[i]
+		if !commit.IsMerge {
+			bucketedCommitTime := resolution.apply(commit.Date)
+			bucket := buckets[i]
+			if bucketedCommitTime.After(bucket.Time) {
+				// Next bucket, might have to skip some empty ones
+				for !bucketedCommitTime.Equal(bucket.Time) {
+					i += 1
+					bucket = buckets[i]
+				}
 			}
+
+			key := opts.Key(commit)
+
+			tally, ok := bucket.tallies[key]
+			if !ok {
+				tally.name = commit.AuthorName
+				tally.email = commit.AuthorEmail
+				tally.fileset = map[string]bool{}
+			}
+
+			tally.numTallied += 1
+
+			for _, diff := range commit.FileDiffs {
+				tally.added += diff.LinesAdded
+				tally.removed += diff.LinesRemoved
+				tally.fileset[diff.Path] = true
+			}
+
+			bucket.tallies[key] = tally
+			buckets[i] = bucket
 		}
-
-		key := opts.Key(commit)
-
-		tally, ok := bucket.tallies[key]
-		if !ok {
-			tally.name = commit.AuthorName
-			tally.email = commit.AuthorEmail
-			tally.fileset = map[string]bool{}
-		}
-
-		tally.numTallied += 1
-
-		for _, diff := range commit.FileDiffs {
-			tally.added += diff.LinesAdded
-			tally.removed += diff.LinesRemoved
-			tally.fileset[diff.Path] = true
-		}
-
-		bucket.tallies[key] = tally
-		buckets[i] = bucket
 
 		commit, err, ok = next()
 		if err != nil {
