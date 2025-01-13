@@ -198,10 +198,20 @@ func parseFileAction(line string) (_ FileAction, _ string, err error) {
 	}
 }
 
-func allowCommit(commit Commit) bool {
+func allowCommit(commit Commit, now time.Time) bool {
 	if commit.AuthorName == "" && commit.AuthorEmail == "" {
 		logger().Debug(
 			"skipping commit with no author",
+			"commit",
+			commit.Name(),
+		)
+
+		return false
+	}
+
+	if commit.Date.After(now) {
+		logger().Debug(
+			"skipping commit with commit date in the future",
 			"commit",
 			commit.Name(),
 		)
@@ -217,6 +227,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 	return func(yield func(Commit, error) bool) {
 		var commit Commit
 		diffLookup := map[string]FileDiff{}
+		now := time.Now()
 		linesThisCommit := 0
 
 		for line, err := range lines {
@@ -235,7 +246,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			done := linesThisCommit >= 7 && (len(line) == 0 || isRev(line))
 			if done {
 				commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
-				if allowCommit(commit) {
+				if allowCommit(commit, now) {
 					if !yield(commit, nil) {
 						return
 					}
@@ -331,7 +342,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			linesThisCommit += 1
 		}
 
-		if linesThisCommit > 0 && allowCommit(commit) {
+		if linesThisCommit > 0 && allowCommit(commit, now) {
 			commit.FileDiffs = slices.Collect(maps.Values(diffLookup))
 			yield(commit, nil)
 		}
