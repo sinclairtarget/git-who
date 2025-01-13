@@ -65,7 +65,7 @@ func hist(
 
 	var buckets []tally.TimeBucket
 	if populateDiffs && runtime.GOMAXPROCS(0) > 1 {
-		buckets, err = concurrent.TallyCommitsByDate(
+		buckets, err = concurrent.TallyCommitsTimeline(
 			ctx,
 			revs,
 			paths,
@@ -88,7 +88,11 @@ func hist(
 			return err
 		}
 
-		buckets, err = tally.TallyCommitsByDate(commits, tallyOpts, time.Now())
+		buckets, err = tally.TallyCommitsTimeline(
+			commits,
+			tallyOpts,
+			time.Now(),
+		)
 		if err != nil {
 			return err
 		}

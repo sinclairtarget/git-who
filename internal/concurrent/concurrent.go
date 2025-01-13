@@ -203,7 +203,7 @@ func TallyCommitsTree(
 	return tally.TallyCommitsTreeFromPaths(talliesByPath, worktreePaths)
 }
 
-func TallyCommitsByDate(
+func TallyCommitsTimeline(
 	ctx context.Context,
 	revspec []string,
 	paths []string,
@@ -226,10 +226,15 @@ func TallyCommitsByDate(
 		opts:    opts,
 	}
 
-	ts, err := tallyFanOutFanIn[tally.TimeSeries](ctx, whop)
+	buckets, err := tallyFanOutFanIn[tally.TimeSeries](ctx, whop)
 	if err != nil {
 		return nil, err
 	}
 
-	return ts, nil
+	resolution := tally.CalcResolution(
+		buckets[0].Time,
+		buckets[len(buckets)-1].Time,
+	)
+	rebuckets := tally.Rebucket(buckets, resolution, end)
+	return rebuckets, nil
 }

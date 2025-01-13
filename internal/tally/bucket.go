@@ -120,13 +120,30 @@ func (a TimeSeries) Combine(b TimeSeries) TimeSeries {
 // apply - Truncate time to its time bucket
 // label - Format the date to a label for the bucket
 // next - Get next time in series, given a time
-type resolution struct {
+type Resolution struct {
 	apply func(time.Time) time.Time
 	label func(time.Time) string
 	next  func(time.Time) time.Time
 }
 
-func calcResolution(start time.Time, end time.Time) resolution {
+func applyDaily(t time.Time) time.Time {
+	year, month, day := t.Date()
+	return time.Date(year, month, day, 0, 0, 0, 0, time.Local)
+}
+
+var daily = Resolution{
+	apply: applyDaily,
+	next: func(t time.Time) time.Time {
+		t = applyDaily(t)
+		year, month, day := t.Date()
+		return time.Date(year, month, day+1, 0, 0, 0, 0, time.Local)
+	},
+	label: func(t time.Time) string {
+		return applyDaily(t).Format(time.DateOnly)
+	},
+}
+
+func CalcResolution(start time.Time, end time.Time) Resolution {
 	duration := end.Sub(start)
 	day := time.Hour * 24
 	year := day * 365
@@ -137,7 +154,7 @@ func calcResolution(start time.Time, end time.Time) resolution {
 			year, _, _ := t.Date()
 			return time.Date(year, 1, 1, 0, 0, 0, 0, time.Local)
 		}
-		return resolution{
+		return Resolution{
 			apply: apply,
 			next: func(t time.Time) time.Time {
 				t = apply(t)
@@ -154,7 +171,7 @@ func calcResolution(start time.Time, end time.Time) resolution {
 			year, month, _ := t.Date()
 			return time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
 		}
-		return resolution{
+		return Resolution{
 			apply: apply,
 			next: func(t time.Time) time.Time {
 				t = apply(t)
@@ -166,29 +183,11 @@ func calcResolution(start time.Time, end time.Time) resolution {
 			},
 		}
 	} else {
-		// Daily buckets
-		apply := func(t time.Time) time.Time {
-			year, month, day := t.Date()
-			return time.Date(year, month, day, 0, 0, 0, 0, time.Local)
-		}
-		return resolution{
-			apply: apply,
-			next: func(t time.Time) time.Time {
-				t = apply(t)
-				year, month, day := t.Date()
-				return time.Date(year, month, day+1, 0, 0, 0, 0, time.Local)
-			},
-			label: func(t time.Time) string {
-				return apply(t).Format(time.DateOnly)
-			},
-		}
+		return daily
 	}
 }
 
-// Returns a list of "time buckets," with a winning tally for each date.
-//
-// The resolution / size of the buckets is determined based on the duration
-// between the first commit and end time.
+// Returns tallies grouped by calendar date.
 func TallyCommitsByDate(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
@@ -205,11 +204,12 @@ func TallyCommitsByDate(
 	}
 
 	buckets := []TimeBucket{}
+	resolution := daily
 
 	next, stop := iter.Pull2(commits)
 	defer stop()
 
-	// Use first commit to calculate resolution
+	// Use first commit to caclulate start time
 	firstCommit, err, ok := next()
 	if err != nil {
 		return buckets, err
@@ -217,8 +217,6 @@ func TallyCommitsByDate(
 	if !ok {
 		return buckets, nil // Iterator is empty
 	}
-
-	resolution := calcResolution(firstCommit.Date, end)
 
 	// Init buckets/timeseries
 	t := resolution.apply(firstCommit.Date)
@@ -271,4 +269,63 @@ func TallyCommitsByDate(
 	}
 
 	return buckets, nil
+}
+
+// Returns a list of "time buckets" with tallies for each date.
+//
+// The resolution / size of the buckets is determined based on the duration
+// between the first commit and end time.
+func TallyCommitsTimeline(
+	commits iter.Seq2[git.Commit, error],
+	opts TallyOpts,
+	end time.Time,
+) ([]TimeBucket, error) {
+	buckets, err := TallyCommitsByDate(commits, opts, end)
+	if err != nil {
+		return buckets, err
+	}
+
+	resolution := CalcResolution(buckets[0].Time, buckets[len(buckets)-1].Time)
+	rebuckets := Rebucket(buckets, resolution, end)
+
+	return rebuckets, nil
+}
+
+func Rebucket(
+	buckets []TimeBucket,
+	resolution Resolution,
+	end time.Time,
+) []TimeBucket {
+	if len(buckets) < 1 {
+		return buckets
+	}
+
+	rebuckets := []TimeBucket{}
+
+	// Re-bucket using new resolution
+	t := resolution.apply(buckets[0].Time)
+	for end.After(t) {
+		bucket := newBucket(resolution.label(t), resolution.apply(t))
+		rebuckets = append(rebuckets, bucket)
+		t = resolution.next(t)
+	}
+
+	i := 0
+	for _, bucket := range buckets {
+		rebucketedTime := resolution.apply(bucket.Time)
+		rebucket := rebuckets[i]
+		if rebucketedTime.After(rebucket.Time) {
+			// Next bucket, might have to skip some empty ones
+			for !rebucketedTime.Equal(rebucket.Time) {
+				i += 1
+				rebucket = rebuckets[i]
+			}
+		}
+
+		bucket.Time = rebucket.Time
+		bucket.Name = rebucket.Name
+		rebuckets[i] = rebuckets[i].Combine(bucket)
+	}
+
+	return rebuckets
 }
