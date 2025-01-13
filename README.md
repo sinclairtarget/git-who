@@ -88,6 +88,27 @@ filter the results to commits reachable from the specified commit:
 └─────────────────────────────────────────────────────┘
 ```
 
+Revision ranges also work. This shows the commits made after the release
+of 3.10.9 up to the release of 3.11.9:
+```
+~/clones/cpython$ git who v3.10.9..v3.11.9
+┌─────────────────────────────────────────────────────┐
+│Author                            Last Edit   Commits│
+├─────────────────────────────────────────────────────┤
+│Miss Islington (bot)              9 mon. ago     2551│
+│Victor Stinner                    9 mon. ago      367│
+│Serhiy Storchaka                  9 mon. ago      304│
+│Erlend Egeberg Aasland            2 yr. ago       202│
+│Christian Heimes                  2 yr. ago       200│
+│Mark Shannon                      1 year ago      157│
+│Irit Katriel                      10 mon. ago     135│
+│Nikita Sobolev                    10 mon. ago     126│
+│Pablo Galindo Salgado             1 year ago      117│
+│Pablo Galindo                     9 mon. ago       97│
+│...574 more...                                       │
+└─────────────────────────────────────────────────────┘
+```
+
 Just like with `git` itself, when there is ambiguity between a path name
 and a commit-ish, you can use `--` to clarfiy the distinction. The
 following command will show you contributions to the file or directory
@@ -242,6 +263,23 @@ Guido van Rossum is shown as the overall highest committer to the
 tree with the `-a` flag to see that most of his commits were to
 files that have since been moved or deleted.
 
+Like with the `table` subcommand, you can specify a "commit-ish". This
+next example shows changes to the `Parser/` directory that happened
+after the 3.10.9 release up to the 3.11.9 release.
+```
+~/clones/cpython$ git who tree v3.10.9..v3.11.9 -- Parser/
+Parser/.................Pablo Galindo Salgado (52)
+├── Python.asdl.........Batuhan Taskaya (1)
+├── action_helpers.c....Matthieu Dartiailh (1)
+├── asdl_c.py...........Batuhan Taskaya (4)
+├── myreadline.c........Victor Stinner (1)
+├── parser.c
+├── pegen.c
+├── pegen.h
+├── pegen_errors.c......Miss Islington (bot) (8)
+└── string_parser.c.....Miss Islington (bot) (4)
+```
+
 The `tree` subcommand, like the `table` subcommand, supports the `-l`, `-f`,
 and `-m` flags. The `-l` flag will annotate each file tree node with the
 author who has added or removed the most lines at that path:
@@ -359,6 +397,33 @@ Jan 2025 ┤
 ```
 The printed timeline will begin with the date of the first commit modifying
 that path.
+
+You can also filter using a commit-ish. This shows the timeline of contributions
+since Python's 3.12 release.
+```
+~/clones/cpython$ git who hist v3.12.0..
+May 2023 ┤ ###---------                          Victor Stinner (28)
+Jun 2023 ┤ #######--------------------           Victor Stinner (90)
+Jul 2023 ┤ ######----------------------------    Victor Stinner (78)
+Aug 2023 ┤ #######-------------------------      Victor Stinner (91)
+Sep 2023 ┤ ############----------------------    Victor Stinner (157)
+Oct 2023 ┤ #####---------------------------      Victor Stinner (68)
+Nov 2023 ┤ ###---------------------              Serhiy Storchaka (40)
+Dec 2023 ┤ ###-----------------------            Alex Waygood (32)
+Jan 2024 ┤ ####-----------------------------     Serhiy Storchaka (43)
+Feb 2024 ┤ ####------------------------------    Serhiy Storchaka (42)
+Mar 2024 ┤ #####---------------------------      Victor Stinner (59)
+Apr 2024 ┤ ###---------------------------        Serhiy Storchaka (37)
+May 2024 ┤ ##----------------------------------  Serhiy Storchaka (26)
+Jun 2024 ┤ ####------------------------          Victor Stinner (48)
+Jul 2024 ┤ ###------------------------           Sam Gross (32)
+Aug 2024 ┤ ##-------------------                 Mark Shannon (24)
+Sep 2024 ┤ ##---------------------------         Serhiy Storchaka (23)
+Oct 2024 ┤ ###----------------------------       Victor Stinner (39)
+Nov 2024 ┤ ##-----------------------             Serhiy Storchaka (27)
+Dec 2024 ┤ ##------------------                  Bénédikt Tran (18)
+Jan 2025 ┤ ##---------                           Bénédikt Tran (26)
+```
 
 The `hist` subcommand supports the `-l` and `-f` flags but not the `-m` flag:
 
