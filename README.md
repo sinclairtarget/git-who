@@ -288,7 +288,98 @@ is measured from the current working directory.
 Run `git who tree --help` to see all options available for the `tree` subcommand.
 
 ### The `hist` Subcommand
-TODO.
+The `hist` subcommand prints out a little bar chart / timeline of commit activity
+showing the history of contributions to the repository.
+
+```
+~/repos/cpython$ git who hist
+1990 ┤ #                                     Guido van Rossum (105)
+1991 ┤ ##                                    Guido van Rossum (445)
+1992 ┤ ###                                   Guido van Rossum (606)
+1993 ┤ #-                                    Guido van Rossum (200)
+1994 ┤ ###                                   Guido van Rossum (525)
+1995 ┤ ####-                                 Guido van Rossum (869)
+1996 ┤ ####---                               Guido van Rossum (961)
+1997 ┤ #######--                             Guido van Rossum (1626)
+1998 ┤ #####------                           Guido van Rossum (1205)
+1999 ┤ ###-----                              Fred Drake (755)
+2000 ┤ ####------------                      Fred Drake (973)
+2001 ┤ #####-----------------                Fred Drake (1196)
+2002 ┤ ###--------------                     Guido van Rossum (543)
+2003 ┤ ##------------                        Raymond Hettinger (479)
+2004 ┤ ##--------                            Raymond Hettinger (460)
+2005 ┤ #----                                 Raymond Hettinger (171)
+2006 ┤ ###-------------                      Neal Norwitz (636)
+2007 ┤ ####------------                      Guido van Rossum (792)
+2008 ┤ ####--------------------              Georg Brandl (1005)
+2009 ┤ #####-----------------------          Benjamin Peterson (1107)
+2010 ┤ #####-------------------------------  Georg Brandl (1088)
+2011 ┤ ####-----------------                 Victor Stinner (877)
+2012 ┤ ##------------------                  Antoine Pitrou (466)
+2013 ┤ ###--------------                     Victor Stinner (570)
+2014 ┤ ###----------                         Victor Stinner (594)
+2015 ┤ ###---------                          Victor Stinner (529)
+2016 ┤ ##-----------                         Victor Stinner (497)
+2017 ┤ ##--------                            Victor Stinner (404)
+2018 ┤ ##--------                            Victor Stinner (306)
+2019 ┤ ##----------                          Victor Stinner (467)
+2020 ┤ ###---------                          Victor Stinner (524)
+2021 ┤ ##----------                          Victor Stinner (260)
+2022 ┤ ##-------------                       Victor Stinner (366)
+2023 ┤ ###---------------                    Victor Stinner (556)
+2024 ┤ ##-----------------                   Serhiy Storchaka (321)
+2025 ┤ #                                     Bénédikt Tran (26)
+```
+
+(Git was only released in 2005, so clearly there has been some version control
+metadata imported from another tool!)
+
+The timeline shows the author who made the most commits in each year. The bar
+in the bar chart shows their contributions as a proportion of the total 
+contributions made in that year. (The `#` symbol shows the proportion
+of total commits by the "winning" author for that year.)
+
+Like with the other subcommands, you can filter the commits examined to just
+those editing files under a given path:
+
+```
+~/repos/cpython$ git who hist iOS/
+Feb 2024 ┤ #                                     Russell Keith-Magee (1)
+Mar 2024 ┤ ####                                  Russell Keith-Magee (4)
+Apr 2024 ┤ #-                                    Xie Yanbo (1)
+May 2024 ┤
+Jun 2024 ┤
+Jul 2024 ┤ #                                     Russell Keith-Magee (1)
+Aug 2024 ┤ ##                                    Russell Keith-Magee (2)
+Sep 2024 ┤ #                                     Russell Keith-Magee (1)
+Oct 2024 ┤
+Nov 2024 ┤ #                                     Russell Keith-Magee (1)
+Dec 2024 ┤ ###-                                  Russell Keith-Magee (3)
+Jan 2025 ┤
+```
+The printed timeline will begin with the date of the first commit modifying
+that path.
+
+The `hist` subcommand supports the `-l` and `-f` flags but not the `-m` flag:
+
+``` 
+~/repos/cpython$ git who hist -l iOS/
+Feb 2024 ┤ ###############                       Russell Keith-Magee (406 / 0)
+Mar 2024 ┤ ####################################  Russell Keith-Magee (994 / 32)
+Apr 2024 ┤ #                                     Xie Yanbo (2 / 2)
+May 2024 ┤
+Jun 2024 ┤
+Jul 2024 ┤ #                                     Russell Keith-Magee (1 / 1)
+Aug 2024 ┤ #                                     Russell Keith-Magee (2 / 0)
+Sep 2024 ┤ #                                     Russell Keith-Magee (6 / 0)
+Oct 2024 ┤
+Nov 2024 ┤ #####                                 Russell Keith-Magee (104 / 28)
+Dec 2024 ┤ ##################-                   Russell Keith-Magee (444 / 52)
+Jan 2025 ┤
+```
+
+Run `git who hist --help` for a full listing of the options supported by the
+`hist` subcommand.
 
 ## Git Alias
 You can invoke `git-who` as `git who` by setting up an alias in your global Git
