@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"iter"
 	"runtime"
+	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
@@ -200,4 +201,35 @@ func TallyCommitsTree(
 	}
 
 	return tally.TallyCommitsTreeFromPaths(talliesByPath, worktreePaths)
+}
+
+func TallyCommitsByDate(
+	ctx context.Context,
+	revspec []string,
+	paths []string,
+	filters git.LogFilters,
+	opts tally.TallyOpts,
+	end time.Time,
+) ([]tally.TimeBucket, error) {
+	f := func(
+		commits iter.Seq2[git.Commit, error],
+		opts tally.TallyOpts,
+	) (tally.TimeSeries, error) {
+		return tally.TallyCommitsByDate(commits, opts, end)
+	}
+
+	whop := whoperation[tally.TimeSeries]{
+		revspec: revspec,
+		paths:   paths,
+		filters: filters,
+		tally:   f,
+		opts:    opts,
+	}
+
+	ts, err := tallyFanOutFanIn[tally.TimeSeries](ctx, whop)
+	if err != nil {
+		return nil, err
+	}
+
+	return ts, nil
 }

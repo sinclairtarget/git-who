@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/ansi"
+	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
@@ -60,25 +62,41 @@ func hist(
 		Authors:  authors,
 		Nauthors: nauthors,
 	}
-	commits, closer, err := git.CommitsWithOpts(
-		ctx,
-		revs,
-		paths,
-		filters,
-		populateDiffs,
-	)
-	if err != nil {
-		return err
-	}
 
-	buckets, err := tally.TallyCommitsByDate(commits, tallyOpts, time.Now())
-	if err != nil {
-		return err
-	}
+	var buckets []tally.TimeBucket
+	if populateDiffs && runtime.GOMAXPROCS(0) > 1 {
+		buckets, err = concurrent.TallyCommitsByDate(
+			ctx,
+			revs,
+			paths,
+			filters,
+			tallyOpts,
+			time.Now(),
+		)
+		if err != nil {
+			return err
+		}
+	} else {
+		commits, closer, err := git.CommitsWithOpts(
+			ctx,
+			revs,
+			paths,
+			filters,
+			populateDiffs,
+		)
+		if err != nil {
+			return err
+		}
 
-	err = closer()
-	if err != nil {
-		return err
+		buckets, err = tally.TallyCommitsByDate(commits, tallyOpts, time.Now())
+		if err != nil {
+			return err
+		}
+
+		err = closer()
+		if err != nil {
+			return err
+		}
 	}
 
 	// -- Pick winner in each bucket --
