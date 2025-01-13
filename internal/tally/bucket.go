@@ -203,7 +203,6 @@ func TallyCommitsByDate(
 		return nil, errors.New("Last modified mode not implemented")
 	}
 
-	buckets := []TimeBucket{}
 	resolution := daily
 
 	next, stop := iter.Pull2(commits)
@@ -212,35 +211,42 @@ func TallyCommitsByDate(
 	// Use first commit to caclulate start time
 	firstCommit, err, ok := next()
 	if err != nil {
-		return buckets, err
+		return nil, err
 	}
 	if !ok {
-		return buckets, nil // Iterator is empty
+		return []TimeBucket{}, nil // Iterator is empty
 	}
 
 	// Init buckets/timeseries
+	sortedKeys := []int64{}
+	buckets := map[int64]TimeBucket{} // Map of (unix) time to bucket
 	t := resolution.apply(firstCommit.Date)
 	for end.After(t) {
 		bucket := newBucket(resolution.label(t), resolution.apply(t))
-		buckets = append(buckets, bucket)
+		key := bucket.Time.Unix()
+		sortedKeys = append(sortedKeys, key)
+		buckets[key] = bucket
 		t = resolution.next(t)
 	}
 
 	// Tally
-	i := 0
 	commit := firstCommit
 	for {
-		if !commit.IsMerge {
-			bucketedCommitTime := resolution.apply(commit.Date)
-			bucket := buckets[i]
-			if bucketedCommitTime.After(bucket.Time) {
-				// Next bucket, might have to skip some empty ones
-				for !bucketedCommitTime.Equal(bucket.Time) {
-					i += 1
-					bucket = buckets[i]
-				}
-			}
+		bucketedCommitTime := resolution.apply(commit.Date)
+		bucket, ok := buckets[bucketedCommitTime.Unix()]
 
+		if !ok {
+			// This might happen if the input commits aren't truly ordered by
+			// commit date and we get a commit before the start time we picked.
+			logger().Debug(
+				"commit did not map to bucket",
+				"commit",
+				commit.Name(),
+			)
+		}
+
+		// Skip merge commits and weird commits outside time range
+		if !commit.IsMerge && ok {
 			key := opts.Key(commit)
 
 			tally, ok := bucket.tallies[key]
@@ -259,19 +265,23 @@ func TallyCommitsByDate(
 			}
 
 			bucket.tallies[key] = tally
-			buckets[i] = bucket
+			buckets[bucket.Time.Unix()] = bucket
 		}
 
 		commit, err, ok = next()
 		if err != nil {
-			return buckets, fmt.Errorf("error iterating commits: %w", err)
+			return nil, fmt.Errorf("error iterating commits: %w", err)
 		}
 		if !ok {
 			break // done, no more commits
 		}
 	}
 
-	return buckets, nil
+	bucketSlice := []TimeBucket{}
+	for _, key := range sortedKeys {
+		bucketSlice = append(bucketSlice, buckets[key])
+	}
+	return bucketSlice, nil
 }
 
 // Returns a list of "time buckets" with tallies for each date.
