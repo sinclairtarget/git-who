@@ -5,10 +5,10 @@
 
 > _Who wrote this code??_
 
-`git-who` is like `git blame` but for file trees, i.e. directories and their
-contents. Whereas `git blame` tells you who wrote a _line_ of code, `git-who`
-tries to identify the primary authors of an entire component or subsystem in a
-codebase.
+Unlike `git blame`, which can tell you who wrote a _line_ of code, `git-who`
+helps you identify the primary authors behind entire components or subsystems
+of a codebase. You can think of `git-who` sort of like `git-blame` but for
+file trees, i.e. directories and their contents.
 
 ## Usage
 _(In the following examples, `git-who` is invoked as `git who`, which requires
