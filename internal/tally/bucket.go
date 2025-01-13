@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -12,8 +14,8 @@ import (
 type TimeBucket struct {
 	Name       string
 	Time       time.Time
-	Tally      FinalTally
-	TotalTally FinalTally
+	Tally      FinalTally // Winning author's tally
+	TotalTally FinalTally // Overall tally for all authors
 	tallies    map[string]Tally
 }
 
@@ -51,6 +53,28 @@ func (b TimeBucket) TotalValue(mode TallyMode) int {
 	}
 }
 
+func (a TimeBucket) Combine(b TimeBucket) TimeBucket {
+	if a.Name != b.Name {
+		panic("cannot combine buckets whose names do not match")
+	}
+
+	if a.Time != b.Time {
+		panic("cannot combine buckets whose times do not match")
+	}
+
+	merged := a
+	for key, tally := range b.tallies {
+		existing, ok := a.tallies[key]
+		if ok {
+			merged.tallies[key] = existing.Combine(tally)
+		} else {
+			merged.tallies[key] = tally
+		}
+	}
+
+	return merged
+}
+
 func (b TimeBucket) Rank(mode TallyMode) TimeBucket {
 	if len(b.tallies) > 0 {
 		b.Tally = Rank(b.tallies, mode)[0]
@@ -63,6 +87,32 @@ func (b TimeBucket) Rank(mode TallyMode) TimeBucket {
 	}
 
 	return b
+}
+
+type TimeSeries []TimeBucket
+
+func (a TimeSeries) Combine(b TimeSeries) TimeSeries {
+	buckets := map[int64]TimeBucket{}
+	for _, bucket := range a {
+		buckets[bucket.Time.Unix()] = bucket
+	}
+	for _, bucket := range b {
+		existing, ok := buckets[bucket.Time.Unix()]
+		if ok {
+			buckets[bucket.Time.Unix()] = existing.Combine(bucket)
+		} else {
+			buckets[bucket.Time.Unix()] = bucket
+		}
+	}
+
+	sortedKeys := slices.Sorted(maps.Keys(buckets))
+
+	outBuckets := []TimeBucket{}
+	for _, key := range sortedKeys {
+		outBuckets = append(outBuckets, buckets[key])
+	}
+
+	return outBuckets
 }
 
 // Resolution for a time series.
