@@ -228,15 +228,8 @@ func TallyCommitsByDate(
 
 	// Tally
 	i := 0
+	commit := firstCommit
 	for {
-		commit, err, ok := next()
-		if err != nil {
-			return buckets, fmt.Errorf("error iterating commits: %w", err)
-		}
-		if !ok {
-			break
-		}
-
 		bucketedCommitTime := resolution.apply(commit.Date)
 		bucket := buckets[i]
 		if bucketedCommitTime.After(bucket.Time) {
@@ -266,6 +259,14 @@ func TallyCommitsByDate(
 
 		bucket.tallies[key] = tally
 		buckets[i] = bucket
+
+		commit, err, ok = next()
+		if err != nil {
+			return buckets, fmt.Errorf("error iterating commits: %w", err)
+		}
+		if !ok {
+			break // done, no more commits
+		}
 	}
 
 	return buckets, nil
