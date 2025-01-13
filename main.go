@@ -19,9 +19,9 @@ const version = "0.1"
 var progStart time.Time
 
 type command struct {
-	flagSet  *flag.FlagSet
-	run      func(args []string) error
-	isHidden bool // Hide from usage
+	flagSet     *flag.FlagSet
+	run         func(args []string) error
+	description string
 }
 
 // Main examines the args and delegates to the specified subcommand.
@@ -43,20 +43,22 @@ func main() {
 	verboseFlag := mainFlagSet.Bool("v", false, "Enables debug logging")
 
 	mainFlagSet.Usage = func() {
-		fmt.Println("Usage: git-who [options...] [subcommand]")
-		fmt.Println("git-who tallies authorship")
+		fmt.Println("Usage: git-who [-v] [subcommand] [subcommand options...]")
+		fmt.Println("git-who tallies code contributions by author")
+
+		fmt.Println()
+		fmt.Println("Top-level options:")
 		mainFlagSet.PrintDefaults()
 
 		fmt.Println()
 		fmt.Println("Subcommands:")
 
-		for name, cmd := range subcommands {
-			if cmd.isHidden {
-				continue
-			}
+		helpSubcommands := []string{"table", "tree", "hist"}
+		for _, name := range helpSubcommands {
+			cmd := subcommands[name]
 
-			fmt.Println(name)
-			cmd.flagSet.PrintDefaults()
+			fmt.Printf("  %s\n", name)
+			fmt.Printf("\t%s\n", cmd.description)
 		}
 	}
 
@@ -117,7 +119,7 @@ func tableCmd() command {
 
 	useCsv := flagSet.Bool("csv", false, "Output as csv")
 	showEmail := flagSet.Bool("e", false, "Show email address of each author")
-	countMerges := flagSet.Bool("merges", false, "Count merge commits")
+	countMerges := flagSet.Bool("merges", false, "Count merge commits toward commit total")
 	linesMode := flagSet.Bool("l", false, "Sort by lines added + removed")
 	filesMode := flagSet.Bool("f", false, "Sort by files changed")
 	lastModifiedMode := flagSet.Bool("m", false, "Sort by last modified")
@@ -125,16 +127,20 @@ func tableCmd() command {
 
 	filterFlags := addFilterFlags(flagSet)
 
+	description := "Print out a table showing total contributions by author"
+
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
-Usage: git-who table [--csv] [-e] [-n <n>] [-l|-f|-m] [filter opts...] [revision...] [[--] path]
+Usage: git-who table [options...] [revisions...] [[--] paths...]
 		`))
-		fmt.Println("Print out a table summarizing authorship")
+		fmt.Println(description)
+		fmt.Println()
 		flagSet.PrintDefaults()
 	}
 
 	return command{
-		flagSet: flagSet,
+		flagSet:     flagSet,
+		description: description,
 		run: func(args []string) error {
 			mode := tally.CommitMode
 
@@ -179,7 +185,7 @@ func treeCmd() command {
 
 	showEmail := flagSet.Bool("e", false, "Show email address of each author")
 	showHidden := flagSet.Bool("a", false, "Show files not in working tree")
-	countMerges := flagSet.Bool("merges", false, "Count merge commits")
+	countMerges := flagSet.Bool("merges", false, "Count merge commits toward commit total")
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
 	useLastModified := flagSet.Bool(
@@ -191,16 +197,20 @@ func treeCmd() command {
 
 	filterFlags := addFilterFlags(flagSet)
 
+	description := "Print out a file tree showing most contributions by path"
+
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
-Usage: git-who tree [-e] [-a] [-l|-f|-m] [-d <depth>] [filter opts...] [revision...] [[--] path]
+Usage: git-who tree [options...] [revisions...] [[--] paths...]
 		`))
-		fmt.Println("Print out a tree summarizing authorship")
+		fmt.Println(description)
+		fmt.Println()
 		flagSet.PrintDefaults()
 	}
 
 	return command{
-		flagSet: flagSet,
+		flagSet:     flagSet,
+		description: description,
 		run: func(args []string) error {
 			revs, paths, err := git.ParseArgs(args)
 			if err != nil {
@@ -242,20 +252,24 @@ func histCmd() command {
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
 	showEmail := flagSet.Bool("e", false, "Show email address of each author")
-	countMerges := flagSet.Bool("merges", false, "Count merge commits")
+	countMerges := flagSet.Bool("merges", false, "Count merge commits toward commit total")
 
 	filterFlags := addFilterFlags(flagSet)
 
+	description := "Print out a timeline showing most contributions by date"
+
 	flagSet.Usage = func() {
 		fmt.Println(strings.TrimSpace(`
-Usage: git-who hist [-e] [-l|-f] [filter opts...] [revision...] [[--] path]
+Usage: git-who hist [options...] [revisions...] [[--] paths...]
 		`))
-		fmt.Println("Print out a timeline summarizing authorship")
+		fmt.Println(description)
+		fmt.Println()
 		flagSet.PrintDefaults()
 	}
 
 	return command{
-		flagSet: flagSet,
+		flagSet:     flagSet,
+		description: description,
 		run: func(args []string) error {
 			revs, paths, err := git.ParseArgs(args)
 			if err != nil {
@@ -310,7 +324,6 @@ func dumpCmd() command {
 				filterFlags.nauthors,
 			)
 		},
-		isHidden: true,
 	}
 }
 
@@ -337,7 +350,6 @@ func parseCmd() command {
 				filterFlags.nauthors,
 			)
 		},
-		isHidden: true,
 	}
 }
 
@@ -379,7 +391,7 @@ type filterFlags struct {
 func addFilterFlags(set *flag.FlagSet) *filterFlags {
 	flags := filterFlags{
 		since: set.String("since", "", strings.TrimSpace(`
-Only count commits after the given date. See git-commit(1) for valid formats
+Only count commits after the given date. See git-commit(1) for valid date formats
 		`)),
 	}
 
