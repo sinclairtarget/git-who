@@ -505,6 +505,58 @@ config:
 See [here](https://git-scm.com/book/en/v2/Git-Basics-Git-Aliases) for more
 information about Git aliases.
 
+## What Exactly Do These Numbers Mean?
+### Metrics
+The number of **commits** shown for each author is the number of unique commits
+found while walking the commit log. When supplying a path argument to `git
+who`, the commits walked include only commits modifying the given path(s).
+Here, the rules described under the HISTORY SIMPLIFICATION section of Git log
+apply—branches in the commit history that do not modify the given path(s) are
+pruned away.
+
+The number of **files** shown for each author is the number of unique files
+modified in commits by that author. If a file is renamed, it will count twice.
+
+The number of **lines added** and **lines removed** shown for each author is
+the number of lines added and removed to files under the supplied path(s) or to
+all files in the case of no path arguments. In Git, modifying a line counts as
+removing it and then adding the new version of the line.
+
+### Merge Commits
+Merge commits are not counted toward any of these metrics. The rationale here
+is that merge commits represent a kind of overhead involved in managing the
+commit graph and that all novel changes will already have been introduced to
+the commit graph by the merge commit's ancestor commits.
+
+You can supply the `--merges` flag to `git who` to change this behavior. The
+`--merges` flag forces `git who` to count merge commits toward the commit total
+for each author. Merge commits are still ignored for the purposes of the file
+total or lines total.
+
+### Differences From `git blame`
+Whereas `git blame` starts from the code that exists in the working tree and
+identifies the commit that introduced each line, `git who` instead walks some
+subset of the commit log tallying contributions. This means that `git blame`
+and `git who`, in addition to operating on different levels (individual files
+vs file trees), tell you slightly different things.
+
+This is best illustrated through an example. If Bob has made dozens of commits
+editing a file, but Alice recently formatted the file and made one big commit
+with her style changes, `git blame` will attribute most of the lines in the
+file to Alice. `git who`, on the other hand, will rank Bob as the primary
+author, at least when sorting by number of commits. In this case, `git who`
+seems better suited to answering the question, "Who came up with the code in
+this file?"
+
+If instead, Bob made the same commits but Alice came along later and completely
+refactored the file, again in one bit commit, `git blame` will correctly
+attribute most of the lines in the file to her, while `git who` will still list
+Bob as the primary author. In this case, `git blame` seems to do a better job
+of answering, "Who came up with the code in this file?". That said, the various
+subcommands and options of `git who` can give you the full picture of what has
+happened here. `git who hist` in particular will show you that Bob was the
+primary author until Alice took over.
+
 ## DEVELOPMENT
 ### Test Repository Submodule
 Some of the automated tests for `git-who` need to run against a Git repository.
