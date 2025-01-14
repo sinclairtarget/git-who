@@ -110,28 +110,40 @@ func tree(
 			tallyOpts,
 			wtreeset,
 		)
+
+		if err == tally.EmptyTreeErr {
+			logger().Debug("Tree was empty.")
+			return nil
+		}
+
 		if err != nil {
 			return err
 		}
 	} else {
-		commits, closer, err := git.CommitsWithOpts(
+		commits, closer, innererr := git.CommitsWithOpts(
 			ctx,
 			revs,
 			paths,
 			filters,
 			true,
 		)
-		if err != nil {
-			return err
-		}
-		root, err = tally.TallyCommitsTree(commits, tallyOpts, wtreeset)
-		if err != nil {
-			return fmt.Errorf("failed to tally commits: %w", err)
+		if innererr != nil {
+			return innererr
 		}
 
-		err = closer()
-		if err != nil {
-			return err
+		root, innererr = tally.TallyCommitsTree(commits, tallyOpts, wtreeset)
+		if innererr == tally.EmptyTreeErr {
+			logger().Debug("Tree was empty.")
+			return nil
+		}
+
+		if innererr != nil {
+			return fmt.Errorf("failed to tally commits: %w", innererr)
+		}
+
+		innererr = closer()
+		if innererr != nil {
+			return innererr
 		}
 	}
 

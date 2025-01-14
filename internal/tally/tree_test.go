@@ -116,3 +116,20 @@ func TestTallyCommitsTree(t *testing.T) {
 		t.Errorf("bob's second tally is wrong:\n%s", diff)
 	}
 }
+
+func TestTallyCommitsTreeNoCommits(t *testing.T) {
+	seq := iterutils.WithoutErrors(slices.Values([]git.Commit{}))
+	opts := tally.TallyOpts{
+		Mode: tally.CommitMode,
+		Key:  func(c git.Commit) string { return c.AuthorEmail },
+	}
+	worktreeset := map[string]bool{}
+
+	_, err := tally.TallyCommitsTree(seq, opts, worktreeset)
+	if err != tally.EmptyTreeErr {
+		t.Fatalf(
+			"TallyCommits() should have returned EmptyTreeErr but returned %v",
+			err,
+		)
+	}
+}

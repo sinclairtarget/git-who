@@ -1,6 +1,7 @@
 package tally
 
 import (
+	"errors"
 	"fmt"
 	"iter"
 	"os"
@@ -8,6 +9,8 @@ import (
 
 	"github.com/sinclairtarget/git-who/internal/git"
 )
+
+var EmptyTreeErr = errors.New("No commits; tree is empty.")
 
 // A file tree of edits to the repo
 type TreeNode struct {
@@ -115,6 +118,10 @@ func TallyCommitsTreeFromPaths(
 			inWTree := worktreePaths[path]
 			root.insert(path, key, tally, inWTree)
 		}
+	}
+
+	if len(root.Children) == 0 {
+		return root, EmptyTreeErr
 	}
 
 	return root, nil
