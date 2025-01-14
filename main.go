@@ -14,7 +14,8 @@ import (
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
-const version = "0.1"
+var Commit = "unknown"
+var Version = "unknown"
 
 var progStart time.Time
 
@@ -79,7 +80,7 @@ loop:
 	mainFlagSet.Parse(os.Args[1:subcmdIndex])
 
 	if *versionFlag {
-		fmt.Printf("%s\n", version)
+		fmt.Printf("%s %s\n", Version, Commit)
 		return
 	}
 
