@@ -44,8 +44,9 @@ namespace 'release' do
   desc 'Build binaries for all supported platforms'
   task build: RELEASE_DIRS do
     SUPPORTED.each do |os, arch|
-      output_dir = "out/#{os}_#{arch}"
+      output_dir = "#{OUTDIR}/#{os}_#{arch}"
       build_for_platform(os, arch, out: "#{output_dir}/#{PROGNAME}")
+      sh "tar czf #{OUTDIR}/#{os}_#{arch}.tar.gz -C #{OUTDIR} #{os}_#{arch}"
     end
   end
 end
