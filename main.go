@@ -163,7 +163,7 @@ Usage: git-who table [options...] [revisions...] [[--] paths...]
 
 			revs, paths, err := git.ParseArgs(args)
 			if err != nil {
-				return fmt.Errorf("could not parse args: %w", err)
+				return err
 			}
 			return table(
 				revs,
