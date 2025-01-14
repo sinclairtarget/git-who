@@ -557,6 +557,12 @@ subcommands and options of `git who` can give you the full picture of what has
 happened here. `git who hist` in particular will show you that Bob was the
 primary author until Alice took over.
 
+Ultimately, neither tool quite answers what we want to know, which is "Who came
+up with the code in this file?", perhaps because the question is too ambiguous.
+`git blame` answers, "Who last modified each line of code in this file?" and
+`git who` answers, "Who made the most modifications to this file / this file
+tree?"
+
 ## DEVELOPMENT
 ### Test Repository Submodule
 Some of the automated tests for `git-who` need to run against a Git repository.
