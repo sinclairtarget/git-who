@@ -549,7 +549,7 @@ seems better suited to answering the question, "Who came up with the code in
 this file?"
 
 If instead, Bob made the same commits but Alice came along later and completely
-refactored the file, again in one bit commit, `git blame` will correctly
+refactored the file, again in one big commit, `git blame` will correctly
 attribute most of the lines in the file to her, while `git who` will still list
 Bob as the primary author. In this case, `git blame` seems to do a better job
 of answering, "Who came up with the code in this file?". That said, the various
