@@ -54,7 +54,7 @@ end
 CLOBBER.include(OUTDIR)
 CLOBBER.include(PROGNAME)
 
-def build_for_platform(goos, goarch, out: 'git-who')
+def build_for_platform(goos, goarch, out: PROGNAME)
   rev = `git rev-parse --short HEAD`.strip
   version = `git describe --tags --always --dirty`.strip
   sh "GOOS=#{goos} GOARCH=#{goarch} go build -a -o #{out} "\

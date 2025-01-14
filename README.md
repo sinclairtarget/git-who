@@ -11,14 +11,17 @@ subsystems in a codebase. You can think of `git-who` sort of like `git-blame`
 but for file trees rather than individual files.
 
 ## Installation
+### Precompiled Binaries
+See [releases](https://github.com/sinclairtarget/git-who/releases).
+
 ### From Source
-This requires that you have Go installed.
+This requires that you have Go, Ruby, and the `rake` Ruby gem installed.
 
 ```
 $ git clone git@github.com:sinclairtarget/git-who.git
 $ cd git-who
-$ go build .
-$ ./git-who
+$ rake
+$ ./git-who --version
 ```
 
 ## Usage
