@@ -82,7 +82,7 @@ func (s Subprocess) Wait() error {
 	if err != nil {
 		return SubprocessErr{
 			ExitCode: s.cmd.ProcessState.ExitCode(),
-			Stderr:   string(stderr),
+			Stderr:   strings.TrimSpace(string(stderr)),
 			Err:      err,
 		}
 	}
