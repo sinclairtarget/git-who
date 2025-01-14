@@ -300,6 +300,10 @@ func TallyCommitsTimeline(
 		return buckets, err
 	}
 
+	if len(buckets) == 0 {
+		return buckets, err
+	}
+
 	resolution := CalcResolution(buckets[0].Time, buckets[len(buckets)-1].Time)
 	rebuckets := Rebucket(buckets, resolution, end)
 

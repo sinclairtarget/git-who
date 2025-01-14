@@ -1,8 +1,12 @@
 package tally
 
 import (
+	"slices"
 	"testing"
 	"time"
+
+	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/iterutils"
 )
 
 func TestTimeSeriesCombine(t *testing.T) {
@@ -129,5 +133,26 @@ func TestTimeSeriesCombine(t *testing.T) {
 	}
 	if c[3].tallies["alice"].added != expected[3].tallies["alice"].added {
 		t.Errorf("alice tally for fourth bucket is wrong")
+	}
+}
+
+func TestTallyCommitsTimelineEmpty(t *testing.T) {
+	seq := iterutils.WithoutErrors(slices.Values([]git.Commit{}))
+	opts := TallyOpts{
+		Mode: CommitMode,
+		Key:  func(c git.Commit) string { return c.AuthorEmail },
+	}
+	end := time.Now()
+
+	buckets, err := TallyCommitsTimeline(seq, opts, end)
+	if err != nil {
+		t.Errorf("TallyCommitsTimeline() returned error: %v", err)
+	}
+
+	if len(buckets) > 0 {
+		t.Errorf(
+			"TallyCommitsTimeline() should have returned empty slice but returned %v",
+			buckets,
+		)
 	}
 }
