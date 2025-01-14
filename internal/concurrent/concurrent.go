@@ -186,6 +186,7 @@ func TallyCommitsTree(
 	filters git.LogFilters,
 	opts tally.TallyOpts,
 	worktreePaths map[string]bool,
+	gitRootPath string,
 ) (*tally.TreeNode, error) {
 	whop := whoperation[tally.TalliesByPath]{
 		revspec: revspec,
@@ -200,7 +201,11 @@ func TallyCommitsTree(
 		return nil, err
 	}
 
-	return tally.TallyCommitsTreeFromPaths(talliesByPath, worktreePaths)
+	return tally.TallyCommitsTreeFromPaths(
+		talliesByPath,
+		worktreePaths,
+		gitRootPath,
+	)
 }
 
 func TallyCommitsTimeline(

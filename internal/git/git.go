@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"iter"
 	"strconv"
 	"strings"
@@ -184,6 +185,39 @@ func NumCommits(
 	}
 
 	return count, nil
+}
+
+func GetRoot() (_ string, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf(
+				"failed to run git rev-parse --show-toplevel: %w",
+				err,
+			)
+		}
+	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	args := []string{"rev-parse", "--show-toplevel"}
+	subprocess, err := run(ctx, args, false)
+	if err != nil {
+		return "", err
+	}
+
+	b, err := io.ReadAll(subprocess.stdout)
+	if err != nil {
+		return "", err
+	}
+
+	err = subprocess.Wait()
+	if err != nil {
+		return "", err
+	}
+
+	root := strings.TrimSpace(string(b))
+	return root, nil
 }
 
 // Returns all paths in the working tree under the given paths.

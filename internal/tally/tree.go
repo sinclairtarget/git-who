@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"iter"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -96,6 +97,7 @@ func TallyCommitsTree(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
 	worktreePaths map[string]bool,
+	gitRootPath string,
 ) (*TreeNode, error) {
 	// Tally paths
 	talliesByPath, err := TallyCommitsByPath(commits, opts)
@@ -103,20 +105,36 @@ func TallyCommitsTree(
 		return nil, err
 	}
 
-	return TallyCommitsTreeFromPaths(talliesByPath, worktreePaths)
+	return TallyCommitsTreeFromPaths(talliesByPath, worktreePaths, gitRootPath)
 }
 
 func TallyCommitsTreeFromPaths(
 	talliesByPath TalliesByPath,
 	worktreePaths map[string]bool,
+	gitRootPath string,
 ) (*TreeNode, error) {
 	root := newNode(true)
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return root, err
+	}
 
 	// Build tree
 	for key, pathTallies := range talliesByPath {
 		for path, tally := range pathTallies {
-			inWTree := worktreePaths[path]
-			root.insert(path, key, tally, inWTree)
+			relPath := path
+			if gitRootPath != "" {
+				// Adjust path for working dir
+				absPath := filepath.Join(gitRootPath, path)
+				relPath, err = filepath.Rel(wd, absPath)
+				if err != nil || !filepath.IsLocal(relPath) {
+					continue // Skip any paths outside of working dir
+				}
+			}
+
+			inWTree := worktreePaths[relPath]
+			root.insert(relPath, key, tally, inWTree)
 		}
 	}
 

@@ -87,6 +87,11 @@ func tree(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	gitRootPath, err := git.GetRoot()
+	if err != nil {
+		return err
+	}
+
 	filters := git.LogFilters{
 		Since:    since,
 		Authors:  authors,
@@ -109,6 +114,7 @@ func tree(
 			filters,
 			tallyOpts,
 			wtreeset,
+			gitRootPath,
 		)
 
 		if err == tally.EmptyTreeErr {
@@ -131,7 +137,12 @@ func tree(
 			return innererr
 		}
 
-		root, innererr = tally.TallyCommitsTree(commits, tallyOpts, wtreeset)
+		root, innererr = tally.TallyCommitsTree(
+			commits,
+			tallyOpts,
+			wtreeset,
+			gitRootPath,
+		)
 		if innererr == tally.EmptyTreeErr {
 			logger().Debug("Tree was empty.")
 			return nil

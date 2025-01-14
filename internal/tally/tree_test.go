@@ -66,7 +66,7 @@ func TestTallyCommitsTree(t *testing.T) {
 		Key:  func(c git.Commit) string { return c.AuthorEmail },
 	}
 
-	root, err := tally.TallyCommitsTree(seq, opts, worktreeset)
+	root, err := tally.TallyCommitsTree(seq, opts, worktreeset, "")
 	if err != nil {
 		t.Fatalf("TallyCommits() returned error: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestTallyCommitsTreeNoCommits(t *testing.T) {
 	}
 	worktreeset := map[string]bool{}
 
-	_, err := tally.TallyCommitsTree(seq, opts, worktreeset)
+	_, err := tally.TallyCommitsTree(seq, opts, worktreeset, "")
 	if err != tally.EmptyTreeErr {
 		t.Fatalf(
 			"TallyCommits() should have returned EmptyTreeErr but returned %v",
