@@ -11,7 +11,15 @@ subsystems in a codebase. You can think of `git-who` sort of like `git-blame`
 but for file trees rather than individual files.
 
 ## Installation
-TBD.
+### From Source
+This requires that you have Go installed.
+
+```
+$ git clone git@github.com:sinclairtarget/git-who.git
+$ cd git-who
+$ go build .
+$ ./git-who
+```
 
 ## Usage
 _(In the following examples, `git-who` is invoked as `git who`, which requires
