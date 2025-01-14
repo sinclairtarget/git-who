@@ -6,7 +6,7 @@
 > _Who wrote this code?!_
 
 Unlike `git blame`, which can tell you who wrote a _line_ of code, `git-who`
-can help you identify the people responsible for entire components or
+is meant to help you identify the people responsible for entire components or
 subsystems in a codebase. You can think of `git-who` sort of like `git-blame`
 but for file trees rather than individual files.
 
@@ -251,7 +251,7 @@ Parser/.........................Guido van Rossum (182)
 ├── grammar.c...................Guido van Rossum (20)
 ...
 ```
-(_The above output continues but has been elided for the purposes 
+(_The above output continues but has been elided for the purposes
 of this README._)
 
 Note that, whether or not the `-a` flag is used, commits that
@@ -280,6 +280,7 @@ Parser/.................Pablo Galindo Salgado (52)
 └── string_parser.c.....Miss Islington (bot) (4)
 ```
 
+#### Options
 The `tree` subcommand, like the `table` subcommand, supports the `-l`, `-f`,
 and `-m` flags. The `-l` flag will annotate each file tree node with the
 author who has added or removed the most lines at that path:
@@ -321,7 +322,9 @@ The `-f` flag will pick authors based on files touched and the `-m` flag will
 pick an author based on last modification time.
 
 You can limit the depth of the tree printed by using the `-d` flag. The depth
-is measured from the current working directory. 
+is measured from the current working directory.
+
+The `-a` flag has already been mentioned.
 
 Run `git who tree --help` to see all options available for the `tree` subcommand.
 
@@ -373,7 +376,7 @@ showing the history of contributions to the repository.
 metadata imported from another tool!)
 
 The timeline shows the author who made the most commits in each year. The bar
-in the bar chart shows their contributions as a proportion of the total 
+in the bar chart shows their contributions as a proportion of the total
 contributions made in that year. (The `#` symbol shows the proportion
 of total commits by the "winning" author for that year.)
 
@@ -425,9 +428,10 @@ Dec 2024 ┤ ##------------------                  Bénédikt Tran (18)
 Jan 2025 ┤ ##---------                           Bénédikt Tran (26)
 ```
 
+#### Options
 The `hist` subcommand supports the `-l` and `-f` flags but not the `-m` flag:
 
-``` 
+```
 ~/repos/cpython$ git who hist -l iOS/
 Feb 2024 ┤ ###############                       Russell Keith-Magee (406 / 0)
 Mar 2024 ┤ ####################################  Russell Keith-Magee (994 / 32)
@@ -445,6 +449,38 @@ Jan 2025 ┤
 
 Run `git who hist --help` for a full listing of the options supported by the
 `hist` subcommand.
+
+### Additional Options for Filtering Commits
+All of the `git who` subcommands take these additional options that further
+filter the commits that get counted.
+
+The `--author` and `--nauthor` options allow you to specify authors to include
+or exclude. Both options can be specified multiple times to include or exclude
+multiple authors.
+
+The `--since` option allows you to filter out commits before a certain date.
+The option takes a string that gets passed to `git log` to be interpreted. `git
+log` can handle some surprising inputs. See git-commit(1) for an explanation of
+what is possible.
+
+The following example shows the paths edited by Guido van Rossum over the last
+eight months:
+```
+~/repos/cpython$ git who tree -d 1 --since "nine months ago" --author "Guido van Rossum"
+./..................Guido van Rossum (11)
+├── .github/........Guido van Rossum (2)
+├── Doc/............Guido van Rossum (3)
+├── Include/........Guido van Rossum (3)
+├── Lib/............Guido van Rossum (1)
+├── Modules/........Guido van Rossum (1)
+├── Objects/........Guido van Rossum (1)
+├── PCbuild/........Guido van Rossum (2)
+├── Programs/.......Guido van Rossum (1)
+├── Python/.........Guido van Rossum (4)
+├── Tools/..........Guido van Rossum (1)
+├── configure
+└── configure.ac
+```
 
 ## Git Alias
 You can invoke `git-who` as `git who` by setting up an alias in your global Git
