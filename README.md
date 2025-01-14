@@ -291,6 +291,11 @@ Parser/.................Pablo Galindo Salgado (52)
 └── string_parser.c.....Miss Islington (bot) (4)
 ```
 
+If a file isn't edited in any of the commits specified by the revision range,
+then it won't appear in the output of `git who tree`, even if the file is in
+the working tree. This can make `git who tree` useful for visualizing the
+changes introduced by a branch.
+
 #### Options
 The `tree` subcommand, like the `table` subcommand, supports the `-l`, `-f`,
 and `-m` flags. The `-l` flag will annotate each file tree node with the
