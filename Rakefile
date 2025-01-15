@@ -46,17 +46,40 @@ namespace 'release' do
     SUPPORTED.each do |os, arch|
       output_dir = "#{OUTDIR}/#{os}_#{arch}"
       build_for_platform(os, arch, out: "#{output_dir}/#{PROGNAME}")
-      sh "tar czf #{OUTDIR}/#{os}_#{arch}.tar.gz -C #{OUTDIR} #{os}_#{arch}"
+
+      version = get_version
+      sh "tar czf #{OUTDIR}/gitwho_#{version}_#{os}_#{arch}.tar.gz "\
+        "-C #{OUTDIR} #{os}_#{arch}"
     end
   end
+
+  desc 'Sign checksum of built artifacts'
+  task :sign do
+    FileUtils.cd(OUTDIR) do
+      version = get_version
+      sumsfile = "SHA2-256SUMS_#{version}.txt"
+      sh "shasum -a 256 **/git-who > #{sumsfile}"
+      sh "ssh-keygen -Y sign -n file -f ~/.ssh/gitwho_ed25519 #{sumsfile}"
+    end
+  end
+
+  task all: [:build, :sign]
 end
 
 CLOBBER.include(OUTDIR)
 CLOBBER.include(PROGNAME)
 
+def get_version()
+  `git describe --tags --always --dirty`.strip
+end
+
+def get_commit()
+  `git rev-parse --short HEAD`.strip
+end
+
 def build_for_platform(goos, goarch, out: PROGNAME)
-  rev = `git rev-parse --short HEAD`.strip
-  version = `git describe --tags --always --dirty`.strip
+  version = get_version
+  rev = get_commit
   sh "GOOS=#{goos} GOARCH=#{goarch} go build -a -o #{out} "\
     "-ldflags '-s -w -X main.Commit=#{rev} -X main.Version=#{version}'"
 end
