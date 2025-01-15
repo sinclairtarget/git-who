@@ -234,8 +234,8 @@ func writeTable(
 		)
 	} else {
 		fmt.Printf(
-			"│%-*s %-11s %7s %7s %17s│\n",
-			colwidth-36-12,
+			"│%-*s %-11s %7s %7s  %17s│\n",
+			colwidth-36-13,
 			"Author",
 			"Last Edit",
 			"Commits",
@@ -278,9 +278,9 @@ func writeTable(
 			)
 		} else {
 			fmt.Printf(
-				"│%-*s %-11s %7s %7s %17s│\n",
-				colwidth-36-12,
-				format.Abbrev(author, colwidth-36-12),
+				"│%-*s %-11s %7s %7s  %17s│\n",
+				colwidth-36-13,
+				format.Abbrev(author, colwidth-36-13),
 				format.RelativeTime(progStart, t.LastCommitTime),
 				format.Number(t.Commits),
 				format.Number(t.FileCount),
