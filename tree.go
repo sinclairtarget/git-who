@@ -115,7 +115,7 @@ func tree(
 			tallyOpts,
 			wtreeset,
 			gitRootPath,
-			true,
+			pretty.AllowDynamic(os.Stdout),
 		)
 
 		if err == tally.EmptyTreeErr {

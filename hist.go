@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -79,7 +80,7 @@ func hist(
 			filters,
 			tallyOpts,
 			time.Now(),
-			true,
+			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {
 			return err
