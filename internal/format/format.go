@@ -72,3 +72,27 @@ func RelativeTime(now time.Time, t time.Time) string {
 		}
 	}
 }
+
+// Adds thousands comma and abbreviates numbers > 1m
+func Number(num int) string {
+	if num < 0 {
+		panic("cannot format negative number")
+	}
+
+	if num > 100_000_000 {
+		return ">99m"
+	}
+
+	if num > 1_000_000 {
+		mils := float32(num) / 1_000_000
+		return fmt.Sprintf("%.1fm", mils)
+	}
+
+	if num > 1_000 {
+		ones := num % 1_000
+		thousands := num / 1_000
+		return fmt.Sprintf("%d,%03d", thousands, ones)
+	}
+
+	return fmt.Sprintf("%d", num)
+}
