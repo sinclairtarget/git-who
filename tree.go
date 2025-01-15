@@ -115,6 +115,7 @@ func tree(
 			tallyOpts,
 			wtreeset,
 			gitRootPath,
+			true,
 		)
 
 		if err == tally.EmptyTreeErr {

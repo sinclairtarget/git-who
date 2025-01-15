@@ -27,6 +27,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/sinclairtarget/git-who/internal/ansi"
+	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
@@ -63,9 +65,18 @@ type worker struct {
 	err chan error
 }
 
+func calcTotalChunks(revCount int) int {
+	return revCount/chunkSize + 1
+}
+
+func shouldShowProgress(chunks int) bool {
+	return chunks > nCPU
+}
+
 func tallyFanOutFanIn[T combinable[T]](
 	ctx context.Context,
 	whop whoperation[T],
+	allowProgressBar bool,
 ) (_ T, err error) {
 	defer func() {
 		if err != nil {
@@ -132,6 +143,14 @@ func tallyFanOutFanIn[T combinable[T]](
 	// -- Join -----------------------------------------------------------------
 	// Read and combine results until results channel is closed, context is
 	// cancelled, or we get a worker error
+	totalChunks := calcTotalChunks(len(revs))
+	chunksComplete := 0
+	showProgress := allowProgressBar && shouldShowProgress(totalChunks)
+
+	if showProgress {
+		fmt.Printf("  0%% (0/%s commits)", format.Number(len(revs)))
+	}
+
 loop:
 	for {
 		select {
@@ -143,6 +162,17 @@ loop:
 			}
 
 			accumulator = accumulator.Combine(result)
+			chunksComplete += 1
+
+			if showProgress {
+				fmt.Printf("%s\r", ansi.EraseLine)
+				fmt.Printf(
+					"%3.0f%% (%s/%s commits)",
+					float32(chunksComplete)/float32(totalChunks)*100,
+					format.Number(min(len(revs), chunksComplete*chunkSize)),
+					format.Number(len(revs)),
+				)
+			}
 		case err, ok := <-errs:
 			if ok && err != nil {
 				return accumulator, fmt.Errorf(
@@ -153,6 +183,9 @@ loop:
 		}
 	}
 
+	if showProgress {
+		fmt.Printf("%s\r", ansi.EraseLine)
+	}
 	return accumulator, nil
 }
 
@@ -162,6 +195,7 @@ func TallyCommits(
 	paths []string,
 	filters git.LogFilters,
 	opts tally.TallyOpts,
+	allowProgressBar bool,
 ) (_ map[string]tally.Tally, err error) {
 	whop := whoperation[tally.TalliesByPath]{
 		revspec: revspec,
@@ -171,7 +205,11 @@ func TallyCommits(
 		opts:    opts,
 	}
 
-	talliesByPath, err := tallyFanOutFanIn[tally.TalliesByPath](ctx, whop)
+	talliesByPath, err := tallyFanOutFanIn[tally.TalliesByPath](
+		ctx,
+		whop,
+		allowProgressBar,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +225,7 @@ func TallyCommitsTree(
 	opts tally.TallyOpts,
 	worktreePaths map[string]bool,
 	gitRootPath string,
+	allowProgressBar bool,
 ) (*tally.TreeNode, error) {
 	whop := whoperation[tally.TalliesByPath]{
 		revspec: revspec,
@@ -196,7 +235,11 @@ func TallyCommitsTree(
 		opts:    opts,
 	}
 
-	talliesByPath, err := tallyFanOutFanIn[tally.TalliesByPath](ctx, whop)
+	talliesByPath, err := tallyFanOutFanIn[tally.TalliesByPath](
+		ctx,
+		whop,
+		allowProgressBar,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -215,6 +258,7 @@ func TallyCommitsTimeline(
 	filters git.LogFilters,
 	opts tally.TallyOpts,
 	end time.Time,
+	allowProgressBar bool,
 ) ([]tally.TimeBucket, error) {
 	f := func(
 		commits iter.Seq2[git.Commit, error],
@@ -231,7 +275,11 @@ func TallyCommitsTimeline(
 		opts:    opts,
 	}
 
-	buckets, err := tallyFanOutFanIn[tally.TimeSeries](ctx, whop)
+	buckets, err := tallyFanOutFanIn[tally.TimeSeries](
+		ctx,
+		whop,
+		allowProgressBar,
+	)
 	if err != nil {
 		return nil, err
 	}

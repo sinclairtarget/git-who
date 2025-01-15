@@ -79,6 +79,7 @@ func hist(
 			filters,
 			tallyOpts,
 			time.Now(),
+			true,
 		)
 		if err != nil {
 			return err

@@ -98,6 +98,7 @@ func table(
 			paths,
 			filters,
 			tallyOpts,
+			true,
 		)
 		if err != nil {
 			return err
