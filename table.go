@@ -136,7 +136,7 @@ func table(
 	}
 
 	if useCsv {
-		err := writeCsv(rankedTallies, showEmail)
+		err := writeCsv(rankedTallies, tallyOpts, showEmail)
 		if err != nil {
 			return err
 		}
@@ -148,50 +148,60 @@ func table(
 	return nil
 }
 
-func toRecord(t tally.FinalTally, showEmail bool) []string {
+func toRecord(
+	t tally.FinalTally,
+	opts tally.TallyOpts,
+	showEmail bool,
+) []string {
 	record := []string{t.AuthorName}
 
 	if showEmail {
 		record = append(record, t.AuthorEmail)
 	}
 
-	return append(
-		record,
-		strconv.Itoa(t.Commits),
-		strconv.Itoa(t.LinesAdded),
-		strconv.Itoa(t.LinesRemoved),
-		strconv.Itoa(t.FileCount),
-		t.LastCommitTime.Format(time.RFC3339),
-	)
+	record = append(record, strconv.Itoa(t.Commits))
+
+	if opts.IsDiffMode() {
+		record = append(
+			record,
+			strconv.Itoa(t.LinesAdded),
+			strconv.Itoa(t.LinesRemoved),
+			strconv.Itoa(t.FileCount),
+		)
+	}
+
+	return append(record, t.LastCommitTime.Format(time.RFC3339))
 }
 
-func writeCsv(tallies []tally.FinalTally, showEmail bool) error {
+func writeCsv(
+	tallies []tally.FinalTally,
+	opts tally.TallyOpts,
+	showEmail bool,
+) error {
 	w := csv.NewWriter(os.Stdout)
 
 	// Write header
+	columnHeaders := []string{"name"}
 	if showEmail {
-		w.Write([]string{
-			"name",
-			"email",
-			"commits",
-			"lines added",
-			"lines removed",
-			"files",
-			"last commit time",
-		})
-	} else {
-		w.Write([]string{
-			"name",
-			"commits",
-			"lines added",
-			"lines removed",
-			"files",
-			"last commit time",
-		})
+		columnHeaders = append(columnHeaders, "email")
 	}
 
+	columnHeaders = append(columnHeaders, "commits")
+
+	if opts.IsDiffMode() {
+		columnHeaders = append(
+			columnHeaders,
+			"lines added",
+			"lines removed",
+			"files",
+		)
+	}
+
+	columnHeaders = append(columnHeaders, "last commit time")
+	w.Write(columnHeaders)
+
 	for _, tally := range tallies {
-		record := toRecord(tally, showEmail)
+		record := toRecord(tally, opts, showEmail)
 		if err := w.Write(record); err != nil {
 			return fmt.Errorf("error writing CSV record to stdout: %w", err)
 		}
