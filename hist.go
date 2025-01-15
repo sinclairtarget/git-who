@@ -182,17 +182,17 @@ func fmtHistTally(
 	var metric string
 	switch mode {
 	case tally.CommitMode:
-		metric = fmt.Sprintf("(%d)", t.Commits)
+		metric = fmt.Sprintf("(%s)", format.Number(t.Commits))
 	case tally.FilesMode:
-		metric = fmt.Sprintf("(%d)", t.FileCount)
+		metric = fmt.Sprintf("(%s)", format.Number(t.FileCount))
 	case tally.LinesMode:
 		metric = fmt.Sprintf(
-			"(%s%d%s / %s%d%s)",
+			"(%s%s%s / %s%s%s)",
 			ansi.Green,
-			t.LinesAdded,
+			format.Number(t.LinesAdded),
 			ansi.DefaultColor,
 			ansi.Red,
-			t.LinesRemoved,
+			format.Number(t.LinesRemoved),
 			ansi.DefaultColor,
 		)
 	default:
