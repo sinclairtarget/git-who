@@ -32,7 +32,7 @@ import (
 )
 
 // We run one git log process for each chuck of this many revisions.
-const chunkSize = 5000
+const chunkSize = 1024
 
 var nCPU int
 
