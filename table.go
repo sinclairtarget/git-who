@@ -248,12 +248,12 @@ func writeTable(
 	// -- Write table rows --
 	for _, t := range tallies {
 		lines := fmt.Sprintf(
-			"%s%7d%s / %s%7d%s",
+			"%s%7s%s / %s%7s%s",
 			ansi.Green,
-			t.LinesAdded,
+			format.Number(t.LinesAdded),
 			ansi.Reset,
 			ansi.Red,
-			t.LinesRemoved,
+			format.Number(t.LinesRemoved),
 			ansi.Reset,
 		)
 
@@ -270,27 +270,27 @@ func writeTable(
 
 		if mode == tally.CommitMode || mode == tally.LastModifiedMode {
 			fmt.Printf(
-				"│%-*s %-11s %7d│\n",
+				"│%-*s %-11s %7s│\n",
 				colwidth-22,
 				format.Abbrev(author, colwidth-22),
 				format.RelativeTime(progStart, t.LastCommitTime),
-				t.Commits,
+				format.Number(t.Commits),
 			)
 		} else {
 			fmt.Printf(
-				"│%-*s %-11s %7d %7d %17s│\n",
+				"│%-*s %-11s %7s %7s %17s│\n",
 				colwidth-36-12,
 				format.Abbrev(author, colwidth-36-12),
 				format.RelativeTime(progStart, t.LastCommitTime),
-				t.Commits,
-				t.FileCount,
+				format.Number(t.Commits),
+				format.Number(t.FileCount),
 				lines,
 			)
 		}
 	}
 
 	if numFilteredOut > 0 {
-		msg := fmt.Sprintf("...%d more...", numFilteredOut)
+		msg := fmt.Sprintf("...%s more...", format.Number(numFilteredOut))
 		fmt.Printf("│%-*s│\n", colwidth-2, msg)
 	}
 
