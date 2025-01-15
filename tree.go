@@ -291,17 +291,17 @@ func toLines(
 func fmtTallyMetric(t tally.FinalTally, opts printTreeOpts) string {
 	switch opts.mode {
 	case tally.CommitMode:
-		return fmt.Sprintf("(%d)", t.Commits)
+		return fmt.Sprintf("(%s)", format.Number(t.Commits))
 	case tally.FilesMode:
-		return fmt.Sprintf("(%d)", t.FileCount)
+		return fmt.Sprintf("(%s)", format.Number(t.FileCount))
 	case tally.LinesMode:
 		return fmt.Sprintf(
-			"(%s%d%s / %s%d%s)",
+			"(%s%s%s / %s%s%s)",
 			ansi.Green,
-			t.LinesAdded,
+			format.Number(t.LinesAdded),
 			ansi.DefaultColor,
 			ansi.Red,
-			t.LinesRemoved,
+			format.Number(t.LinesRemoved),
 			ansi.DefaultColor,
 		)
 	case tally.LastModifiedMode:
