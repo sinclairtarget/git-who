@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sinclairtarget/git-who/internal/ansi"
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/pretty"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
@@ -160,10 +160,10 @@ func drawPlot(
 				"%s ┤ %s%s%-*s%s  %s\n",
 				bucket.Name,
 				valueBar,
-				ansi.Dim,
+				pretty.Dim,
 				barWidth-clampedValue,
 				totalBar,
-				ansi.Reset,
+				pretty.Reset,
 				tallyPart,
 			)
 
@@ -189,12 +189,12 @@ func fmtHistTally(
 	case tally.LinesMode:
 		metric = fmt.Sprintf(
 			"(%s%s%s / %s%s%s)",
-			ansi.Green,
+			pretty.Green,
 			format.Number(t.LinesAdded),
-			ansi.DefaultColor,
-			ansi.Red,
+			pretty.DefaultColor,
+			pretty.Red,
 			format.Number(t.LinesRemoved),
-			ansi.DefaultColor,
+			pretty.DefaultColor,
 		)
 	default:
 		panic("unrecognized tally mode in switch")
@@ -210,10 +210,10 @@ func fmtHistTally(
 	if fade {
 		return fmt.Sprintf(
 			"%s%s %s%s",
-			ansi.Dim,
+			pretty.Dim,
 			author,
 			metric,
-			ansi.Reset,
+			pretty.Reset,
 		)
 	} else {
 		return fmt.Sprintf("%s %s", author, metric)

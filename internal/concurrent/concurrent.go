@@ -27,9 +27,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/sinclairtarget/git-who/internal/ansi"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/pretty"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
@@ -165,7 +165,7 @@ loop:
 			chunksComplete += 1
 
 			if showProgress {
-				fmt.Printf("%s\r", ansi.EraseLine)
+				fmt.Printf("%s\r", pretty.EraseLine)
 				fmt.Printf(
 					"%3.0f%% (%s/%s commits)",
 					float32(chunksComplete)/float32(totalChunks)*100,
@@ -184,7 +184,7 @@ loop:
 	}
 
 	if showProgress {
-		fmt.Printf("%s\r", ansi.EraseLine)
+		fmt.Printf("%s\r", pretty.EraseLine)
 	}
 	return accumulator, nil
 }

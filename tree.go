@@ -11,10 +11,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/sinclairtarget/git-who/internal/ansi"
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/pretty"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
@@ -298,12 +298,12 @@ func fmtTallyMetric(t tally.FinalTally, opts printTreeOpts) string {
 	case tally.LinesMode:
 		return fmt.Sprintf(
 			"(%s%s%s / %s%s%s)",
-			ansi.Green,
+			pretty.Green,
 			format.Number(t.LinesAdded),
-			ansi.DefaultColor,
-			ansi.Red,
+			pretty.DefaultColor,
+			pretty.Red,
 			format.Number(t.LinesRemoved),
-			ansi.DefaultColor,
+			pretty.DefaultColor,
 		)
 	case tally.LastModifiedMode:
 		return fmt.Sprintf(
@@ -334,7 +334,7 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 
 		var path string
 		if line.dimPath {
-			path = fmt.Sprintf("%s%s%s", ansi.Dim, line.path, ansi.Reset)
+			path = fmt.Sprintf("%s%s%s", pretty.Dim, line.path, pretty.Reset)
 		} else {
 			path = line.path
 		}
@@ -360,9 +360,9 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 				"%s%s%s%s%s%s %s\n",
 				line.indent,
 				path,
-				ansi.Dim,
+				pretty.Dim,
 				separator,
-				ansi.Reset,
+				pretty.Reset,
 				author,
 				line.metric,
 			)
@@ -371,11 +371,11 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 				"%s%s%s%s%s %s%s\n",
 				line.indent,
 				path,
-				ansi.Dim,
+				pretty.Dim,
 				separator,
 				author,
 				line.metric,
-				ansi.Reset,
+				pretty.Reset,
 			)
 		}
 	}

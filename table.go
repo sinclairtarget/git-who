@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sinclairtarget/git-who/internal/ansi"
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/pretty"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
 
@@ -250,12 +250,12 @@ func writeTable(
 	for _, t := range tallies {
 		lines := fmt.Sprintf(
 			"%s%7s%s / %s%7s%s",
-			ansi.Green,
+			pretty.Green,
 			format.Number(t.LinesAdded),
-			ansi.Reset,
-			ansi.Red,
+			pretty.Reset,
+			pretty.Red,
 			format.Number(t.LinesRemoved),
-			ansi.Reset,
+			pretty.Reset,
 		)
 
 		var author string

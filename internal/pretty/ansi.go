@@ -1,5 +1,5 @@
 // ANSI escape codes
-package ansi
+package pretty
 
 const Reset string = "\x1b[0m"
 
