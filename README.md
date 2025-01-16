@@ -39,21 +39,21 @@ The `table` subcommand prints a table summarizing the contributions of every
 author who has made commits in the repository:
 
 ```
-~/repos/cpython$ git who
+~/clones/cpython$ git who
 ┌─────────────────────────────────────────────────────┐
 │Author                            Last Edit   Commits│
 ├─────────────────────────────────────────────────────┤
-│Guido van Rossum                  2 mon. ago    11213│
-│Victor Stinner                    1 week ago     7193│
-│Fred Drake                        13 yr. ago     5465│
-│Georg Brandl                      1 year ago     5294│
-│Benjamin Peterson                 4 mon. ago     4724│
-│Raymond Hettinger                 1 month ago    4235│
-│Serhiy Storchaka                  1 day ago      3366│
-│Antoine Pitrou                    10 mon. ago    3180│
-│Jack Jansen                       18 yr. ago     2978│
-│Martin v. Löwis                   9 yr. ago      2690│
-│...3026 more...                                      │
+│Guido van Rossum                  2 mon. ago   11,213│
+│Victor Stinner                    1 week ago    7,193│
+│Fred Drake                        13 yr. ago    5,465│
+│Georg Brandl                      1 year ago    5,294│
+│Benjamin Peterson                 4 mon. ago    4,724│
+│Raymond Hettinger                 1 month ago   4,235│
+│Serhiy Storchaka                  3 days ago    3,366│
+│Antoine Pitrou                    10 mon. ago   3,180│
+│Jack Jansen                       18 yr. ago    2,978│
+│Martin v. Löwis                   9 yr. ago     2,690│
+│...3,026 more...                                     │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -81,20 +81,20 @@ touched files under the given path:
 You can also specify a branch name, tag name, or any "commit-ish" to
 filter the results to commits reachable from the specified commit:
 ```
-~/repos/cpython$ git who v3.7.1
+~/clones/cpython$ git who v3.7.1
 ┌─────────────────────────────────────────────────────┐
 │Author                            Last Edit   Commits│
 ├─────────────────────────────────────────────────────┤
-│Guido van Rossum                  6 yr. ago     10986│
-│Fred Drake                        13 yr. ago     5465│
-│Georg Brandl                      8 yr. ago      5291│
-│Benjamin Peterson                 6 yr. ago      4599│
-│Victor Stinner                    6 yr. ago      4462│
-│Raymond Hettinger                 6 yr. ago      3667│
-│Antoine Pitrou                    6 yr. ago      3149│
-│Jack Jansen                       18 yr. ago     2978│
-│Martin v. Löwis                   9 yr. ago      2690│
-│Tim Peters                        10 yr. ago     2489│
+│Guido van Rossum                  6 yr. ago    10,986│
+│Fred Drake                        13 yr. ago    5,465│
+│Georg Brandl                      8 yr. ago     5,291│
+│Benjamin Peterson                 6 yr. ago     4,599│
+│Victor Stinner                    6 yr. ago     4,462│
+│Raymond Hettinger                 6 yr. ago     3,667│
+│Antoine Pitrou                    6 yr. ago     3,149│
+│Jack Jansen                       18 yr. ago    2,978│
+│Martin v. Löwis                   9 yr. ago     2,690│
+│Tim Peters                        10 yr. ago    2,489│
 │...550 more...                                       │
 └─────────────────────────────────────────────────────┘
 ```
@@ -106,7 +106,7 @@ of 3.10.9 up to the release of 3.11.9:
 ┌─────────────────────────────────────────────────────┐
 │Author                            Last Edit   Commits│
 ├─────────────────────────────────────────────────────┤
-│Miss Islington (bot)              9 mon. ago     2551│
+│Miss Islington (bot)              9 mon. ago    2,551│
 │Victor Stinner                    9 mon. ago      367│
 │Serhiy Storchaka                  9 mon. ago      304│
 │Erlend Egeberg Aasland            2 yr. ago       202│
@@ -141,19 +141,19 @@ columns:
 ```
 $ git who -l
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│Author                           Last Edit   Commits   Files       Lines (+/-)│
+│Author                          Last Edit   Commits   Files        Lines (+/-)│
 ├──────────────────────────────────────────────────────────────────────────────┤
-│Jiang Xin                        8 mon. ago      331     471  253283 /  226023│
-│Junio C Hamano                   19 hr. ago     7993    2492  247398 /  105550│
-│Peter Krefting                   3 mon. ago      122     564  160447 /  135430│
-│Tran Ngoc Quan                   2 yr. ago        84     296  148753 /  126581│
-│Alexander Shopov                 1 week ago       82     298  143828 /  114936│
-│Jordi Mas                        2 mon. ago       59     222  110952 /   95889│
-│Jean-Noël Avila                  1 month ago     126     383   96875 /   90328│
-│Ralf Thielow                     2 mon. ago      166     470   88881 /   64093│
-│Dimitriy Ryazantcev              1 year ago       30     279   84741 /   62953│
-│Jeff King                        3 days ago     4421    2056   86235 /   47464│
-│...2243 more...                                                               │
+│Guido van Rossum                2 mon. ago   11,213  14,135     1.3m / 793,252│
+│Antoine Pitrou                  10 mon. ago   3,180   3,868  944,685 / 776,587│
+│Jack Jansen                     18 yr. ago    2,978   5,887  836,527 / 691,078│
+│Benjamin Peterson               4 mon. ago    4,724   6,957  690,740 / 781,700│
+│Georg Brandl                    1 year ago    5,294   9,139  644,620 / 640,217│
+│Martin v. Löwis                 9 yr. ago     2,690   4,557  570,632 / 389,794│
+│Victor Stinner                  1 week ago    7,193  11,382  464,474 / 460,396│
+│Brett Cannon                    1 month ago   2,022   2,841  305,631 / 283,178│
+│Serhiy Storchaka                3 days ago    3,366   9,955  335,209 / 208,899│
+│Christian Heimes                1 year ago    1,553   4,191  339,706 / 178,947│
+│...3,022 more...                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -303,15 +303,15 @@ author who has added or removed the most lines at that path:
 
 ```
 ~/repos/cpython$ git who tree -l Parser/
-Parser/.........................Pablo Galindo (72917 / 47102)
-├── lexer/......................Lysandros Nikolaou (1668 / 0)
+Parser/.........................Pablo Galindo (72,917 / 47,102)
+├── lexer/......................Lysandros Nikolaou (1,668 / 0)
 │   ├── buffer.c
 │   ├── buffer.h
 │   ├── lexer.c
 │   ├── lexer.h
 │   ├── state.c
 │   └── state.h.................Pablo Galindo Salgado (1 / 0)
-├── tokenizer/..................Lysandros Nikolaou (1391 / 0)
+├── tokenizer/..................Lysandros Nikolaou (1,391 / 0)
 │   ├── file_tokenizer.c
 │   ├── helpers.c
 │   ├── helpers.h
@@ -349,7 +349,7 @@ The `hist` subcommand prints out a little bar chart / timeline of commit activit
 showing the history of contributions to the repository.
 
 ```
-~/repos/cpython$ git who hist
+~/clones/cpython$ git who hist
 1990 ┤ #                                     Guido van Rossum (105)
 1991 ┤ ##                                    Guido van Rossum (445)
 1992 ┤ ###                                   Guido van Rossum (606)
@@ -357,20 +357,20 @@ showing the history of contributions to the repository.
 1994 ┤ ###                                   Guido van Rossum (525)
 1995 ┤ ####-                                 Guido van Rossum (869)
 1996 ┤ ####---                               Guido van Rossum (961)
-1997 ┤ #######--                             Guido van Rossum (1626)
-1998 ┤ #####------                           Guido van Rossum (1205)
+1997 ┤ #######--                             Guido van Rossum (1,626)
+1998 ┤ #####------                           Guido van Rossum (1,205)
 1999 ┤ ###-----                              Fred Drake (755)
 2000 ┤ ####------------                      Fred Drake (973)
-2001 ┤ #####-----------------                Fred Drake (1196)
+2001 ┤ #####-----------------                Fred Drake (1,196)
 2002 ┤ ###--------------                     Guido van Rossum (543)
 2003 ┤ ##------------                        Raymond Hettinger (479)
 2004 ┤ ##--------                            Raymond Hettinger (460)
 2005 ┤ #----                                 Raymond Hettinger (171)
 2006 ┤ ###-------------                      Neal Norwitz (636)
 2007 ┤ ####------------                      Guido van Rossum (792)
-2008 ┤ ####--------------------              Georg Brandl (1005)
-2009 ┤ #####-----------------------          Benjamin Peterson (1107)
-2010 ┤ #####-------------------------------  Georg Brandl (1088)
+2008 ┤ ####--------------------              Georg Brandl (1,005)
+2009 ┤ #####-----------------------          Benjamin Peterson (1,107)
+2010 ┤ #####-------------------------------  Georg Brandl (1,088)
 2011 ┤ ####-----------------                 Victor Stinner (877)
 2012 ┤ ##------------------                  Antoine Pitrou (466)
 2013 ┤ ###--------------                     Victor Stinner (570)
@@ -385,7 +385,7 @@ showing the history of contributions to the repository.
 2022 ┤ ##-------------                       Victor Stinner (366)
 2023 ┤ ###---------------                    Victor Stinner (556)
 2024 ┤ ##-----------------                   Serhiy Storchaka (321)
-2025 ┤ #                                     Bénédikt Tran (26)
+2025 ┤ #                                     Bénédikt Tran (27)
 ```
 
 (Git was only released in 2005, so clearly there has been some version control
