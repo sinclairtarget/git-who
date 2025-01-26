@@ -1,36 +1,47 @@
 package cache
 
 import (
-	"fmt"
+	"iter"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
-type Backend interface {
+type CacheBackend interface {
 	Name() string
-	Get(revs []string) ([]git.Commit, error)
+	Size() int
+	Get(revs []string) (iter.Seq2[git.Commit, error], bool, error)
 	Add(commits []git.Commit) error
-	Wipe() error
+	Clear() error
 }
 
-var backend Backend
-
-func UseBackend(b Backend) {
-	logger().Debug(fmt.Sprintf("using backend %s", b.Name()))
-	backend = b
+type Cache struct {
+	backend CacheBackend
 }
 
-func Get(revs []string) ([]git.Commit, error) {
+func NewCache(backend CacheBackend) Cache {
+	return Cache{
+		backend: backend,
+	}
+}
+
+func (c *Cache) Name() string {
+	return c.backend.Name()
+}
+
+func (c *Cache) Size() int {
+	return c.backend.Size()
+}
+
+func (c *Cache) Get(revs []string) (iter.Seq2[git.Commit, error], error) {
 	start := time.Now()
 
-	commits, err := backend.Get(revs)
+	commits, wasHit, err := c.backend.Get(revs)
 	if err != nil {
 		return nil, err
 	}
 
 	elapsed := time.Now().Sub(start)
-	wasHit := len(commits) > 0
 	logger().Debug(
 		"cache get",
 		"duration_ms",
@@ -42,10 +53,10 @@ func Get(revs []string) ([]git.Commit, error) {
 	return commits, nil
 }
 
-func Add(commits []git.Commit) error {
+func (c *Cache) Add(commits []git.Commit) error {
 	start := time.Now()
 
-	err := backend.Add(commits)
+	err := c.backend.Add(commits)
 	if err != nil {
 		return err
 	}
@@ -60,6 +71,12 @@ func Add(commits []git.Commit) error {
 	return nil
 }
 
-func Wipe() error {
-	return backend.Wipe()
+func (c *Cache) Clear() error {
+	err := c.backend.Clear()
+	if err != nil {
+		return err
+	}
+
+	logger().Debug("cache clear")
+	return nil
 }

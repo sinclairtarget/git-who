@@ -11,6 +11,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/sinclairtarget/git-who/internal/cache"
+	"github.com/sinclairtarget/git-who/internal/cache/backends"
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -115,6 +117,7 @@ func tree(
 			tallyOpts,
 			wtreeset,
 			gitRootPath,
+			cache.NewCache(backends.NoopBackend{}),
 			pretty.AllowDynamic(os.Stdout),
 		)
 

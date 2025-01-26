@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/cache"
-	"github.com/sinclairtarget/git-who/internal/cache/backends"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/pretty"
@@ -75,9 +74,30 @@ func shouldShowProgress(chunks int) bool {
 	return chunks > nCPU
 }
 
+func accumulateCached[T combinable[T]](
+	whop whoperation[T],
+	c cache.Cache,
+	revs []string,
+) (T, error) {
+	var none T
+
+	commits, err := c.Get(revs)
+	if err != nil {
+		return none, err
+	}
+
+	result, err := whop.tally(commits, whop.opts)
+	if err != nil {
+		return none, err
+	}
+
+	return result, nil
+}
+
 func tallyFanOutFanIn[T combinable[T]](
 	ctx context.Context,
 	whop whoperation[T],
+	cache cache.Cache,
 	allowProgressBar bool,
 ) (_ T, err error) {
 	defer func() {
@@ -94,6 +114,13 @@ func tallyFanOutFanIn[T combinable[T]](
 		return accumulator, err
 	}
 
+	// -- Use cached commits ---------------------------------------------------
+	accumulator, err = accumulateCached[T](whop, cache, revs)
+	if err != nil {
+		return accumulator, err
+	}
+
+	// -- Fork -----------------------------------------------------------------
 	logger().Debug(
 		"running concurrent tally",
 		"revCount",
@@ -102,16 +129,9 @@ func tallyFanOutFanIn[T combinable[T]](
 		nCPU,
 	)
 
-	cache.UseBackend(backends.NoopBackend{})
-	_, err = cache.Get(revs)
-	if err != nil {
-		return accumulator, err
-	}
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// -- Fork -----------------------------------------------------------------
 	q := func() <-chan []string {
 		q := make(chan []string) // q is our work queue
 		go func() {
@@ -203,6 +223,7 @@ func TallyCommits(
 	paths []string,
 	filters git.LogFilters,
 	opts tally.TallyOpts,
+	cache cache.Cache,
 	allowProgressBar bool,
 ) (_ map[string]tally.Tally, err error) {
 	whop := whoperation[tally.TalliesByPath]{
@@ -216,6 +237,7 @@ func TallyCommits(
 	talliesByPath, err := tallyFanOutFanIn[tally.TalliesByPath](
 		ctx,
 		whop,
+		cache,
 		allowProgressBar,
 	)
 	if err != nil {
@@ -233,6 +255,7 @@ func TallyCommitsTree(
 	opts tally.TallyOpts,
 	worktreePaths map[string]bool,
 	gitRootPath string,
+	cache cache.Cache,
 	allowProgressBar bool,
 ) (*tally.TreeNode, error) {
 	whop := whoperation[tally.TalliesByPath]{
@@ -246,6 +269,7 @@ func TallyCommitsTree(
 	talliesByPath, err := tallyFanOutFanIn[tally.TalliesByPath](
 		ctx,
 		whop,
+		cache,
 		allowProgressBar,
 	)
 	if err != nil {
@@ -266,6 +290,7 @@ func TallyCommitsTimeline(
 	filters git.LogFilters,
 	opts tally.TallyOpts,
 	end time.Time,
+	cache cache.Cache,
 	allowProgressBar bool,
 ) ([]tally.TimeBucket, error) {
 	f := func(
@@ -286,6 +311,7 @@ func TallyCommitsTimeline(
 	buckets, err := tallyFanOutFanIn[tally.TimeSeries](
 		ctx,
 		whop,
+		cache,
 		allowProgressBar,
 	)
 	if err != nil {
