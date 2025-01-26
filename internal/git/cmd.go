@@ -281,20 +281,14 @@ func RunRevList(
 	revs []string,
 	paths []string,
 	filters LogFilters,
-	countOnly bool,
 ) (*Subprocess, error) {
 	if len(revs) == 0 {
 		return nil, errors.New("git rev-list requires revision spec")
 	}
 
-	var baseArgs []string
-	if countOnly {
-		baseArgs = []string{"rev-list", "--count"}
-	} else {
-		baseArgs = []string{
-			"rev-list",
-			"--reverse",
-		}
+	baseArgs := []string{
+		"rev-list",
+		"--reverse",
 	}
 
 	filterArgs := filters.ToArgs()

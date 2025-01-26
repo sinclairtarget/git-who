@@ -8,11 +8,9 @@ package git
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"iter"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -121,7 +119,7 @@ func RevList(
 
 	revs := []string{}
 
-	subprocess, err := RunRevList(ctx, revranges, paths, filters, false)
+	subprocess, err := RunRevList(ctx, revranges, paths, filters)
 	if err != nil {
 		return revs, err
 	}
@@ -141,50 +139,6 @@ func RevList(
 	}
 
 	return revs, nil
-}
-
-func NumCommits(
-	revs []string,
-	paths []string,
-	filters LogFilters,
-) (_ int, err error) {
-	defer func() {
-		if err != nil {
-			err = fmt.Errorf("error getting commit count: %w", err)
-		}
-	}()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	subprocess, err := RunRevList(ctx, revs, paths, filters, true)
-	if err != nil {
-		return 0, err
-	}
-
-	lines := subprocess.StdoutLines()
-	next, stop := iter.Pull2(lines)
-	defer stop()
-
-	line, err, ok := next()
-	if err != nil {
-		return 0, err
-	}
-	if !ok {
-		return 0, errors.New("no output from git rev-list")
-	}
-
-	count, err := strconv.Atoi(line)
-	if err != nil {
-		return 0, err
-	}
-
-	err = subprocess.Wait()
-	if err != nil {
-		return count, nil
-	}
-
-	return count, nil
 }
 
 func GetRoot() (_ string, err error) {
