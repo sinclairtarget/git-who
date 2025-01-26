@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/iterutils"
+	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 func TestCommitsFileRename(t *testing.T) {

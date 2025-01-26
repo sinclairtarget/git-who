@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/timeutils"
+	"github.com/sinclairtarget/git-who/internal/utils/timeutils"
 )
 
 // Whether we rank authors by commit, lines, or files.

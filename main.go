@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sinclairtarget/git-who/internal/flagutils"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
+	"github.com/sinclairtarget/git-who/internal/utils/flagutils"
 )
 
 var Commit = "unknown"
