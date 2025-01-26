@@ -27,6 +27,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/sinclairtarget/git-who/internal/cache"
+	"github.com/sinclairtarget/git-who/internal/cache/backends"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/pretty"
@@ -99,6 +101,12 @@ func tallyFanOutFanIn[T combinable[T]](
 		"nCPU",
 		nCPU,
 	)
+
+	cache.UseBackend(backends.NoopBackend{})
+	_, err = cache.Get(revs)
+	if err != nil {
+		return accumulator, err
+	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
