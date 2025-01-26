@@ -1,4 +1,4 @@
-// Utils for running tests in the test submodule/repo.
+// Helpers for running tests in the test submodule/repo.
 package repotest
 
 import (
