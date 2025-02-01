@@ -100,7 +100,7 @@ func table(
 			paths,
 			filters,
 			tallyOpts,
-			cache.NewCache(backends.NoopBackend{}),
+			cache.NewCache(backends.ConstantBackend{}),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {

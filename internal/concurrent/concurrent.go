@@ -74,24 +74,41 @@ func shouldShowProgress(chunks int) bool {
 	return chunks > nCPU
 }
 
+// All the strings in the first array minus the strings in the second array
+func setDiff(a []string, b []string) []string {
+	m := map[string]bool{}
+	for _, rev := range b {
+		m[rev] = true
+	}
+
+	ret := []string{}
+	for _, rev := range a {
+		if _, ok := m[rev]; !ok {
+			ret = append(ret, rev)
+		}
+	}
+
+	return ret
+}
+
 func accumulateCached[T combinable[T]](
 	whop whoperation[T],
 	c cache.Cache,
 	revs []string,
-) (T, error) {
+) (T, []string, error) {
 	var none T
 
-	commits, err := c.Get(revs)
+	result, err := c.Get(revs)
 	if err != nil {
-		return none, err
+		return none, revs, err
 	}
 
-	result, err := whop.tally(commits, whop.opts)
+	accumulator, err := whop.tally(result.Commits, whop.opts)
 	if err != nil {
-		return none, err
+		return none, revs, err
 	}
 
-	return result, nil
+	return accumulator, setDiff(revs, result.Revs), nil
 }
 
 func tallyFanOutFanIn[T combinable[T]](
@@ -115,7 +132,7 @@ func tallyFanOutFanIn[T combinable[T]](
 	}
 
 	// -- Use cached commits ---------------------------------------------------
-	accumulator, err = accumulateCached[T](whop, cache, revs)
+	accumulator, remainingRevs, err := accumulateCached[T](whop, cache, revs)
 	if err != nil {
 		return accumulator, err
 	}
@@ -124,7 +141,7 @@ func tallyFanOutFanIn[T combinable[T]](
 	logger().Debug(
 		"running concurrent tally",
 		"revCount",
-		len(revs),
+		len(remainingRevs),
 		"nCPU",
 		nCPU,
 	)
@@ -137,7 +154,7 @@ func tallyFanOutFanIn[T combinable[T]](
 		go func() {
 			defer close(q)
 
-			runWriter(ctx, revs, q)
+			runWriter(ctx, remainingRevs, q)
 		}()
 
 		return q
@@ -171,12 +188,12 @@ func tallyFanOutFanIn[T combinable[T]](
 	// -- Join -----------------------------------------------------------------
 	// Read and combine results until results channel is closed, context is
 	// cancelled, or we get a worker error
-	totalChunks := calcTotalChunks(len(revs))
+	totalChunks := calcTotalChunks(len(remainingRevs))
 	chunksComplete := 0
 	showProgress := allowProgressBar && shouldShowProgress(totalChunks)
 
 	if showProgress {
-		fmt.Printf("  0%% (0/%s commits)", format.Number(len(revs)))
+		fmt.Printf("  0%% (0/%s commits)", format.Number(len(remainingRevs)))
 	}
 
 loop:
@@ -197,8 +214,8 @@ loop:
 				fmt.Printf(
 					"%3.0f%% (%s/%s commits)",
 					float32(chunksComplete)/float32(totalChunks)*100,
-					format.Number(min(len(revs), chunksComplete*chunkSize)),
-					format.Number(len(revs)),
+					format.Number(min(len(remainingRevs), chunksComplete*chunkSize)),
+					format.Number(len(remainingRevs)),
 				)
 			}
 		case err, ok := <-errs:

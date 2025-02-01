@@ -7,19 +7,28 @@ import (
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
-type CacheBackend interface {
+type Result struct {
+	Revs    []string                     // All commit hashes in the sequence
+	Commits iter.Seq2[git.Commit, error] // The sequence of commits
+}
+
+func (r Result) WasHit() bool {
+	return len(r.Revs) > 0
+}
+
+type Backend interface {
 	Name() string
 	Size() int
-	Get(revs []string) (iter.Seq2[git.Commit, error], bool, error)
+	Get(revs []string) (Result, error)
 	Add(commits []git.Commit) error
 	Clear() error
 }
 
 type Cache struct {
-	backend CacheBackend
+	backend Backend
 }
 
-func NewCache(backend CacheBackend) Cache {
+func NewCache(backend Backend) Cache {
 	return Cache{
 		backend: backend,
 	}
@@ -33,12 +42,14 @@ func (c *Cache) Size() int {
 	return c.backend.Size()
 }
 
-func (c *Cache) Get(revs []string) (iter.Seq2[git.Commit, error], error) {
+func (c *Cache) Get(revs []string) (Result, error) {
 	start := time.Now()
 
-	commits, wasHit, err := c.backend.Get(revs)
+	var result Result
+
+	result, err := c.backend.Get(revs)
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 
 	elapsed := time.Now().Sub(start)
@@ -47,10 +58,10 @@ func (c *Cache) Get(revs []string) (iter.Seq2[git.Commit, error], error) {
 		"duration_ms",
 		elapsed.Milliseconds(),
 		"hit",
-		wasHit,
+		result.WasHit(),
 	)
 
-	return commits, nil
+	return result, nil
 }
 
 func (c *Cache) Add(commits []git.Commit) error {
