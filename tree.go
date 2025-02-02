@@ -115,7 +115,7 @@ func tree(
 			tallyOpts,
 			wtreeset,
 			gitRootPath,
-			defaultCache(),
+			getCache(),
 			pretty.AllowDynamic(os.Stdout),
 		)
 

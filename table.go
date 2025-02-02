@@ -98,7 +98,7 @@ func table(
 			paths,
 			filters,
 			tallyOpts,
-			defaultCache(),
+			getCache(),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {

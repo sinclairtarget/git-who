@@ -80,7 +80,7 @@ func hist(
 			filters,
 			tallyOpts,
 			time.Now(),
-			defaultCache(),
+			getCache(),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {
