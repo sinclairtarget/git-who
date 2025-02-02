@@ -12,13 +12,12 @@ type Result struct {
 	Commits iter.Seq2[git.Commit, error] // The sequence of commits
 }
 
-func (r Result) WasHit() bool {
+func (r Result) AnyHits() bool {
 	return len(r.Revs) > 0
 }
 
 type Backend interface {
 	Name() string
-	Size() int
 	Get(revs []string) (Result, error)
 	Add(commits []git.Commit) error
 	Clear() error
@@ -38,10 +37,6 @@ func (c *Cache) Name() string {
 	return c.backend.Name()
 }
 
-func (c *Cache) Size() int {
-	return c.backend.Size()
-}
-
 func (c *Cache) Get(revs []string) (Result, error) {
 	start := time.Now()
 
@@ -58,7 +53,7 @@ func (c *Cache) Get(revs []string) (Result, error) {
 		"duration_ms",
 		elapsed.Milliseconds(),
 		"hit",
-		result.WasHit(),
+		result.AnyHits(),
 	)
 
 	return result, nil

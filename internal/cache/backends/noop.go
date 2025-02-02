@@ -11,10 +11,6 @@ func (b NoopBackend) Name() string {
 	return "noop"
 }
 
-func (b NoopBackend) Size() int {
-	return 0
-}
-
 func (b NoopBackend) Get(revs []string) (cache.Result, error) {
 	return cache.Result{Revs: []string{}}, nil
 }

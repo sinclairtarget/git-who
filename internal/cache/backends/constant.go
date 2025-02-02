@@ -36,10 +36,6 @@ func (b ConstantBackend) Name() string {
 	return "constant"
 }
 
-func (b ConstantBackend) Size() int {
-	return len(commits)
-}
-
 func (b ConstantBackend) Get(revs []string) (cache.Result, error) {
 	cached := map[string]git.Commit{}
 	for _, commit := range commits {
