@@ -11,8 +11,8 @@
 //	         ~q2~
 //	   v      v      v
 //	worker  worker  worker ...
-//	      v       v v v
-//	  ~results~   waiter
+//	      v       v v v          v
+//	  ~results~   waiter       cacher
 //	        |       v
 //	        |     ~errs~
 //	        v    v
@@ -59,11 +59,6 @@ type whoperation[T combinable[T]] struct {
 	filters git.LogFilters
 	tally   tallyFunc[T]
 	opts    tally.TallyOpts
-}
-
-type worker struct {
-	id  int
-	err chan error
 }
 
 func calcTotalChunks(revCount int) int {
@@ -131,10 +126,13 @@ func tallyFanOutFanIn[T combinable[T]](
 		return accumulator, err
 	}
 
-	// -- Use cached commits ---------------------------------------------------
+	// -- Use cached commits if there are any ----------------------------------
 	accumulator, remainingRevs, err := accumulateCached[T](whop, cache, revs)
 	if err != nil {
 		return accumulator, err
+	} else if len(remainingRevs) == 0 {
+		logger().Debug("all commits were cached")
+		return accumulator, nil
 	}
 
 	// -- Fork -----------------------------------------------------------------
@@ -162,9 +160,10 @@ func tallyFanOutFanIn[T combinable[T]](
 
 	// Launches workers that consume from q and write to results and errors
 	// that can be read by the main coroutine.
-	results, errs := func() (<-chan T, <-chan error) {
+	results, errs, cacheErr := func() (<-chan T, <-chan error, <-chan error) {
 		q2 := make(chan []string) // Intermediate work queue
 		workers := make(chan worker, nCPU)
+		toCache := make(chan []git.Commit)
 		results := make(chan T)
 		errs := make(chan error, 1)
 
@@ -172,17 +171,28 @@ func tallyFanOutFanIn[T combinable[T]](
 			defer close(q2)
 			defer close(workers)
 
-			runSpawner[T](ctx, whop, q, q2, workers, results)
+			runSpawner[T](ctx, whop, q, q2, workers, results, toCache)
 		}()
 
 		go func() {
+			defer close(toCache)
 			defer close(results)
 			defer close(errs)
 
 			runWaiter(ctx, workers, errs)
 		}()
 
-		return results, errs
+		cacheErr := make(chan error, 1)
+		go func() {
+			defer close(cacheErr)
+
+			err := runCacher(ctx, cache, toCache)
+			if err != nil {
+				cacheErr <- err
+			}
+		}()
+
+		return results, errs, cacheErr
 	}()
 
 	// -- Join -----------------------------------------------------------------
@@ -231,6 +241,13 @@ loop:
 	if showProgress {
 		fmt.Printf("%s\r", pretty.EraseLine)
 	}
+
+	// Wait for cacher to exit too
+	err, ok := <-cacheErr
+	if ok && err != nil {
+		return accumulator, err
+	}
+
 	return accumulator, nil
 }
 

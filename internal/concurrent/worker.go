@@ -5,8 +5,14 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/git"
 )
+
+type worker struct {
+	id  int
+	err chan error
+}
 
 // Write chunks of work to our work queue to be handled by workers downstream.
 func runWriter(ctx context.Context, revs []string, q chan<- []string) {
@@ -32,6 +38,7 @@ func runSpawner[T combinable[T]](
 	q2 chan []string,
 	workers chan<- worker,
 	results chan<- T,
+	toCache chan<- []git.Commit,
 ) {
 	logger().Debug("spawner started")
 	defer logger().Debug("spawner exited")
@@ -69,6 +76,7 @@ func runSpawner[T combinable[T]](
 					whop,
 					q2,
 					results,
+					toCache,
 				)
 				if err != nil {
 					w.err <- err
@@ -122,6 +130,42 @@ func runWaiter(
 	}
 }
 
+// Cacher. Writes parsed commits to the cache.
+func runCacher(
+	ctx context.Context,
+	cache cache.Cache,
+	toCache <-chan []git.Commit,
+) (err error) {
+	logger().Debug("cacher started")
+
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("error in cacher: %w", err)
+		}
+
+		logger().Debug("cacher exited")
+	}()
+
+loop:
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("cacher cancelled")
+		case commits, ok := <-toCache:
+			if !ok {
+				break loop
+			}
+
+			err := cache.Add(commits)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // A tally worker that runs git log for each chunk of work.
 func runWorker[T combinable[T]](
 	ctx context.Context,
@@ -129,6 +173,7 @@ func runWorker[T combinable[T]](
 	whop whoperation[T],
 	in <-chan []string,
 	results chan<- T,
+	toCache chan<- []git.Commit,
 ) (err error) {
 	logger := logger().With("workerId", id)
 	logger.Debug("worker started")
@@ -175,7 +220,7 @@ loop:
 
 			// Read parsed commits
 			lines := subprocess.StdoutLines()
-			commits := git.ParseCommits(lines)
+			commits := cacheTee(git.ParseCommits(lines), toCache)
 			result, err := whop.tally(commits, whop.opts)
 			if err != nil {
 				return err

@@ -12,7 +12,7 @@ func (b NoopBackend) Name() string {
 }
 
 func (b NoopBackend) Get(revs []string) (cache.Result, error) {
-	return cache.Result{Revs: []string{}}, nil
+	return cache.EmptyResult(), nil
 }
 
 func (b NoopBackend) Add(commits []git.Commit) error {

@@ -1,15 +1,26 @@
 package cache
 
 import (
+	"fmt"
 	"iter"
+	"slices"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 type Result struct {
 	Revs    []string                     // All commit hashes in the sequence
 	Commits iter.Seq2[git.Commit, error] // The sequence of commits
+}
+
+// If we use the zero-value for Result, the iterator will be nil. We instead
+// want an interator over a zero-length sequence.
+func EmptyResult() Result {
+	return Result{
+		Commits: iterutils.WithoutErrors(slices.Values([]git.Commit{})),
+	}
 }
 
 func (r Result) AnyHits() bool {
@@ -37,10 +48,14 @@ func (c *Cache) Name() string {
 	return c.backend.Name()
 }
 
-func (c *Cache) Get(revs []string) (Result, error) {
-	start := time.Now()
+func (c *Cache) Get(revs []string) (_ Result, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("failed to retrieve from cache: %w", err)
+		}
+	}()
 
-	var result Result
+	start := time.Now()
 
 	result, err := c.backend.Get(revs)
 	if err != nil {
@@ -55,6 +70,11 @@ func (c *Cache) Get(revs []string) (Result, error) {
 		"hit",
 		result.AnyHits(),
 	)
+
+	// Make sure iterator is not nil
+	if result.Commits == nil {
+		panic("Cache backend returned nil commits iterator; this isn't kosher!")
+	}
 
 	return result, nil
 }

@@ -100,7 +100,7 @@ func table(
 			paths,
 			filters,
 			tallyOpts,
-			cache.NewCache(cacheBackends.ConstantBackend{}),
+			cache.NewCache(cacheBackends.JSONBackend{Path: "commits.ndjson"}),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {
