@@ -131,7 +131,7 @@ func tallyFanOutFanIn[T combinable[T]](
 	if err != nil {
 		return accumulator, err
 	} else if len(remainingRevs) == 0 {
-		logger().Debug("all commits were cached")
+		logger().Debug("all commits read from cache")
 		return accumulator, nil
 	}
 
