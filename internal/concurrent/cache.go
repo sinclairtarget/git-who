@@ -40,3 +40,26 @@ func cacheTee(
 		}
 	}
 }
+
+// We want to get a list of revs from an iterator over commits while passing
+// through the iterator to someone else for consumption.
+//
+// A little awkward... is there a better way to do this?
+func revTee(
+	commits iter.Seq2[git.Commit, error],
+	revs *[]string,
+) iter.Seq2[git.Commit, error] {
+	return func(yield func(git.Commit, error) bool) {
+		for c, err := range commits {
+			if err != nil {
+				yield(c, err)
+				return
+			}
+
+			*revs = append(*revs, c.Hash)
+			if !yield(c, nil) {
+				return
+			}
+		}
+	}
+}

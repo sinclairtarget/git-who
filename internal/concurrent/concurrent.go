@@ -98,12 +98,17 @@ func accumulateCached[T combinable[T]](
 		return none, revs, err
 	}
 
-	accumulator, err := whop.tally(result.Commits, whop.opts)
+	foundRevs := []string{}
+	accumulator, err := whop.tally(
+		revTee(result.Commits, &foundRevs),
+		whop.opts,
+	)
 	if err != nil {
 		return none, revs, err
 	}
 
-	return accumulator, setDiff(revs, result.Revs), nil
+	logger().Debug("commits found in cache", "num", len(foundRevs))
+	return accumulator, setDiff(revs, foundRevs), nil
 }
 
 func tallyFanOutFanIn[T combinable[T]](

@@ -75,13 +75,7 @@ func (b JSONBackend) Get(revs []string) (cache.Result, error) {
 		}
 	}
 
-	hitRevs := []string{}
-	for _, commit := range commits {
-		hitRevs = append(hitRevs, commit.Hash)
-	}
-
 	return cache.Result{
-		Revs:    hitRevs,
 		Commits: iterutils.WithoutErrors(slices.Values(commits)),
 	}, nil
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/sinclairtarget/git-who/internal/cache/backends"
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 func TestAddGetClear(t *testing.T) {
@@ -49,10 +50,6 @@ func TestAddGetClear(t *testing.T) {
 		t.Fatalf("get commits from cache failed with error: %v", err)
 	}
 
-	if diff := cmp.Diff(revs, result.Revs); diff != "" {
-		t.Errorf("revs are wrong:\n%s", diff)
-	}
-
 	next, stop := iter.Pull2(result.Commits)
 	defer stop()
 
@@ -83,8 +80,13 @@ func TestAddGetClear(t *testing.T) {
 		)
 	}
 
-	if result.AnyHits() {
-		t.Errorf("cache result after clear should not have been a hit")
+	commits, err := iterutils.Collect(result.Commits)
+	if err != nil {
+		t.Fatalf("error collecting commits: %v", err)
+	}
+
+	if len(commits) > 0 {
+		t.Errorf("cache result after clear should have been empty")
 	}
 }
 
@@ -140,8 +142,16 @@ func TestAddGetAddGet(t *testing.T) {
 		t.Fatalf("get commits from cache failed with error: %v", err)
 	}
 
-	if diff := cmp.Diff([]string{commitOne.Hash}, result.Revs); diff != "" {
-		t.Errorf("revs are wrong after first get:\n%s", diff)
+	commits, err := iterutils.Collect(result.Commits)
+	if err != nil {
+		t.Fatalf("error collecting commits: %v", err)
+	}
+
+	if len(commits) != 1 {
+		t.Errorf(
+			"expected to get one commit from cache, but got %d",
+			len(commits),
+		)
 	}
 
 	err = c.Add([]git.Commit{commitTwo})
@@ -154,7 +164,15 @@ func TestAddGetAddGet(t *testing.T) {
 		t.Fatalf("get commits from cache failed with error: %v", err)
 	}
 
-	if diff := cmp.Diff(revs, result.Revs); diff != "" {
-		t.Errorf("revs are wrong after second get:\n%s", diff)
+	commits, err = iterutils.Collect(result.Commits)
+	if err != nil {
+		t.Fatalf("error collecting commits: %v", err)
+	}
+
+	if len(commits) != 2 {
+		t.Errorf(
+			"expected to get two commits from cache, but got %d",
+			len(commits),
+		)
 	}
 }

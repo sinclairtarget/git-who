@@ -21,7 +21,6 @@ func IsCachingEnabled() bool {
 }
 
 type Result struct {
-	Revs    []string                     // All commit hashes in the sequence
 	Commits iter.Seq2[git.Commit, error] // The sequence of commits
 }
 
@@ -31,10 +30,6 @@ func EmptyResult() Result {
 	return Result{
 		Commits: iterutils.WithoutErrors(slices.Values([]git.Commit{})),
 	}
-}
-
-func (r Result) AnyHits() bool {
-	return len(r.Revs) > 0
 }
 
 type Backend interface {
@@ -77,8 +72,6 @@ func (c *Cache) Get(revs []string) (_ Result, err error) {
 		"cache get",
 		"duration_ms",
 		elapsed.Milliseconds(),
-		"hit",
-		result.AnyHits(),
 	)
 
 	// Make sure iterator is not nil

@@ -50,13 +50,7 @@ func (b ConstantBackend) Get(revs []string) (cache.Result, error) {
 		}
 	}
 
-	hitRevs := []string{}
-	for _, c := range hits {
-		hitRevs = append(hitRevs, c.Hash)
-	}
-
 	return cache.Result{
-		Revs:    hitRevs,
 		Commits: iterutils.WithoutErrors(slices.Values(hits)),
 	}, nil
 }
