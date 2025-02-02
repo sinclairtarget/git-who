@@ -240,17 +240,15 @@ loop:
 					err,
 				)
 			}
+		case err, ok := <-cacheErr:
+			if ok && err != nil {
+				return accumulator, err
+			}
 		}
 	}
 
 	if showProgress {
 		fmt.Printf("%s\r", pretty.EraseLine)
-	}
-
-	// Wait for cacher to exit too
-	err, ok := <-cacheErr
-	if ok && err != nil {
-		return accumulator, err
 	}
 
 	return accumulator, nil
