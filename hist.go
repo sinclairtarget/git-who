@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sinclairtarget/git-who/internal/cache"
-	"github.com/sinclairtarget/git-who/internal/cache/backends"
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -82,7 +80,7 @@ func hist(
 			filters,
 			tallyOpts,
 			time.Now(),
-			cache.NewCache(backends.NoopBackend{}),
+			defaultCache(),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {

@@ -1,14 +1,24 @@
+// Cache for storing commits we've already diff-ed and parsed.
 package cache
 
 import (
 	"fmt"
 	"iter"
+	"os"
 	"slices"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
+
+func IsCachingEnabled() bool {
+	if len(os.Getenv("GIT_WHO_DISABLE_CACHE")) > 0 {
+		return false
+	}
+
+	return true
+}
 
 type Result struct {
 	Revs    []string                     // All commit hashes in the sequence

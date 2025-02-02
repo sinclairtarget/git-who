@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sinclairtarget/git-who/internal/cache"
-	cacheBackends "github.com/sinclairtarget/git-who/internal/cache/backends"
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -100,7 +98,7 @@ func table(
 			paths,
 			filters,
 			tallyOpts,
-			cache.NewCache(cacheBackends.JSONBackend{Path: "commits.ndjson"}),
+			defaultCache(),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {
