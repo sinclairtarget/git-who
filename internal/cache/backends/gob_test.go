@@ -13,7 +13,7 @@ import (
 	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
-func TestAddGetClear(t *testing.T) {
+func TestGobAddGetClear(t *testing.T) {
 	dir := t.TempDir()
 	c := backends.GobBackend{
 		Path: filepath.Join(dir, "commits.gob"),
@@ -89,7 +89,7 @@ func TestAddGetClear(t *testing.T) {
 	}
 }
 
-func TestAddGetAddGet(t *testing.T) {
+func TestGobAddGetAddGet(t *testing.T) {
 	dir := t.TempDir()
 	c := backends.GobBackend{
 		Path: filepath.Join(dir, "commits.gob"),
