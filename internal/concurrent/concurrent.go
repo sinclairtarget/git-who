@@ -134,7 +134,14 @@ func tallyFanOutFanIn[T combinable[T]](
 	// -- Use cached commits if there are any ----------------------------------
 	accumulator, remainingRevs, err := accumulateCached[T](whop, cache, revs)
 	if err != nil {
-		return accumulator, err
+		// Graceful handling of cache error. Wipe cache and move on without it
+		logger().Warn(
+			"error reading from cache (maybe corrupt?); wiping and moving on",
+		)
+		err = cache.Clear()
+		if err != nil {
+			return accumulator, nil
+		}
 	} else if len(remainingRevs) == 0 {
 		logger().Debug("all commits read from cache")
 		return accumulator, nil
