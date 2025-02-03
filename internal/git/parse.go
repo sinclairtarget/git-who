@@ -289,7 +289,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 
 				commit.Date = time.Unix(int64(i), 0)
 			case linesThisCommit == 6:
-				commit.Subject = line
+				break // Used to parse subject here; no longer
 			case linesThisCommit >= 7 && line[0] != ' ':
 				diff, err := parseFileDiff(line)
 				if err != nil {

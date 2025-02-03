@@ -27,7 +27,6 @@ func TestAddGetClear(t *testing.T) {
 		Date: time.Date(
 			2025, 1, 31, 16, 35, 26, 0, time.UTC,
 		),
-		Subject: "Use apikey header.",
 		FileDiffs: []git.FileDiff{
 			{
 				Path:         "foo/bar.txt",
@@ -104,7 +103,6 @@ func TestAddGetAddGet(t *testing.T) {
 		Date: time.Date(
 			2025, 1, 30, 16, 35, 26, 0, time.UTC,
 		),
-		Subject: "Use apikey header.",
 		FileDiffs: []git.FileDiff{
 			{
 				Path:         "foo/bar.txt",
@@ -121,7 +119,6 @@ func TestAddGetAddGet(t *testing.T) {
 		Date: time.Date(
 			2025, 1, 31, 16, 35, 26, 0, time.UTC,
 		),
-		Subject: "Use apikey header.",
 		FileDiffs: []git.FileDiff{
 			{
 				Path:         "foo/bim.txt",
