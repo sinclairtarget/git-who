@@ -22,6 +22,9 @@ import (
 // the Gob type metadata is repeated for each array) but allows us to append to
 // the file on disk instead of replacing the whole file when we want to cache
 // new commits.
+//
+// The Gob backend produces a cache file roughly half the size of the JSON
+// backend on disk. It's also SIGNIFICANTLY faster to read the cache from disk.
 type GobBackend struct {
 	Path string
 }
