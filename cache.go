@@ -8,7 +8,7 @@ import (
 func getCache() cache.Cache {
 	var cb cache.Backend = cacheBackends.NoopBackend{}
 	if cache.IsCachingEnabled() {
-		cb = cacheBackends.JSONBackend{Path: "commits.ndjson"}
+		cb = cacheBackends.GobBackend{Path: "commits.gob"}
 	}
 
 	return cache.NewCache(cb)
