@@ -6,9 +6,12 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"io/fs"
 	"os"
+	"os/user"
+	"path/filepath"
 
 	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -162,4 +165,33 @@ func (b GobBackend) Add(commits []git.Commit) (err error) {
 
 func (b GobBackend) Clear() error {
 	return os.Remove(b.Path)
+}
+
+// Returns the absolute path at which we should store the Gob data.
+//
+// Tries to store it under the XDG_CACHE_HOME dir.
+func GobCachePathXDG(gitRootPath string) (string, error) {
+	// Filename includes hash of path to repo so we don't collide with other
+	// git-who caches for other repos.
+	h := fnv.New32()
+	h.Write([]byte(gitRootPath))
+	filename := fmt.Sprintf("%x.gobs", h.Sum32())
+
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	cacheHome := filepath.Join(usr.HomeDir, ".cache")
+	if len(os.Getenv("XDG_CACHE_HOME")) > 0 {
+		cacheHome = os.Getenv("XDG_CACHE_HOME")
+	}
+
+	p := filepath.Join(cacheHome, "git-who", filename)
+	absP, err := filepath.Abs(p)
+	if err != nil {
+		return "", err
+	}
+
+	return absP, nil
 }
