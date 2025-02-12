@@ -98,11 +98,10 @@ func accumulateCached[T combinable[T]](
 		return none, revs, err
 	}
 
+	commits := git.LimitDiffsByPath(result.Commits, whop.paths)
+
 	foundRevs := []string{}
-	accumulator, err := whop.tally(
-		revTee(result.Commits, &foundRevs),
-		whop.opts,
-	)
+	accumulator, err := whop.tally(revTee(commits, &foundRevs), whop.opts)
 	if err != nil {
 		return none, revs, err
 	}

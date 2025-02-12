@@ -200,14 +200,20 @@ loop:
 				break loop // We're done, input channel is closed
 			}
 
-			subprocess, err := git.RunStdinLog(ctx, whop.paths, true)
+			// We pass an empty array of paths here. Even if we are only
+			// tallying commits that affected certain paths, we want to make
+			// sure that the diffs we get include ALL paths touched by each
+			// commit. Otherwise when we cache the commits we would be caching
+			// only a part of the commit
+			nopaths := []string{}
+			subprocess, err := git.RunStdinLog(ctx, nopaths, true)
 			if err != nil {
 				return err
 			}
 
 			w, stdinCloser := subprocess.StdinWriter()
 
-			// Write to git log stdin
+			// Write revs to git log stdin
 			for _, rev := range revs {
 				fmt.Fprintln(w, rev)
 			}
@@ -218,9 +224,14 @@ loop:
 				return err
 			}
 
-			// Read parsed commits
+			// Read parsed commits and enqueue for caching
 			lines := subprocess.StdoutLines()
 			commits := cacheTee(git.ParseCommits(lines), toCache)
+
+			// Now that we're tallying, we DO care to only look at the file
+			// diffs under the given paths
+			commits = git.LimitDiffsByPath(commits, whop.paths)
+
 			result, err := whop.tally(commits, whop.opts)
 			if err != nil {
 				return err

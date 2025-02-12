@@ -176,7 +176,7 @@ func GetRoot() (_ string, err error) {
 func WorkingTreeFiles(paths []string) (_ map[string]bool, err error) {
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("error gettign tree files: %w", err)
+			err = fmt.Errorf("error getting tree files: %w", err)
 		}
 	}()
 
@@ -204,4 +204,35 @@ func WorkingTreeFiles(paths []string) (_ map[string]bool, err error) {
 	}
 
 	return wtreeset, nil
+}
+
+func LimitDiffsByPath(
+	commits iter.Seq2[Commit, error],
+	paths []string,
+) iter.Seq2[Commit, error] {
+	if len(paths) == 0 {
+		return commits
+	}
+
+	return func(yield func(Commit, error) bool) {
+		for commit, err := range commits {
+			if err != nil {
+				yield(commit, err)
+				return
+			}
+
+			filtered := []FileDiff{}
+			for _, diff := range commit.FileDiffs {
+				for _, p := range paths {
+					if strings.HasPrefix(diff.Path, p) {
+						filtered = append(filtered, diff)
+						break
+					}
+				}
+			}
+
+			commit.FileDiffs = filtered
+			yield(commit, nil)
+		}
+	}
 }
