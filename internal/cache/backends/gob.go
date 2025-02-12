@@ -29,7 +29,11 @@ import (
 // new commits.
 //
 // The Gob backend produces a cache file roughly half the size of the JSON
-// backend on disk. It's also SIGNIFICANTLY faster to read the cache from disk.
+// backend on disk. It's also SIGNIFICANTLY faster to read the cache from disk
+// when in Gob format rather than JSON format.
+//
+// We also gzip the file when we're done using it to keep it even smaller on
+// disk.
 type GobBackend struct {
 	Path      string
 	wasOpened bool
@@ -104,7 +108,10 @@ func (b *GobBackend) Close() (err error) {
 		defer fout.Close()
 
 		r := bufio.NewReader(f)
-		zw := gzip.NewWriter(fout)
+		zw, err := gzip.NewWriterLevel(fout, gzip.BestSpeed)
+		if err != nil {
+			return err
+		}
 
 		_, err = io.Copy(zw, r)
 		if err != nil {
