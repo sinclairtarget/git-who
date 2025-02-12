@@ -1,7 +1,9 @@
 package backends
 
 import (
+	"bufio"
 	"bytes"
+	"compress/gzip"
 	"encoding/binary"
 	"encoding/gob"
 	"errors"
@@ -29,14 +31,106 @@ import (
 // The Gob backend produces a cache file roughly half the size of the JSON
 // backend on disk. It's also SIGNIFICANTLY faster to read the cache from disk.
 type GobBackend struct {
-	Path string
+	Path      string
+	wasOpened bool
+	isDirty   bool
 }
 
-func (b GobBackend) Name() string {
+func (b *GobBackend) Name() string {
 	return "gob"
 }
 
-func (b GobBackend) Get(revs []string) (cache.Result, error) {
+func (b *GobBackend) compressedPath() string {
+	return b.Path + ".gz"
+}
+
+func (b *GobBackend) Open() (err error) {
+	b.wasOpened = true
+
+	// Uncompress gzipped file to regular location if it exists
+	f, err := os.Open(b.compressedPath())
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	fout, err := os.OpenFile(b.Path, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer fout.Close()
+
+	zr, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+
+	w := bufio.NewWriter(fout)
+	_, err = io.Copy(w, zr)
+	if err != nil {
+		return err
+	}
+
+	err = zr.Close()
+	if err != nil {
+		return err
+	}
+
+	err = w.Flush()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *GobBackend) Close() (err error) {
+	if b.isDirty {
+		// Compress file and save to gzipped location
+		f, err := os.Open(b.Path)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		fout, err := os.OpenFile(b.compressedPath(), os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		defer fout.Close()
+
+		r := bufio.NewReader(f)
+		zw := gzip.NewWriter(fout)
+
+		_, err = io.Copy(zw, r)
+		if err != nil {
+			return err
+		}
+
+		err = zw.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	// Remove uncompressed file
+	err = os.RemoveAll(b.Path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *GobBackend) Get(revs []string) (_ cache.Result, err error) {
+	if !b.wasOpened {
+		panic("cache not yet open. Did you forget to call Open()?")
+	}
+
 	result := cache.EmptyResult()
 
 	lookingFor := map[string]bool{}
@@ -120,7 +214,13 @@ func (b GobBackend) Get(revs []string) (cache.Result, error) {
 	return cache.Result{Commits: it}, nil
 }
 
-func (b GobBackend) Add(commits []git.Commit) (err error) {
+func (b *GobBackend) Add(commits []git.Commit) (err error) {
+	if !b.wasOpened {
+		panic("cache not yet open. Did you forget to call Open()?")
+	}
+
+	b.isDirty = true
+
 	f, err := os.OpenFile(
 		b.Path,
 		os.O_WRONLY|os.O_APPEND|os.O_CREATE,
@@ -163,8 +263,18 @@ func (b GobBackend) Add(commits []git.Commit) (err error) {
 	return nil
 }
 
-func (b GobBackend) Clear() error {
-	return os.Remove(b.Path)
+func (b *GobBackend) Clear() error {
+	err := os.RemoveAll(b.Path)
+	if err != nil {
+		return err
+	}
+
+	err = os.RemoveAll(b.compressedPath())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Returns the absolute path at which we should store the Gob data.

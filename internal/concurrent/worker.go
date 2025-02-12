@@ -133,7 +133,7 @@ func runWaiter(
 // Cacher. Writes parsed commits to the cache.
 func runCacher(
 	ctx context.Context,
-	cache cache.Cache,
+	cache *cache.Cache,
 	toCache <-chan []git.Commit,
 ) (err error) {
 	logger().Debug("cacher started")

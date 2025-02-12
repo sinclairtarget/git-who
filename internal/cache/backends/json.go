@@ -26,6 +26,14 @@ func (b JSONBackend) Name() string {
 	return "json"
 }
 
+func (b JSONBackend) Open() error {
+	return nil
+}
+
+func (b JSONBackend) Close() error {
+	return nil
+}
+
 func (b JSONBackend) Get(revs []string) (cache.Result, error) {
 	result := cache.EmptyResult()
 

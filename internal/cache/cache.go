@@ -34,6 +34,8 @@ func EmptyResult() Result {
 
 type Backend interface {
 	Name() string
+	Open() error
+	Close() error
 	Get(revs []string) (Result, error)
 	Add(commits []git.Commit) error
 	Clear() error
@@ -51,6 +53,54 @@ func NewCache(backend Backend) Cache {
 
 func (c *Cache) Name() string {
 	return c.backend.Name()
+}
+
+func (c *Cache) Open() (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("error opening cache: %w", err)
+		}
+	}()
+
+	start := time.Now()
+
+	err = c.backend.Open()
+	if err != nil {
+		return err
+	}
+
+	elapsed := time.Now().Sub(start)
+	logger().Debug(
+		"cache open",
+		"duration_ms",
+		elapsed.Milliseconds(),
+	)
+
+	return nil
+}
+
+func (c *Cache) Close() (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("error closing cache: %w", err)
+		}
+	}()
+
+	start := time.Now()
+
+	err = c.backend.Close()
+	if err != nil {
+		return err
+	}
+
+	elapsed := time.Now().Sub(start)
+	logger().Debug(
+		"cache close",
+		"duration_ms",
+		elapsed.Milliseconds(),
+	)
+
+	return nil
 }
 
 func (c *Cache) Get(revs []string) (_ Result, err error) {

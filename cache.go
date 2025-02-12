@@ -38,7 +38,7 @@ func getCache() cache.Cache {
 		}
 
 		logger().Debug("cache initialized", "path", p)
-		cb = cacheBackends.GobBackend{Path: p}
+		cb = &cacheBackends.GobBackend{Path: p}
 	}
 
 	return cache.NewCache(cb)

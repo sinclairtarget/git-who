@@ -111,6 +111,15 @@ func accumulateCached[T combinable[T]](
 	return accumulator, setDiff(revs, foundRevs), nil
 }
 
+func handleCacheFailure(c cache.Cache, err error) error {
+	// Graceful handling of cache error. Wipe cache and move on without it
+	logger().Warn(
+		fmt.Sprintf("error reading from cache (maybe corrupt?): %v", err),
+	)
+	logger().Warn("wiping cache and moving on")
+	return c.Clear()
+}
+
 func tallyFanOutFanIn[T combinable[T]](
 	ctx context.Context,
 	whop whoperation[T],
@@ -132,19 +141,29 @@ func tallyFanOutFanIn[T combinable[T]](
 	}
 
 	// -- Use cached commits if there are any ----------------------------------
-	accumulator, remainingRevs, err := accumulateCached[T](whop, cache, revs)
-	if err != nil {
-		// Graceful handling of cache error. Wipe cache and move on without it
-		logger().Warn(
-			"error reading from cache (maybe corrupt?); wiping and moving on",
-		)
-		err = cache.Clear()
+	remainingRevs := revs
+
+	err = cache.Open()
+	defer func() {
+		err = cache.Close()
+	}()
+
+	if err == nil {
+		accumulator, remainingRevs, err = accumulateCached(whop, cache, revs)
 		if err != nil {
+			err = handleCacheFailure(cache, err)
+			if err != nil {
+				return accumulator, err
+			}
+		} else if len(remainingRevs) == 0 {
+			logger().Debug("all commits read from cache")
 			return accumulator, nil
 		}
-	} else if len(remainingRevs) == 0 {
-		logger().Debug("all commits read from cache")
-		return accumulator, nil
+	} else {
+		err = handleCacheFailure(cache, err)
+		if err != nil {
+			return accumulator, err
+		}
 	}
 
 	// -- Fork -----------------------------------------------------------------
@@ -198,7 +217,7 @@ func tallyFanOutFanIn[T combinable[T]](
 		go func() {
 			defer close(cacheErr)
 
-			err := runCacher(ctx, cache, toCache)
+			err := runCacher(ctx, &cache, toCache)
 			if err != nil {
 				cacheErr <- err
 			}
@@ -247,15 +266,21 @@ loop:
 					err,
 				)
 			}
-		case err, ok := <-cacheErr:
-			if ok && err != nil {
-				return accumulator, err
-			}
 		}
 	}
 
 	if showProgress {
 		fmt.Printf("%s\r", pretty.EraseLine)
+	}
+
+	// Check if there was a caching error (and wait for cacher to exit)
+	select {
+	case <-ctx.Done():
+		return accumulator, errors.New("concurrent tally cancelled")
+	case err, ok := <-cacheErr:
+		if ok && err != nil {
+			return accumulator, err
+		}
 	}
 
 	return accumulator, nil

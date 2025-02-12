@@ -11,6 +11,14 @@ func (b NoopBackend) Name() string {
 	return "noop"
 }
 
+func (b NoopBackend) Open() error {
+	return nil
+}
+
+func (b NoopBackend) Close() error {
+	return nil
+}
+
 func (b NoopBackend) Get(revs []string) (cache.Result, error) {
 	return cache.EmptyResult(), nil
 }
