@@ -140,6 +140,11 @@ func tallyFanOutFanIn[T combinable[T]](
 		return accumulator, err
 	}
 
+	if len(revs) == 0 {
+		logger().Debug("no commits found; no work to do")
+		return accumulator, nil
+	}
+
 	// -- Use cached commits if there are any ----------------------------------
 	remainingRevs := revs
 
