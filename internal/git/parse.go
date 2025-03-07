@@ -145,13 +145,20 @@ func parseFileDiff(line string) (diff FileDiff, err error) {
 		diff.LinesRemoved = removed
 	}
 
-	diff.Path, _, err = parseDiffPath(parts[2])
+	path, moveDest, err := parseDiffPath(parts[2])
 	if err != nil {
 		return diff, fmt.Errorf(
 			"could not parse path part of file diff on line \"%s\": %w",
 			line,
 			err,
 		)
+	}
+
+	if len(moveDest) > 0 {
+		// If file is moved, attribute diff to the new path
+		diff.Path = moveDest
+	} else {
+		diff.Path = path
 	}
 
 	return diff, nil
