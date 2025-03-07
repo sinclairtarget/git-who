@@ -182,11 +182,10 @@ func RunLog(
 			"--date=unix",
 			"--reverse",
 			"--numstat",
-			"--summary",
 			"--diff-merges=first-parent",
 		}
 	} else {
-		// Runs git log without --numstat or --summary, which is much faster.
+		// Runs git log without --numstat, which is much faster.
 		baseArgs = []string{
 			"log",
 			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n", // Extra newline!
@@ -228,11 +227,10 @@ func RunStdinLog(
 			"--no-walk",
 			"--reverse",
 			"--numstat",
-			"--summary",
 			"--diff-merges=first-parent",
 		}
 	} else {
-		// Runs git log without --numstat or --summary, which is much faster.
+		// Runs git log without --numstat, which is much faster.
 		baseArgs = []string{
 			"log",
 			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n", // Extra newline!

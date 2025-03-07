@@ -145,7 +145,7 @@ func parseFileDiff(line string) (diff FileDiff, err error) {
 		diff.LinesRemoved = removed
 	}
 
-	diff.Path, diff.MoveDest, err = parseDiffPath(parts[2])
+	diff.Path, _, err = parseDiffPath(parts[2])
 	if err != nil {
 		return diff, fmt.Errorf(
 			"could not parse path part of file diff on line \"%s\": %w",
@@ -154,48 +154,7 @@ func parseFileDiff(line string) (diff FileDiff, err error) {
 		)
 	}
 
-	if diff.MoveDest != "" {
-		diff.Action = Rename
-	}
-
 	return diff, nil
-}
-
-// e.g. create mode 100644 rename-across-deep-dirs/foo/bar/hello.txt
-func parseFileAction(line string) (_ FileAction, _ string, err error) {
-	line = strings.TrimPrefix(line, " ")
-	action, after, found := strings.Cut(line, " ")
-	if !found {
-		return NoAction, "", fmt.Errorf(
-			"could not parse \"%s\" as file action",
-			line,
-		)
-	}
-
-	switch action {
-	case "create":
-		parts := strings.SplitN(after, " ", 3)
-		if len(parts) != 3 {
-			return NoAction, "", fmt.Errorf(
-				"could not parse \"%s\" as create file action",
-				line,
-			)
-		}
-		return Create, parts[2], nil
-	case "delete":
-		parts := strings.SplitN(after, " ", 3)
-		if len(parts) != 3 {
-			return NoAction, "", fmt.Errorf(
-				"could not parse \"%s\" as delete file action",
-				line,
-			)
-		}
-		return Delete, parts[2], nil
-	case "rename":
-		return Rename, "", nil // We figure out renamed files elsewhere
-	default:
-		return NoAction, "", nil
-	}
 }
 
 func allowCommit(commit Commit, now time.Time) bool {
@@ -290,7 +249,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 				commit.Date = time.Unix(int64(i), 0)
 			case linesThisCommit == 6:
 				break // Used to parse subject here; no longer
-			case linesThisCommit >= 7 && line[0] != ' ':
+			default:
 				diff, err := parseFileDiff(line)
 				if err != nil {
 					yield(
@@ -304,39 +263,6 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 					return
 				}
 				diffLookup[diff.Path] = diff
-			default:
-				action, path, err := parseFileAction(line)
-				if err != nil {
-					yield(
-						commit,
-						fmt.Errorf(
-							"error parsing file action from commit %s: %w",
-							commit.Name(),
-							err,
-						),
-					)
-					return
-				}
-
-				if action == Rename || action == NoAction {
-					continue
-				}
-
-				diff, ok := diffLookup[path]
-				if !ok {
-					yield(
-						commit,
-						fmt.Errorf(
-							"could not look up diff for line \"%s\" using path \"%s\", commit: %s",
-							line,
-							path,
-							commit.Name(),
-						),
-					)
-					return
-				}
-				diff.Action = action
-				diffLookup[path] = diff
 			}
 
 			linesThisCommit += 1
