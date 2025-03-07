@@ -19,6 +19,17 @@ func TestAddGetClear(t *testing.T) {
 		Path: filepath.Join(dir, "commits.json"),
 	}
 
+	err := c.Open()
+	if err != nil {
+		t.Fatalf("could not open cache: %v", err)
+	}
+	defer func() {
+		err = c.Close()
+		if err != nil {
+			t.Fatalf("could not close cache: %v", err)
+		}
+	}()
+
 	commit := git.Commit{
 		ShortHash:   "9e9ea7662b1",
 		Hash:        "9e9ea7662b1001d860471a4cece5e2f1de8062fb",
@@ -37,7 +48,7 @@ func TestAddGetClear(t *testing.T) {
 	}
 
 	// -- Add --
-	err := c.Add([]git.Commit{commit})
+	err = c.Add([]git.Commit{commit})
 	if err != nil {
 		t.Fatalf("add commits to cache failed with error: %v", err)
 	}
@@ -95,6 +106,17 @@ func TestAddGetAddGet(t *testing.T) {
 		Path: filepath.Join(dir, "commits.json"),
 	}
 
+	err := c.Open()
+	if err != nil {
+		t.Fatalf("could not open cache: %v", err)
+	}
+	defer func() {
+		err = c.Close()
+		if err != nil {
+			t.Fatalf("could not close cache: %v", err)
+		}
+	}()
+
 	commitOne := git.Commit{
 		ShortHash:   "1e9ea7662b1",
 		Hash:        "1e9ea7662b1001d860471a4cece5e2f1de8062fb",
@@ -129,7 +151,7 @@ func TestAddGetAddGet(t *testing.T) {
 	}
 	revs := []string{commitOne.Hash, commitTwo.Hash}
 
-	err := c.Add([]git.Commit{commitOne})
+	err = c.Add([]git.Commit{commitOne})
 	if err != nil {
 		t.Fatalf("add commits to cache failed with error: %v", err)
 	}
