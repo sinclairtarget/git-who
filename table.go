@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	runewidth "github.com/mattn/go-runewidth"
+
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -216,6 +218,27 @@ func writeCsv(
 	return nil
 }
 
+// Returns a string matching the given width describing the author
+func formatAuthor(
+	t tally.FinalTally,
+	showEmail bool,
+	width int,
+) string {
+	var author string
+	if showEmail {
+		author = fmt.Sprintf(
+			"%s %s",
+			t.AuthorName,
+			format.GitEmail(t.AuthorEmail),
+		)
+	} else {
+		author = t.AuthorName
+	}
+
+	author = format.Abbrev(author, width)
+	return runewidth.FillRight(author, width)
+}
+
 func writeTable(
 	tallies []tally.FinalTally,
 	colwidth int,
@@ -269,30 +292,17 @@ func writeTable(
 			pretty.Reset,
 		)
 
-		var author string
-		if showEmail {
-			author = fmt.Sprintf(
-				"%s %s",
-				t.AuthorName,
-				format.GitEmail(t.AuthorEmail),
-			)
-		} else {
-			author = t.AuthorName
-		}
-
 		if mode == tally.CommitMode || mode == tally.LastModifiedMode {
 			fmt.Printf(
-				"│%-*s %-11s %7s│\n",
-				colwidth-22,
-				format.Abbrev(author, colwidth-22),
+				"│%s %-11s %7s│\n",
+				formatAuthor(t, showEmail, colwidth-22),
 				format.RelativeTime(progStart, t.LastCommitTime),
 				format.Number(t.Commits),
 			)
 		} else {
 			fmt.Printf(
-				"│%-*s %-11s %7s %7s  %17s│\n",
-				colwidth-36-13,
-				format.Abbrev(author, colwidth-36-13),
+				"│%s %-11s %7s %7s  %17s│\n",
+				formatAuthor(t, showEmail, colwidth-36-13),
 				format.RelativeTime(progStart, t.LastCommitTime),
 				format.Number(t.Commits),
 				format.Number(t.FileCount),

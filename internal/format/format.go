@@ -6,16 +6,24 @@ package format
 import (
 	"fmt"
 	"time"
+	"unicode/utf8"
+
+	runewidth "github.com/mattn/go-runewidth"
 )
 
 // Print string with max length, truncating with ellipsis.
 func Abbrev(s string, max int) string {
-	// TODO: Handle unicode chars
+	tail := "…"
+
+	if len(s) > utf8.RuneCountInString(s) {
+		return runewidth.Truncate(s, max, tail)
+	}
+
 	if len(s) <= max {
 		return s
 	}
 
-	return s[:max-1] + "…"
+	return s[:max-1] + tail
 }
 
 func GitEmail(email string) string {
