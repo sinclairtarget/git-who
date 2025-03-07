@@ -1,14 +1,14 @@
 # git-who
  ![Vanity screenshot](./screenshots/vanity.png)
 
-`git-who` is a command-line tool for answering that age-old question:
+`git-who` is a command-line tool for answering that eternal question:
 
 > _Who wrote this code?!_
 
 Unlike `git blame`, which can tell you who wrote a _line_ of code, `git-who`
-is meant to help you identify the people responsible for entire components or
-subsystems in a codebase. You can think of `git-who` sort of like `git-blame`
-but for file trees rather than individual files.
+tells you the people responsible for entire components or subsystems in a
+codebase. You can think of `git-who` sort of like `git-blame` but for file
+trees rather than individual files.
 
 ## Installation
 ### Precompiled Binaries
