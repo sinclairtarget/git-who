@@ -292,7 +292,9 @@ func GobCachePathXDG(gitRootPath string) (string, error) {
 	// git-who caches for other repos.
 	h := fnv.New32()
 	h.Write([]byte(gitRootPath))
-	filename := fmt.Sprintf("%x.gobs", h.Sum32())
+
+	base := filepath.Base(gitRootPath)
+	filename := fmt.Sprintf("%s-%x.gobs", base, h.Sum32())
 
 	usr, err := user.Current()
 	if err != nil {
