@@ -153,6 +153,7 @@ func (t Tally) Final() FinalTally {
 	}
 }
 
+// author -> path -> tally
 type TalliesByPath map[string]map[string]Tally
 
 func (left TalliesByPath) Combine(right TalliesByPath) TalliesByPath {
@@ -164,7 +165,9 @@ func (left TalliesByPath) Combine(right TalliesByPath) TalliesByPath {
 
 		for path, leftTally := range leftPathTallies {
 			rightTally := rightPathTallies[path]
-			rightPathTallies[path] = leftTally.Combine(rightTally)
+			t := leftTally.Combine(rightTally)
+			t.numTallied = 1 // Same path
+			rightPathTallies[path] = t
 		}
 
 		right[key] = rightPathTallies
