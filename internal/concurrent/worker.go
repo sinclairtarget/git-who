@@ -96,36 +96,16 @@ func runSpawner[T combinable[T]](
 
 // Waiter. Waits for done or error for each one in turn. Forwards
 // errors to errs channel.
-func runWaiter(
-	ctx context.Context,
-	workers <-chan worker,
-	errs chan<- error,
-) {
+func runWaiter(workers <-chan worker, errs chan<- error) {
 	logger().Debug("waiter started")
 	defer logger().Debug("waiter exited")
 
-	for {
-		var w worker
-		var ok bool
+	for w := range workers {
+		logger().Debug("waiting on worker", "workerId", w.id)
 
-		select {
-		case <-ctx.Done():
-			return
-		case w, ok = <-workers:
-			if !ok {
-				// Channel closed, no more workers
-				return
-			}
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-		case err, ok := <-w.err:
-			if ok && err != nil {
-				errs <- err
-				return // Exit on the first error
-			}
+		err, ok := <-w.err
+		if ok && err != nil {
+			errs <- err
 		}
 	}
 }
@@ -181,6 +161,7 @@ func runWorker[T combinable[T]](
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("error in worker %d: %w", id, err)
+			logger.Debug("worker exiting with error")
 		}
 
 		logger.Debug("worker exited")

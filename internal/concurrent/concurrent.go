@@ -124,10 +124,10 @@ func tallyFanOutFanIn[T combinable[T]](
 	whop whoperation[T],
 	cache cache.Cache,
 	allowProgressBar bool,
-) (_ T, err error) {
+) (_ T, _err error) {
 	defer func() {
-		if err != nil {
-			err = fmt.Errorf("error running concurrent tally: %w", err)
+		if _err != nil {
+			_err = fmt.Errorf("error running concurrent tally: %w", _err)
 		}
 	}()
 
@@ -214,7 +214,7 @@ func tallyFanOutFanIn[T combinable[T]](
 			defer close(results)
 			defer close(errs)
 
-			runWaiter(ctx, workers, errs)
+			runWaiter(workers, errs)
 		}()
 
 		cacheErr := make(chan error, 1)
@@ -265,6 +265,7 @@ loop:
 			}
 		case err, ok := <-errs:
 			if ok && err != nil {
+				logger().Debug("error in concurrent tally; cancelling")
 				return accumulator, fmt.Errorf(
 					"concurrent tally failed: %w",
 					err,
