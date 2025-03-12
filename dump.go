@@ -65,7 +65,7 @@ func dump(
 
 	w := bufio.NewWriter(os.Stdout)
 
-	lines := subprocess.StdoutLines()
+	lines := subprocess.StdoutLogLines()
 	for line, err := range lines {
 		if err != nil {
 			w.Flush()

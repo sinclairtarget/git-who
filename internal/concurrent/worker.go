@@ -206,7 +206,7 @@ loop:
 			}
 
 			// Read parsed commits and enqueue for caching
-			lines := subprocess.StdoutLines()
+			lines := subprocess.StdoutLogLines()
 			commits := cacheTee(git.ParseCommits(lines), toCache)
 
 			// Now that we're tallying, we DO care to only look at the file

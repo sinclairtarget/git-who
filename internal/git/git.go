@@ -81,7 +81,7 @@ func CommitsWithOpts(
 		return nil, nil, err
 	}
 
-	lines := subprocess.StdoutLines()
+	lines := subprocess.StdoutLogLines()
 	commits := ParseCommits(lines)
 
 	closer := func() error {

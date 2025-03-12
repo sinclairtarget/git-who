@@ -2,6 +2,7 @@ package git
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -50,6 +51,45 @@ func (s Subprocess) StdinWriter() (_ *bufio.Writer, closer func() error) {
 // Returns a single-use iterator over the output of the command, line by line.
 func (s Subprocess) StdoutLines() iter.Seq2[string, error] {
 	scanner := bufio.NewScanner(s.stdout)
+
+	return func(yield func(string, error) bool) {
+		for scanner.Scan() {
+			if !yield(scanner.Text(), nil) {
+				return
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			yield("", fmt.Errorf("error while scanning: %w", err))
+		}
+	}
+}
+
+// Returns a single-use iterator over the output of the command.
+//
+// Lines are split on both newlines and NULLs.
+func (s Subprocess) StdoutLogLines() iter.Seq2[string, error] {
+	scanner := bufio.NewScanner(s.stdout)
+
+	scanner.Split(func(data []byte, atEOF bool) (int, []byte, error) {
+		null_i := bytes.IndexByte(data, '\x00')
+		newline_i := bytes.IndexByte(data, '\n')
+
+		if null_i >= 0 && newline_i >= 0 {
+			i := min(null_i, newline_i)
+			return i + 1, data[:i], nil
+		} else if newline_i > 0 {
+			return newline_i + 1, data[:newline_i], nil
+		} else if null_i > 0 {
+			return null_i + 1, data[:null_i], nil
+		}
+
+		if atEOF {
+			return 0, data, bufio.ErrFinalToken
+		}
+
+		return 0, nil, nil // Scan more
+	})
 
 	return func(yield func(string, error) bool) {
 		for scanner.Scan() {
@@ -178,7 +218,7 @@ func RunLog(
 	if needDiffs {
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
 			"-z",
 			"--date=unix",
 			"--reverse",
@@ -223,7 +263,7 @@ func RunStdinLog(
 	if needDiffs {
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
 			"-z",
 			"--date=unix",
 			"--stdin",
