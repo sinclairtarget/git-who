@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -71,7 +72,8 @@ func dump(
 			return err
 		}
 
-		fmt.Fprintln(w, line)
+		lineWithNulls := strings.ReplaceAll(line, "\x00", "^@")
+		fmt.Fprintln(w, lineWithNulls)
 	}
 
 	w.Flush()

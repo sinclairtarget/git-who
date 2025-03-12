@@ -178,7 +178,8 @@ func RunLog(
 	if needDiffs {
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
+			"-z",
 			"--date=unix",
 			"--reverse",
 			"--numstat",
@@ -188,7 +189,8 @@ func RunLog(
 		// Runs git log without --numstat, which is much faster.
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n", // Extra newline!
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
+			"-z",
 			"--date=unix",
 			"--reverse",
 		}
@@ -221,7 +223,8 @@ func RunStdinLog(
 	if needDiffs {
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
+			"-z",
 			"--date=unix",
 			"--stdin",
 			"--no-walk",
@@ -233,7 +236,8 @@ func RunStdinLog(
 		// Runs git log without --numstat, which is much faster.
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n", // Extra newline!
+			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
+			"-z",
 			"--date=unix",
 			"--stdin",
 			"--no-walk",
