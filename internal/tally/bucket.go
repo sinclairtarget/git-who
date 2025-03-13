@@ -204,49 +204,30 @@ func TallyCommitsByDate(
 	}
 
 	resolution := daily
-
-	next, stop := iter.Pull2(commits)
-	defer stop()
-
-	// Use first commit to caclulate start time
-	firstCommit, err, ok := next()
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return []TimeBucket{}, nil // Iterator is empty
-	}
-
-	// Init buckets/timeseries
-	sortedKeys := []int64{}
+	minTime := end
 	buckets := map[int64]TimeBucket{} // Map of (unix) time to bucket
-	t := resolution.apply(firstCommit.Date)
-	for end.After(t) {
-		bucket := newBucket(resolution.label(t), resolution.apply(t))
-		key := bucket.Time.Unix()
-		sortedKeys = append(sortedKeys, key)
-		buckets[key] = bucket
-		t = resolution.next(t)
-	}
 
 	// Tally
-	commit := firstCommit
-	for {
-		bucketedCommitTime := resolution.apply(commit.Date)
-		bucket, ok := buckets[bucketedCommitTime.Unix()]
+	for commit, err := range commits {
+		if err != nil {
+			return nil, fmt.Errorf("error iterating commits: %w", err)
+		}
 
+		bucketedCommitTime := resolution.apply(commit.Date)
+		if bucketedCommitTime.Before(minTime) {
+			minTime = bucketedCommitTime
+		}
+
+		bucket, ok := buckets[bucketedCommitTime.Unix()]
 		if !ok {
-			// This might happen if the input commits aren't truly ordered by
-			// commit date and we get a commit before the start time we picked.
-			logger().Debug(
-				"commit did not map to bucket",
-				"commit",
-				commit.Name(),
+			bucket = newBucket(
+				resolution.label(bucketedCommitTime),
+				resolution.apply(bucketedCommitTime),
 			)
 		}
 
 		skipMerge := commit.IsMerge && !opts.CountMerges
-		if !skipMerge && ok {
+		if !skipMerge {
 			key := opts.Key(commit)
 
 			tally, ok := bucket.tallies[key]
@@ -269,20 +250,21 @@ func TallyCommitsByDate(
 			bucket.tallies[key] = tally
 			buckets[bucket.Time.Unix()] = bucket
 		}
-
-		commit, err, ok = next()
-		if err != nil {
-			return nil, fmt.Errorf("error iterating commits: %w", err)
-		}
-		if !ok {
-			break // done, no more commits
-		}
 	}
 
+	// Turn into slice representing *dense* timeseries
+	t := minTime
 	bucketSlice := []TimeBucket{}
-	for _, key := range sortedKeys {
-		bucketSlice = append(bucketSlice, buckets[key])
+	for t.Before(end) {
+		bucket, ok := buckets[t.Unix()]
+		if !ok {
+			bucket = newBucket(resolution.label(t), resolution.apply(t))
+		}
+
+		bucketSlice = append(bucketSlice, bucket)
+		t = resolution.next(t)
 	}
+
 	return bucketSlice, nil
 }
 
