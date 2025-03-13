@@ -9,3 +9,11 @@ func Max(a, b time.Time) time.Time {
 		return b
 	}
 }
+
+func Min(a, b time.Time) time.Time {
+	if b.Before(a) {
+		return b
+	} else {
+		return a
+	}
+}

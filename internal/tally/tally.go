@@ -19,6 +19,7 @@ const (
 	LinesMode
 	FilesMode
 	LastModifiedMode
+	FirstModifiedMode
 )
 
 const NoDiffPathname = ".git-who-no-diff-commits"
@@ -39,13 +40,14 @@ func (opts TallyOpts) IsDiffMode() bool {
 // This kind of tally cannot be combined with others because intermediate
 // information has been lost.
 type FinalTally struct {
-	AuthorName     string
-	AuthorEmail    string
-	Commits        int // Num commits editing paths in tree by this author
-	LinesAdded     int // Num lines added to paths in tree by author
-	LinesRemoved   int // Num lines deleted from paths in tree by author
-	FileCount      int // Num of file paths in working dir touched by author
-	LastCommitTime time.Time
+	AuthorName      string
+	AuthorEmail     string
+	Commits         int // Num commits editing paths in tree by this author
+	LinesAdded      int // Num lines added to paths in tree by author
+	LinesRemoved    int // Num lines deleted from paths in tree by author
+	FileCount       int // Num of file paths in working dir touched by author
+	FirstCommitTime time.Time
+	LastCommitTime  time.Time
 }
 
 func (t FinalTally) SortKey(mode TallyMode) int64 {
@@ -56,6 +58,8 @@ func (t FinalTally) SortKey(mode TallyMode) int64 {
 		return int64(t.FileCount)
 	case LinesMode:
 		return int64(t.LinesAdded + t.LinesRemoved)
+	case FirstModifiedMode:
+		return -t.FirstCommitTime.Unix()
 	case LastModifiedMode:
 		return t.LastCommitTime.Unix()
 	default:
@@ -79,13 +83,14 @@ func (a FinalTally) Compare(b FinalTally, mode TallyMode) int {
 
 // A non-final tally that can be combined with other tallies and then finalized
 type Tally struct {
-	name           string
-	email          string
-	commitset      map[string]bool
-	added          int
-	removed        int
-	fileset        map[string]bool
-	lastCommitTime time.Time
+	name            string
+	email           string
+	commitset       map[string]bool
+	added           int
+	removed         int
+	fileset         map[string]bool
+	firstCommitTime time.Time
+	lastCommitTime  time.Time
 	// Can be used to count Tally objs when we don't need to disambiguate
 	numTallied int
 }
@@ -116,14 +121,15 @@ func unionInPlace(a, b map[string]bool) map[string]bool {
 
 func (a Tally) Combine(b Tally) Tally {
 	return Tally{
-		name:           or(a.name, b.name),
-		email:          or(a.email, b.email),
-		commitset:      unionInPlace(a.commitset, b.commitset),
-		added:          a.added + b.added,
-		removed:        a.removed + b.removed,
-		fileset:        unionInPlace(a.fileset, b.fileset),
-		lastCommitTime: timeutils.Max(a.lastCommitTime, b.lastCommitTime),
-		numTallied:     a.numTallied + b.numTallied,
+		name:            or(a.name, b.name),
+		email:           or(a.email, b.email),
+		commitset:       unionInPlace(a.commitset, b.commitset),
+		added:           a.added + b.added,
+		removed:         a.removed + b.removed,
+		fileset:         unionInPlace(a.fileset, b.fileset),
+		firstCommitTime: timeutils.Min(a.firstCommitTime, b.firstCommitTime),
+		lastCommitTime:  timeutils.Max(a.lastCommitTime, b.lastCommitTime),
+		numTallied:      a.numTallied + b.numTallied,
 	}
 }
 
@@ -143,13 +149,14 @@ func (t Tally) Final() FinalTally {
 	}
 
 	return FinalTally{
-		AuthorName:     t.name,
-		AuthorEmail:    t.email,
-		Commits:        commits,
-		LinesAdded:     t.added,
-		LinesRemoved:   t.removed,
-		FileCount:      files,
-		LastCommitTime: t.lastCommitTime,
+		AuthorName:      t.name,
+		AuthorEmail:     t.email,
+		Commits:         commits,
+		LinesAdded:      t.added,
+		LinesRemoved:    t.removed,
+		FileCount:       files,
+		FirstCommitTime: t.firstCommitTime,
+		LastCommitTime:  t.lastCommitTime,
 	}
 }
 
@@ -164,7 +171,11 @@ func (left TalliesByPath) Combine(right TalliesByPath) TalliesByPath {
 		}
 
 		for path, leftTally := range leftPathTallies {
-			rightTally := rightPathTallies[path]
+			rightTally, ok := rightPathTallies[path]
+			if !ok {
+				rightTally.firstCommitTime = time.Unix(1<<62, 0)
+			}
+
 			t := leftTally.Combine(rightTally)
 			t.numTallied = 1 // Same path
 			rightPathTallies[path] = t
@@ -224,9 +235,14 @@ func TallyCommits(
 			if !ok {
 				tally.name = commit.AuthorName
 				tally.email = commit.AuthorEmail
+				tally.firstCommitTime = commit.Date
 			}
 
 			tally.numTallied += 1
+			tally.firstCommitTime = timeutils.Min(
+				commit.Date,
+				tally.firstCommitTime,
+			)
 			tally.lastCommitTime = timeutils.Max(
 				commit.Date,
 				tally.lastCommitTime,
@@ -285,12 +301,20 @@ func TallyCommitsByPath(
 			if !ok {
 				tally.name = commit.AuthorName
 				tally.email = commit.AuthorEmail
+				tally.firstCommitTime = commit.Date
 				tally.commitset = map[string]bool{}
 				tally.numTallied = 0 // Don't count toward files changed
 			}
 
 			tally.commitset[commit.ShortHash] = true
-			tally.lastCommitTime = commit.Date
+			tally.firstCommitTime = timeutils.Min(
+				tally.firstCommitTime,
+				commit.Date,
+			)
+			tally.lastCommitTime = timeutils.Max(
+				tally.lastCommitTime,
+				commit.Date,
+			)
 
 			pathTallies[NoDiffPathname] = tally
 		} else {
@@ -299,11 +323,19 @@ func TallyCommitsByPath(
 				if !ok {
 					tally.name = commit.AuthorName
 					tally.email = commit.AuthorEmail
+					tally.firstCommitTime = commit.Date
 					tally.commitset = map[string]bool{}
 				}
 
 				tally.commitset[commit.ShortHash] = true
-				tally.lastCommitTime = commit.Date
+				tally.firstCommitTime = timeutils.Min(
+					tally.firstCommitTime,
+					commit.Date,
+				)
+				tally.lastCommitTime = timeutils.Max(
+					tally.lastCommitTime,
+					commit.Date,
+				)
 
 				if !commit.IsMerge {
 					// Only non-merge commits contribute to files / lines

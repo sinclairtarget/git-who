@@ -199,8 +199,8 @@ func TallyCommitsByDate(
 		}
 	}()
 
-	if opts.Mode == LastModifiedMode {
-		return nil, errors.New("Last modified mode not implemented")
+	if opts.Mode == LastModifiedMode || opts.Mode == FirstModifiedMode {
+		return nil, errors.New("mode not implemented")
 	}
 
 	resolution := daily

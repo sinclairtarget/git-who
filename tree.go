@@ -311,6 +311,11 @@ func fmtTallyMetric(t tally.FinalTally, opts printTreeOpts) string {
 			"(%s)",
 			format.RelativeTime(progStart, t.LastCommitTime),
 		)
+	case tally.FirstModifiedMode:
+		return fmt.Sprintf(
+			"(%s)",
+			format.RelativeTime(progStart, t.FirstCommitTime),
+		)
 	default:
 		panic("unrecognized mode in switch")
 	}

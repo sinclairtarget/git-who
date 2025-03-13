@@ -123,6 +123,7 @@ func tableCmd() command {
 	countMerges := flagSet.Bool("merges", false, "Count merge commits toward commit total")
 	linesMode := flagSet.Bool("l", false, "Sort by lines added + removed")
 	filesMode := flagSet.Bool("f", false, "Sort by files changed")
+	firstModifiedMode := flagSet.Bool("c", false, "Sort by first modified (created)")
 	lastModifiedMode := flagSet.Bool("m", false, "Sort by last modified")
 	limit := flagSet.Int("n", 10, "Limit rows in table (set to 0 for no limit)")
 
@@ -145,7 +146,12 @@ Usage: git-who table [options...] [revisions...] [[--] paths...]
 		run: func(args []string) error {
 			mode := tally.CommitMode
 
-			if !isOnlyOne(*linesMode, *filesMode, *lastModifiedMode) {
+			if !isOnlyOne(
+				*linesMode,
+				*filesMode,
+				*lastModifiedMode,
+				*firstModifiedMode,
+			) {
 				return errors.New("all sort flags are mutually exclusive")
 			}
 
@@ -155,6 +161,8 @@ Usage: git-who table [options...] [revisions...] [[--] paths...]
 				mode = tally.FilesMode
 			} else if *lastModifiedMode {
 				mode = tally.LastModifiedMode
+			} else if *firstModifiedMode {
+				mode = tally.FirstModifiedMode
 			}
 
 			if *limit < 0 {
@@ -189,6 +197,7 @@ func treeCmd() command {
 	countMerges := flagSet.Bool("merges", false, "Count merge commits toward commit total")
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
+	useFirstModified := flagSet.Bool("c", false, "Rank authors by first commit time (created)")
 	useLastModified := flagSet.Bool(
 		"m",
 		false,
@@ -218,7 +227,12 @@ Usage: git-who tree [options...] [revisions...] [[--] paths...]
 				return fmt.Errorf("could not parse args: %w", err)
 			}
 
-			if !isOnlyOne(*useLines, *useFiles, *useLastModified) {
+			if !isOnlyOne(
+				*useLines,
+				*useFiles,
+				*useLastModified,
+				*useFirstModified,
+			) {
 				return errors.New("all ranking flags are mutually exclusive")
 			}
 
@@ -229,6 +243,8 @@ Usage: git-who tree [options...] [revisions...] [[--] paths...]
 				mode = tally.FilesMode
 			} else if *useLastModified {
 				mode = tally.LastModifiedMode
+			} else if *useFirstModified {
+				mode = tally.FirstModifiedMode
 			}
 
 			return tree(

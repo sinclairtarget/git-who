@@ -259,15 +259,7 @@ func writeTable(
 	// -- Write header --
 	fmt.Printf("┌%s┐\n", rule)
 
-	if mode == tally.CommitMode || mode == tally.LastModifiedMode {
-		fmt.Printf(
-			"│%-*s %-11s %7s│\n",
-			colwidth-22,
-			"Author",
-			"Last Edit",
-			"Commits",
-		)
-	} else {
+	if mode == tally.LinesMode || mode == tally.FilesMode {
 		fmt.Printf(
 			"│%-*s %-11s %7s %7s  %17s│\n",
 			colwidth-36-13,
@@ -276,6 +268,14 @@ func writeTable(
 			"Commits",
 			"Files",
 			"Lines (+/-)",
+		)
+	} else {
+		fmt.Printf(
+			"│%-*s %-11s %7s│\n",
+			colwidth-22,
+			"Author",
+			"Last Edit",
+			"Commits",
 		)
 	}
 	fmt.Printf("├%s┤\n", rule)
@@ -292,14 +292,7 @@ func writeTable(
 			pretty.Reset,
 		)
 
-		if mode == tally.CommitMode || mode == tally.LastModifiedMode {
-			fmt.Printf(
-				"│%s %-11s %7s│\n",
-				formatAuthor(t, showEmail, colwidth-22),
-				format.RelativeTime(progStart, t.LastCommitTime),
-				format.Number(t.Commits),
-			)
-		} else {
+		if mode == tally.LinesMode || mode == tally.FilesMode {
 			fmt.Printf(
 				"│%s %-11s %7s %7s  %17s│\n",
 				formatAuthor(t, showEmail, colwidth-36-13),
@@ -307,6 +300,13 @@ func writeTable(
 				format.Number(t.Commits),
 				format.Number(t.FileCount),
 				lines,
+			)
+		} else {
+			fmt.Printf(
+				"│%s %-11s %7s│\n",
+				formatAuthor(t, showEmail, colwidth-22),
+				format.RelativeTime(progStart, t.LastCommitTime),
+				format.Number(t.Commits),
 			)
 		}
 	}

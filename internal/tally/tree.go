@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
 )
@@ -75,6 +76,7 @@ func (t *TreeNode) Rank(mode TallyMode) *TreeNode {
 					tally.name = childTally.name
 					tally.email = childTally.email
 					tally.commitset = map[string]bool{}
+					tally.firstCommitTime = time.Unix(1<<62, 0)
 				}
 
 				tally = tally.Combine(childTally)
