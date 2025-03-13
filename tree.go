@@ -24,6 +24,7 @@ type printTreeOpts struct {
 	mode       tally.TallyMode
 	maxDepth   int
 	showHidden bool
+	key        func(t tally.FinalTally) string
 }
 
 type treeOutputLine struct {
@@ -172,6 +173,12 @@ func tree(
 		mode:       mode,
 		showHidden: showHidden,
 	}
+	if showEmail {
+		opts.key = func(t tally.FinalTally) string { return t.AuthorEmail }
+	} else {
+		opts.key = func(t tally.FinalTally) string { return t.AuthorName }
+	}
+
 	lines := toLines(root, ".", 0, "", []bool{}, opts, []treeOutputLine{})
 	printTree(lines, showEmail)
 	return nil
@@ -243,7 +250,7 @@ func toLines(
 	line.dimTally = len(node.Children) > 0
 	line.dimPath = !node.InWorkTree
 
-	newAuthor := node.Tally.AuthorEmail != lastAuthor
+	newAuthor := opts.key(node.Tally) != lastAuthor
 	line.showTally = opts.showHidden || newAuthor || len(node.Children) > 0
 
 	lines = append(lines, line)
@@ -280,7 +287,7 @@ func toLines(
 			child,
 			p,
 			depth+1,
-			node.Tally.AuthorEmail,
+			opts.key(node.Tally),
 			append(isFinalChild, i == finalChildIndex),
 			opts,
 			lines,
