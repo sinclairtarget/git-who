@@ -129,11 +129,13 @@ $ git who -- foo
 ```
 
 #### Options
-The `-m`, `-l`, and `-f` flags allow you to sort the table by different
+The `-m`, `-c`, `-l`, and `-f` flags allow you to sort the table by different
 metrics.
 
 The `-m` flag sorts the table by the "Last Edit" column, showing who
-edited the repository most recently.
+edited the repository most recently. The `-c` flag sorts the table by first
+edit, so that the authors who committed to the repository earliest are at the
+top.
 
 The `-l` flag sorts the table by number of lines modified, adding some more
 columns:
@@ -266,13 +268,11 @@ Parser/.........................Guido van Rossum (182)
 of this README._)
 
 Note that, whether or not the `-a` flag is used, commits that
-edited files
-not in the working tree will still count toward the total displayed
-next to ancestor directories of that file. In the above two examples,
-Guido van Rossum is shown as the overall highest committer to the
-`Parser/` directory, though it takes listing the entire
-tree with the `-a` flag to see that most of his commits were to
-files that have since been moved or deleted.
+edited files not in the working tree will still count toward the total
+displayed next to ancestor directories of that file. In the above two examples,
+Guido van Rossum is shown as the overall highest committer to the `Parser/`
+directory, though it takes listing the entire tree with the `-a` flag to see
+that most of his commits were to files that have since been moved or deleted.
 
 Like with the `table` subcommand, you can specify a "commit-ish". This
 next example shows changes to the `Parser/` directory that happened
@@ -298,7 +298,9 @@ changes introduced by a branch.
 
 #### Options
 The `tree` subcommand, like the `table` subcommand, supports the `-l`, `-f`,
-and `-m` flags. The `-l` flag will annotate each file tree node with the
+`-m`, and `-c` flags.
+
+The `-l` flag will annotate each file tree node with the
 author who has added or removed the most lines at that path:
 
 ```
@@ -334,8 +336,9 @@ Parser/.........................Pablo Galindo (72,917 / 47,102)
 └── token.c.....................Serhiy Storchaka (233 / 0)
 ```
 
-The `-f` flag will pick authors based on files touched and the `-m` flag will
-pick an author based on last modification time.
+The `-f` flag will pick authors based on number of files edited. The `-m` flag
+will pick an author based on last modification time while the `-c` flag picks
+the author who first edited a file.
 
 You can limit the depth of the tree printed by using the `-d` flag. The depth
 is measured from the current working directory.
@@ -345,8 +348,8 @@ The `-a` flag has already been mentioned.
 Run `git who tree --help` to see all options available for the `tree` subcommand.
 
 ### The `hist` Subcommand
-The `hist` subcommand prints out a little bar chart / timeline of commit activity
-showing the history of contributions to the repository.
+The `hist` subcommand prints out a little bar chart / timeline of commit
+activity showing the history of contributions to the repository.
 
 ```
 ~/clones/cpython$ git who hist
@@ -445,7 +448,8 @@ Jan 2025 ┤ ##---------                           Bénédikt Tran (26)
 ```
 
 #### Options
-The `hist` subcommand supports the `-l` and `-f` flags but not the `-m` flag:
+The `hist` subcommand supports the `-l` and `-f` flags but not the `-m` or `-c`
+flags:
 
 ```
 ~/repos/cpython$ git who hist -l iOS/
