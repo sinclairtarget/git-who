@@ -19,27 +19,30 @@ func warnFail(cb cache.Backend, err error) cache.Cache {
 }
 
 func getCache() cache.Cache {
-	var cb cache.Backend = cacheBackends.NoopBackend{}
+	var fallback cache.Backend = cacheBackends.NoopBackend{}
 
-	if cache.IsCachingEnabled() {
-		gitRootPath, err := git.GetRoot()
-		if err != nil {
-			return warnFail(cb, err)
-		}
-
-		p, err := cacheBackends.GobCachePathXDG(gitRootPath)
-		if err != nil {
-			return warnFail(cb, err)
-		}
-
-		err = os.MkdirAll(filepath.Dir(p), 0o700)
-		if err != nil {
-			return warnFail(cb, err)
-		}
-
-		logger().Debug("cache initialized", "path", p)
-		cb = &cacheBackends.GobBackend{Path: p}
+	if !cache.IsCachingEnabled() {
+		return cache.NewCache(fallback)
 	}
 
-	return cache.NewCache(cb)
+	cacheStorageDir, err := cache.CacheStorageDir(
+		cacheBackends.GobBackendName,
+	)
+	if err != nil {
+		return warnFail(fallback, err)
+	}
+
+	gitRootPath, err := git.GetRoot()
+	if err != nil {
+		return warnFail(fallback, err)
+	}
+
+	p := cacheBackends.GobCachePath(cacheStorageDir, gitRootPath)
+	err = os.MkdirAll(filepath.Dir(p), 0o700)
+	if err != nil {
+		return warnFail(fallback, err)
+	}
+
+	logger().Debug("cache initialized", "path", p)
+	return cache.NewCache(&cacheBackends.GobBackend{Path: p})
 }

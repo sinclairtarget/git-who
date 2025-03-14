@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"iter"
 	"os"
+	"os/user"
+	"path/filepath"
 	"slices"
 	"time"
 
@@ -158,4 +160,34 @@ func (c *Cache) Clear() error {
 
 	logger().Debug("cache clear")
 	return nil
+}
+
+// Returns the absolute path at which we should store data for a given cache
+// backend.
+//
+// Tries to store it under the XDG_CACHE_HOME dir.
+func CacheStorageDir(name string) (_ string, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("failed to determine cache storage path: %w", err)
+		}
+	}()
+
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	cacheHome := filepath.Join(usr.HomeDir, ".cache")
+	if len(os.Getenv("XDG_CACHE_HOME")) > 0 {
+		cacheHome = os.Getenv("XDG_CACHE_HOME")
+	}
+
+	p := filepath.Join(cacheHome, "git-who", name)
+	absP, err := filepath.Abs(p)
+	if err != nil {
+		return "", err
+	}
+
+	return absP, nil
 }
