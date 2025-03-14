@@ -227,7 +227,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 					}
 
 					if parts[1] != "-" {
-						diff.LinesRemoved, err = parseLinesChanged(parts[0], line)
+						diff.LinesRemoved, err = parseLinesChanged(parts[1], line)
 						if err != nil {
 							goto handleError
 						}
@@ -245,7 +245,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 					}
 
 					if parts[1] != "-" {
-						diff.LinesRemoved, err = parseLinesChanged(parts[0], line)
+						diff.LinesRemoved, err = parseLinesChanged(parts[1], line)
 						if err != nil {
 							goto handleError
 						}
