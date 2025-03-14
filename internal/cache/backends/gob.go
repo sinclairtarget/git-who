@@ -252,9 +252,9 @@ func (b *GobBackend) Add(commits []git.Commit) (err error) {
 		return err
 	}
 
-	if data.Len() > 0xFFFF_FFFF {
+	if data.Len() > 0x7FFF_FFFF {
 		return errors.New(
-			"cannot add more than 4,294,976,296 bytes to cache at once", // lol
+			"cannot add more than 2,147,483,648 bytes to cache at once", // lol
 		)
 	}
 
