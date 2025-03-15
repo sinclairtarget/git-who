@@ -13,6 +13,11 @@ import (
 	"strings"
 )
 
+const (
+	logFormat     = "--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n" // newline
+	logDiffFormat = "--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s"
+)
+
 type SubprocessErr struct {
 	ExitCode int
 	Stderr   string
@@ -218,7 +223,7 @@ func RunLog(
 	if needDiffs {
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
+			logDiffFormat,
 			"-z",
 			"--date=unix",
 			"--reverse",
@@ -229,7 +234,7 @@ func RunLog(
 		// Runs git log without --numstat, which is much faster.
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
+			logFormat,
 			"-z",
 			"--date=unix",
 			"--reverse",
@@ -263,7 +268,7 @@ func RunStdinLog(
 	if needDiffs {
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s",
+			logDiffFormat,
 			"-z",
 			"--date=unix",
 			"--stdin",
@@ -276,7 +281,7 @@ func RunStdinLog(
 		// Runs git log without --numstat, which is much faster.
 		baseArgs = []string{
 			"log",
-			"--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n",
+			logFormat,
 			"-z",
 			"--date=unix",
 			"--stdin",
