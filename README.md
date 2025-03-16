@@ -121,7 +121,7 @@ of 3.10.9 up to the release of 3.11.9:
 ```
 
 Just like with `git` itself, when there is ambiguity between a path name
-and a commit-ish, you can use `--` to clarfiy the distinction. The
+and a commit-ish, you can use `--` to clarify the distinction. The
 following command will show you contributions to the file or directory
 called `foo` even if there is also a branch called `foo` in your repository:
 ```
