@@ -37,12 +37,18 @@ func getCache() cache.Cache {
 		return warnFail(fallback, err)
 	}
 
-	p := cacheBackends.GobCachePath(cacheStorageDir, gitRootPath)
-	err = os.MkdirAll(filepath.Dir(p), 0o700)
+	dirname := cacheBackends.GobCacheDir(cacheStorageDir, gitRootPath)
+	err = os.MkdirAll(dirname, 0o700)
 	if err != nil {
 		return warnFail(fallback, err)
 	}
 
+	filename, err := cacheBackends.GobCacheFilename()
+	if err != nil {
+		return warnFail(fallback, err)
+	}
+
+	p := filepath.Join(dirname, filename)
 	logger().Debug("cache initialized", "path", p)
-	return cache.NewCache(&cacheBackends.GobBackend{Path: p})
+	return cache.NewCache(&cacheBackends.GobBackend{Path: p, Dir: dirname})
 }

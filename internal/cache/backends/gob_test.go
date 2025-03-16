@@ -2,6 +2,7 @@ package backends_test
 
 import (
 	"iter"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,9 +14,20 @@ import (
 	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
+func CacheDir(t *testing.T) string {
+	dirname := filepath.Join(t.TempDir(), "gob", "test-1234")
+	err := os.MkdirAll(dirname, 0o700)
+	if err != nil {
+		t.Fatalf("could not create cache dir: %v", err)
+	}
+
+	return dirname
+}
+
 func TestGobAddGetClear(t *testing.T) {
-	dir := t.TempDir()
+	dir := CacheDir(t)
 	c := backends.GobBackend{
+		Dir:  dir,
 		Path: filepath.Join(dir, "commits.gob"),
 	}
 
@@ -101,8 +113,9 @@ func TestGobAddGetClear(t *testing.T) {
 }
 
 func TestGobAddGetAddGet(t *testing.T) {
-	dir := t.TempDir()
+	dir := CacheDir(t)
 	c := backends.GobBackend{
+		Dir:  dir,
 		Path: filepath.Join(dir, "commits.gob"),
 	}
 

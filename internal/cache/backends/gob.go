@@ -34,6 +34,7 @@ import (
 // We also gzip the file when we're done using it to keep it even smaller on
 // disk.
 type GobBackend struct {
+	Dir       string
 	Path      string
 	wasOpened bool
 	isDirty   bool
@@ -129,6 +130,25 @@ func (b *GobBackend) Close() (err error) {
 	err = os.RemoveAll(b.Path)
 	if err != nil {
 		return err
+	}
+
+	// Remove any other dangling cache files
+	matches, err := filepath.Glob(filepath.Join(b.Dir, "*"))
+	if err != nil {
+		panic(err) // Bad pattern
+	}
+
+	for _, match := range matches {
+		if match == b.compressedPath() {
+			continue
+		}
+
+		err := os.Remove(match)
+		if err != nil {
+			logger().Warn(
+				fmt.Sprintf("failed to delete old cache file: %v", err),
+			)
+		}
 	}
 
 	return nil
@@ -272,12 +292,7 @@ func (b *GobBackend) Add(commits []git.Commit) (err error) {
 }
 
 func (b *GobBackend) Clear() error {
-	err := os.RemoveAll(b.Path)
-	if err != nil {
-		return err
-	}
-
-	err = os.RemoveAll(b.compressedPath())
+	err := os.RemoveAll(b.Dir)
 	if err != nil {
 		return err
 	}
@@ -285,13 +300,24 @@ func (b *GobBackend) Clear() error {
 	return nil
 }
 
-func GobCachePath(prefix string, gitRootPath string) string {
+func GobCacheDir(prefix string, gitRootPath string) string {
 	// Filename includes hash of path to repo so we don't collide with other
 	// git-who caches for other repos.
 	h := fnv.New32()
 	h.Write([]byte(gitRootPath))
 
 	base := filepath.Base(gitRootPath)
-	filename := fmt.Sprintf("%s-%x.gobs", base, h.Sum32())
-	return filepath.Join(prefix, filename)
+	dirname := fmt.Sprintf("%s-%x", base, h.Sum32())
+	repoDir := filepath.Join(prefix, dirname)
+	return repoDir
+}
+
+func GobCacheFilename() (string, error) {
+	stateHash, err := cache.RepoStateHash()
+	if err != nil {
+		return "", err
+	}
+
+	filename := fmt.Sprintf("%s.gobs", stateHash)
+	return filename, nil
 }

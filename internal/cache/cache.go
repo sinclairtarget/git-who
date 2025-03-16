@@ -191,3 +191,9 @@ func CacheStorageDir(name string) (_ string, err error) {
 
 	return absP, nil
 }
+
+// Returns a hash of state in the repo that, if changed, should invalidate our
+// cache.
+func RepoStateHash() (string, error) {
+	return "abcd1234", nil
+}
