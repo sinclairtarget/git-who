@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	logFormat     = "--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s%n" // newline
-	logDiffFormat = "--pretty=format:%H%n%h%n%p%n%an%n%ae%n%ad%n%s"
+	logFormat     = "--pretty=format:%H%n%h%n%p%n%aN%n%aE%n%ad%n%s%n" // newline
+	logDiffFormat = "--pretty=format:%H%n%h%n%p%n%aN%n%aE%n%ad%n%s"
 )
 
 type SubprocessErr struct {
