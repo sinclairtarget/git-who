@@ -12,7 +12,7 @@ import (
 
 func warnFail(cb cache.Backend, err error) cache.Cache {
 	logger().Warn(
-		fmt.Sprintf("failed to create initialize cache: %v", err),
+		fmt.Sprintf("failed to initialize cache: %v", err),
 	)
 	logger().Warn("disabling caching")
 	return cache.NewCache(cb)
@@ -43,7 +43,7 @@ func getCache() cache.Cache {
 		return warnFail(fallback, err)
 	}
 
-	filename, err := cacheBackends.GobCacheFilename()
+	filename, err := cacheBackends.GobCacheFilename(gitRootPath)
 	if err != nil {
 		return warnFail(fallback, err)
 	}

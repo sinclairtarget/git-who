@@ -2,7 +2,12 @@
 package cache
 
 import (
+	"encoding/hex"
+	"errors"
 	"fmt"
+	"hash/fnv"
+	"io"
+	"io/fs"
 	"iter"
 	"os"
 	"os/user"
@@ -194,6 +199,23 @@ func CacheStorageDir(name string) (_ string, err error) {
 
 // Returns a hash of state in the repo that, if changed, should invalidate our
 // cache.
-func RepoStateHash() (string, error) {
-	return "abcd1234", nil
+func RepoStateHash(gitRootPath string) (string, error) {
+	mailmapPath := filepath.Join(gitRootPath, ".mailmap")
+
+	h := fnv.New32()
+
+	f, err := os.Open(mailmapPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return hex.EncodeToString(h.Sum(nil)), nil
+	} else if err != nil {
+		return "", fmt.Errorf("could not read mailmap file: %v", err)
+	}
+	defer f.Close()
+
+	_, err = io.Copy(h, f)
+	if err != nil {
+		return "", fmt.Errorf("error hashing mailmap file: %v", err)
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
