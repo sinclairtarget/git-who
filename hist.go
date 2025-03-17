@@ -71,6 +71,12 @@ func hist(
 		Nauthors: nauthors,
 	}
 
+	var end time.Time // Default is zero time, meaning use last commit
+	if len(revs) == 1 && revs[0] == "HEAD" {
+		// If no revs given, end timeline at current time
+		end = time.Now()
+	}
+
 	var buckets []tally.TimeBucket
 	if populateDiffs && runtime.GOMAXPROCS(0) > 1 {
 		buckets, err = concurrent.TallyCommitsTimeline(
@@ -79,7 +85,7 @@ func hist(
 			paths,
 			filters,
 			tallyOpts,
-			time.Now(),
+			end,
 			getCache(),
 			pretty.AllowDynamic(os.Stdout),
 		)
@@ -101,7 +107,7 @@ func hist(
 		buckets, err = tally.TallyCommitsTimeline(
 			commits,
 			tallyOpts,
-			time.Now(),
+			end,
 		)
 		if err != nil {
 			return err

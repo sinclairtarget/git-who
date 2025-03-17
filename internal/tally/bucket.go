@@ -191,7 +191,6 @@ func CalcResolution(start time.Time, end time.Time) Resolution {
 func TallyCommitsByDate(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
-	end time.Time,
 ) (_ []TimeBucket, err error) {
 	defer func() {
 		if err != nil {
@@ -203,8 +202,12 @@ func TallyCommitsByDate(
 		return nil, errors.New("mode not implemented")
 	}
 
+	var (
+		minTime time.Time = time.Now()
+		maxTime time.Time
+	)
+
 	resolution := daily
-	minTime := end
 	buckets := map[int64]TimeBucket{} // Map of (unix) time to bucket
 
 	// Tally
@@ -216,6 +219,9 @@ func TallyCommitsByDate(
 		bucketedCommitTime := resolution.apply(commit.Date)
 		if bucketedCommitTime.Before(minTime) {
 			minTime = bucketedCommitTime
+		}
+		if bucketedCommitTime.After(maxTime) {
+			maxTime = bucketedCommitTime
 		}
 
 		bucket, ok := buckets[bucketedCommitTime.Unix()]
@@ -255,7 +261,8 @@ func TallyCommitsByDate(
 	// Turn into slice representing *dense* timeseries
 	t := minTime
 	bucketSlice := []TimeBucket{}
-	for t.Before(end) {
+
+	for t.Before(maxTime) || t.Equal(maxTime) {
 		bucket, ok := buckets[t.Unix()]
 		if !ok {
 			bucket = newBucket(resolution.label(t), resolution.apply(t))
@@ -271,13 +278,14 @@ func TallyCommitsByDate(
 // Returns a list of "time buckets" with tallies for each date.
 //
 // The resolution / size of the buckets is determined based on the duration
-// between the first commit and end time.
+// between the first commit and end time, if the end-time is non-zero. Otherwise
+// the end time is the time of the last commit in chronological order.
 func TallyCommitsTimeline(
 	commits iter.Seq2[git.Commit, error],
 	opts TallyOpts,
 	end time.Time,
 ) ([]TimeBucket, error) {
-	buckets, err := TallyCommitsByDate(commits, opts, end)
+	buckets, err := TallyCommitsByDate(commits, opts)
 	if err != nil {
 		return buckets, err
 	}
@@ -286,7 +294,11 @@ func TallyCommitsTimeline(
 		return buckets, err
 	}
 
-	resolution := CalcResolution(buckets[0].Time, buckets[len(buckets)-1].Time)
+	if end.IsZero() {
+		end = buckets[len(buckets)-1].Time
+	}
+
+	resolution := CalcResolution(buckets[0].Time, end)
 	rebuckets := Rebucket(buckets, resolution, end)
 
 	return rebuckets, nil
@@ -305,7 +317,7 @@ func Rebucket(
 
 	// Re-bucket using new resolution
 	t := resolution.apply(buckets[0].Time)
-	for end.After(t) {
+	for t.Before(end) || t.Equal(end) {
 		bucket := newBucket(resolution.label(t), resolution.apply(t))
 		rebuckets = append(rebuckets, bucket)
 		t = resolution.next(t)

@@ -371,7 +371,7 @@ func TallyCommitsTimeline(
 		commits iter.Seq2[git.Commit, error],
 		opts tally.TallyOpts,
 	) (tally.TimeSeries, error) {
-		return tally.TallyCommitsByDate(commits, opts, end)
+		return tally.TallyCommitsByDate(commits, opts)
 	}
 
 	whop := whoperation[tally.TimeSeries]{
@@ -392,10 +392,10 @@ func TallyCommitsTimeline(
 		return nil, err
 	}
 
-	resolution := tally.CalcResolution(
-		buckets[0].Time,
-		buckets[len(buckets)-1].Time,
-	)
+	if end.IsZero() {
+		end = buckets[len(buckets)-1].Time
+	}
+	resolution := tally.CalcResolution(buckets[0].Time, end)
 	rebuckets := tally.Rebucket(buckets, resolution, end)
 	return rebuckets, nil
 }
