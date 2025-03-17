@@ -514,6 +514,20 @@ config:
 See [here](https://git-scm.com/book/en/v2/Git-Basics-Git-Aliases) for more
 information about Git aliases.
 
+## Git Mailmap
+Quite often, people end up committing to a repository under different names or
+using different email addresses. For example, someone might make a commit using
+the name "Nathan Smith" and their work email adress and then later make a
+commit using the name "Nate Smith" and their personal email address.
+
+How can you make sure that all of someone's commits are counted together
+instead of being attributed to three or four different people with slightly
+different names?
+
+Git already has a solution for his problem called [Git
+mailmap](https://git-scm.com/docs/gitmailmap). If a `.mailmap` file is present
+in a Git repository, `git who` will respect it.
+
 ## What Exactly Do These Numbers Mean?
 ### Metrics
 The number of **commits** shown for each author is the number of unique commits
