@@ -7,7 +7,7 @@
 
 Unlike `git blame`, which can tell you who wrote a _line_ of code, `git-who`
 tells you the people responsible for entire components or subsystems in a
-codebase. You can think of `git-who` sort of like `git-blame` but for file
+codebase. You can think of `git-who` sort of like `git blame` but for file
 trees rather than individual files.
 
 ## Installation
