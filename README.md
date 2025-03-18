@@ -522,7 +522,7 @@ information about Git aliases.
 ## Git Mailmap
 Quite often, people end up committing to a repository under different names or
 using different email addresses. For example, someone might make a commit using
-the name "Nathan Smith" and their work email adress and then later make a
+the name "Nathan Smith" and their work email address and then later make a
 commit using the name "Nate Smith" and their personal email address.
 
 How can you make sure that all of someone's commits are counted together
