@@ -17,6 +17,7 @@ func dump(
 	paths []string,
 	short bool,
 	since string,
+	until string,
 	authors []string,
 	nauthors []string,
 ) (err error) {
@@ -36,6 +37,8 @@ func dump(
 		short,
 		"since",
 		since,
+		"until",
+		until,
 		"authors",
 		authors,
 		"nauthors",
@@ -49,6 +52,7 @@ func dump(
 
 	filters := git.LogFilters{
 		Since:    since,
+		Until:    until,
 		Authors:  authors,
 		Nauthors: nauthors,
 	}

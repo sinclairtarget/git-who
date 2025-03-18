@@ -25,6 +25,7 @@ func hist(
 	showEmail bool,
 	countMerges bool,
 	since string,
+	until string,
 	authors []string,
 	nauthors []string,
 ) (err error) {
@@ -48,6 +49,8 @@ func hist(
 		countMerges,
 		"since",
 		since,
+		"until",
+		until,
 		"authors",
 		authors,
 		"nauthors",
@@ -67,13 +70,14 @@ func hist(
 	populateDiffs := tallyOpts.IsDiffMode()
 	filters := git.LogFilters{
 		Since:    since,
+		Until:    until,
 		Authors:  authors,
 		Nauthors: nauthors,
 	}
 
 	var end time.Time // Default is zero time, meaning use last commit
-	if len(revs) == 1 && revs[0] == "HEAD" {
-		// If no revs given, end timeline at current time
+	if len(revs) == 1 && revs[0] == "HEAD" && len(until) == 0 {
+		// If no revs or --until given, end timeline at current time
 		end = time.Now()
 	}
 

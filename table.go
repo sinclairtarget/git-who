@@ -42,6 +42,7 @@ func table(
 	countMerges bool,
 	limit int,
 	since string,
+	until string,
 	authors []string,
 	nauthors []string,
 ) (err error) {
@@ -69,6 +70,8 @@ func table(
 		limit,
 		"since",
 		since,
+		"until",
+		until,
 		"authors",
 		authors,
 		"nauthors",
@@ -88,6 +91,7 @@ func table(
 	populateDiffs := tallyOpts.IsDiffMode()
 	filters := git.LogFilters{
 		Since:    since,
+		Until:    until,
 		Authors:  authors,
 		Nauthors: nauthors,
 	}

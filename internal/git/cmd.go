@@ -176,6 +176,7 @@ func run(
 
 type LogFilters struct {
 	Since    string
+	Until    string
 	Authors  []string
 	Nauthors []string
 }
@@ -186,6 +187,10 @@ func (f LogFilters) ToArgs() []string {
 
 	if f.Since != "" {
 		args = append(args, "--since", f.Since)
+	}
+
+	if f.Until != "" {
+		args = append(args, "--until", f.Until)
 	}
 
 	for _, author := range f.Authors {

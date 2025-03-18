@@ -182,6 +182,7 @@ Usage: git-who table [options...] [revisions...] [[--] paths...]
 				*countMerges,
 				*limit,
 				*filterFlags.since,
+				*filterFlags.until,
 				filterFlags.authors,
 				filterFlags.nauthors,
 			)
@@ -256,6 +257,7 @@ Usage: git-who tree [options...] [revisions...] [[--] paths...]
 				*showHidden,
 				*countMerges,
 				*filterFlags.since,
+				*filterFlags.until,
 				filterFlags.authors,
 				filterFlags.nauthors,
 			)
@@ -311,6 +313,7 @@ Usage: git-who hist [options...] [revisions...] [[--] paths...]
 				*showEmail,
 				*countMerges,
 				*filterFlags.since,
+				*filterFlags.until,
 				filterFlags.authors,
 				filterFlags.nauthors,
 			)
@@ -337,6 +340,7 @@ func dumpCmd() command {
 				paths,
 				*short,
 				*filterFlags.since,
+				*filterFlags.until,
 				filterFlags.authors,
 				filterFlags.nauthors,
 			)
@@ -363,6 +367,7 @@ func parseCmd() command {
 				paths,
 				*short,
 				*filterFlags.since,
+				*filterFlags.until,
 				filterFlags.authors,
 				filterFlags.nauthors,
 			)
@@ -401,6 +406,7 @@ func isOnlyOne(flags ...bool) bool {
 
 type filterFlags struct {
 	since    *string
+	until    *string
 	authors  flagutils.SliceFlag
 	nauthors flagutils.SliceFlag
 }
@@ -409,6 +415,9 @@ func addFilterFlags(set *flag.FlagSet) *filterFlags {
 	flags := filterFlags{
 		since: set.String("since", "", strings.TrimSpace(`
 Only count commits after the given date. See git-commit(1) for valid date formats
+		`)),
+		until: set.String("until", "", strings.TrimSpace(`
+Only count commits before the given date. See git-commit(1) for valid date formats
 		`)),
 	}
 
