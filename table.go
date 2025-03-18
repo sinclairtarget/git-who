@@ -269,6 +269,14 @@ func writeTable(
 			"Files",
 			"Lines (+/-)",
 		)
+	} else if mode == tally.FirstModifiedMode {
+		fmt.Printf(
+			"│%-*s %-11s %7s│\n",
+			colwidth-22,
+			"Author",
+			"First Edit",
+			"Commits",
+		)
 	} else {
 		fmt.Printf(
 			"│%-*s %-11s %7s│\n",
@@ -300,6 +308,13 @@ func writeTable(
 				format.Number(t.Commits),
 				format.Number(t.FileCount),
 				lines,
+			)
+		} else if mode == tally.FirstModifiedMode {
+			fmt.Printf(
+				"│%s %-11s %7s│\n",
+				formatAuthor(t, showEmail, colwidth-22),
+				format.RelativeTime(progStart, t.FirstCommitTime),
+				format.Number(t.Commits),
 			)
 		} else {
 			fmt.Printf(
