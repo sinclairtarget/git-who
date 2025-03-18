@@ -10,6 +10,11 @@ tells you the people responsible for entire components or subsystems in a
 codebase. You can think of `git-who` sort of like `git blame` but for file
 trees rather than individual files.
 
+## Demo
+This README contains comprehensive documentation. For an overview, see [Who
+Will Maintain Vim? A Demo of Git
+Who](https://sinclairtarget.com/blog/2025/03/who-will-maintain-vim-a-demo-of-git-who/).
+
 ## Installation
 ### Precompiled Binaries
 See [releases](https://github.com/sinclairtarget/git-who/releases).
