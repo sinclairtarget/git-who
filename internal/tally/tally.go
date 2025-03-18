@@ -199,7 +199,7 @@ func (byPath TalliesByPath) Reduce() map[string]Tally {
 			runningTally = runningTally.Combine(tally)
 		}
 
-		if runningTally.numTallied > 0 {
+		if len(runningTally.commitset) > 0 {
 			tallies[key] = runningTally
 		}
 	}
