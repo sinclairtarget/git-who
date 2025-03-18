@@ -20,7 +20,10 @@ Who](https://sinclairtarget.com/blog/2025/03/who-will-maintain-vim-a-demo-of-git
 See [releases](https://github.com/sinclairtarget/git-who/releases).
 
 ### From Source
-This requires that you have Go, Ruby, and the `rake` Ruby gem installed.
+Building from source requires that you have Go, Ruby, and the `rake` Ruby gem
+installed. Note that these are _only_ required when building from source; you
+can download and run one of the binary releases without installing any of these
+tools.
 
 ```
 $ git clone git@github.com:sinclairtarget/git-who.git
