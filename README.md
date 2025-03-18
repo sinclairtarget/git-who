@@ -483,10 +483,10 @@ The `--author` and `--nauthor` options allow you to specify authors to include
 or exclude. Both options can be specified multiple times to include or exclude
 multiple authors.
 
-The `--since` option allows you to filter out commits before a certain date.
-The option takes a string that gets passed to `git log` to be interpreted. `git
-log` can handle some surprising inputs. See git-commit(1) for an explanation of
-what is possible.
+The `--since` and `--until` options allow you to filter out commits before or
+after a certain date respectively. These options each take a string that gets
+passed to `git log` to be interpreted. `git log` can handle some surprising
+inputs. See git-commit(1) for a description of what is possible.
 
 The following example shows the paths edited by Guido van Rossum over the last
 eight months:
