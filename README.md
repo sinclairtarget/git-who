@@ -507,6 +507,12 @@ eight months:
 └── configure.ac
 ```
 
+## Caching
+`git who` caches data on a per-repository basis under `XDG_CACHE_HOME` (this is
+`~/.cache` if the environment variable is not set).
+
+You can disable caching by setting `GIT_WHO_DISABLE_CACHE=1`.
+
 ## Git Alias
 You can invoke `git-who` as `git who` by setting up an alias in your global Git
 config:
