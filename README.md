@@ -166,7 +166,8 @@ $ git who -l
 
 The `-f` flag sorts the table by the number of files modified.
 
-There is also a `--csv` option that outputs the table as a CSV file to stdout.
+There is also an `-n` option can be used to print more rows. Passing `-n 0`
+prints all rows.
 
 Run `git-who table --help` to see additional options for the `table` subcommand.
 
