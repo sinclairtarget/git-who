@@ -173,7 +173,11 @@ func toRecord(
 		)
 	}
 
-	return append(record, t.LastCommitTime.Format(time.RFC3339))
+	return append(
+		record,
+		t.LastCommitTime.Format(time.RFC3339),
+		t.FirstCommitTime.Format(time.RFC3339),
+	)
 }
 
 func writeCsv(
@@ -200,7 +204,7 @@ func writeCsv(
 		)
 	}
 
-	columnHeaders = append(columnHeaders, "last commit time")
+	columnHeaders = append(columnHeaders, "last commit time", "first commit time")
 	w.Write(columnHeaders)
 
 	for _, tally := range tallies {

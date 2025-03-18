@@ -194,6 +194,7 @@ func (byPath TalliesByPath) Reduce() map[string]Tally {
 	for key, pathTallies := range byPath {
 		var runningTally Tally
 		runningTally.commitset = map[string]bool{}
+		runningTally.firstCommitTime = time.Unix(1<<62, 0)
 
 		for _, tally := range pathTallies {
 			runningTally = runningTally.Combine(tally)
