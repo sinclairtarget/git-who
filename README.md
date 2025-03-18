@@ -33,8 +33,9 @@ $ ./git-who --version
 ```
 
 ## Usage
-_(In the following examples, `git-who` is invoked as `git who`, which requires
-setting up a Git alias. See the [Git Alias](#git-alias) section below.)_
+_(In the following examples, `git-who` is invoked as `git who`. This will work
+automatically as long as Git can find `git-who` in your PATH. See the [Git
+Alias](#git-alias) section for more details.)_
 
 `git who` has three subcommands. Each subcommand gives you a different view of
 authorship in your Git repository.
@@ -518,12 +519,16 @@ eight months:
 You can disable caching by setting `GIT_WHO_DISABLE_CACHE=1`.
 
 ## Git Alias
-You can invoke `git-who` as `git who` by setting up an alias in your global Git
-config:
+If you install the `git-who` binary somewhere in your path, running `git who`
+will automatically invoke it with no further configuration. This is a Git
+feature.
+
+If you install the binary using a different name or just like to be explicit
+you can configure a Git alias in your global Git config like so:
 
 ```
 [alias]
-    who = "!git-who"
+    who = "!git-who-executable-name"
 ```
 
 See [here](https://git-scm.com/book/en/v2/Git-Basics-Git-Aliases) for more
