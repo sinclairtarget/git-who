@@ -518,6 +518,48 @@ eight months:
 
 You can disable caching by setting `GIT_WHO_DISABLE_CACHE=1`.
 
+## Using `git-who` with Docker
+You can run `git-who` as a Docker container without installing it on your
+system directly. Follow these steps to build and use the Docker image.
+
+### Building the Docker Image
+To build the `git-who` Docker image, run the following command from the project root:
+
+```
+docker build -t git-who -f docker/Dockerfile .
+```
+
+This will create a Docker image named `git-who` that you can use to run the tool.
+
+### Running `git-who` via Docker
+To use git-who without modifying your Git configuration, you can manually run:
+
+```
+docker run --rm -it -v "$(pwd)":/git -v "$HOME":/root git-who who
+```
+
+- `--rm`: Automatically remove the container after execution.
+- `-it`: Enable interactive mode (for a better experience with CLI tools).
+- `-v "$(pwd):/git"`: Mounts the current Git repository into the container.
+- `-v "$HOME:/root"`: Ensures that user-specific configurations (e.g., SSH keys, Git settings) are available inside the container.
+
+### Setting Up a Git Alias
+To make it easier to run `git-who`, you can add an alias to your Git
+configuration. Add the following lines to your `~/.gitconfig` file:
+
+```
+[alias]
+    who = !zsh -c "docker run --rm -it -v$(pwd):/git -v$HOME:/root git-who who $*"
+```
+
+This allows you to run:
+
+```
+git who
+```
+
+from any Git repository, and it will invoke git-who through Docker.
+
 ## Git Alias
 If you install the `git-who` binary somewhere in your path, running `git who`
 will automatically invoke it with no further configuration. This is a Git
