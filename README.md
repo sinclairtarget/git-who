@@ -17,7 +17,8 @@ Who](https://sinclairtarget.com/blog/2025/03/who-will-maintain-vim-a-demo-of-git
 
 ## Installation
 ### Precompiled Binaries
-See [releases](https://github.com/sinclairtarget/git-who/releases).
+MacOS users should use `brew install git-who`. For other platforms, see [releases](https://github.com/sinclairtarget/git-who/releases).
+
 
 ### From Source
 Building from source requires that you have Go, Ruby, and the `rake` Ruby gem
