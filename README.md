@@ -21,8 +21,8 @@ See [releases](https://github.com/sinclairtarget/git-who/releases).
 
 ### Package Managers
 #### Homebrew
-```
-$ brew install git-who
+```sh
+brew install git-who
 ```
 
 ### From Source
@@ -31,11 +31,11 @@ installed. Note that these are _only_ required when building from source; you
 can download and run one of the binary releases without installing any of these
 tools.
 
-```
-$ git clone git@github.com:sinclairtarget/git-who.git
-$ cd git-who
-$ rake
-$ ./git-who --version
+```sh
+git clone git@github.com:sinclairtarget/git-who.git
+cd git-who
+rake
+./git-who --version
 ```
 
 ## Usage
@@ -139,8 +139,8 @@ Just like with `git` itself, when there is ambiguity between a path name
 and a commit-ish, you can use `--` to clarify the distinction. The
 following command will show you contributions to the file or directory
 called `foo` even if there is also a branch called `foo` in your repository:
-```
-$ git who -- foo
+```sh
+git who -- foo
 ```
 
 #### Options
@@ -531,7 +531,7 @@ system directly. Follow these steps to build and use the Docker image.
 ### Building the Docker Image
 To build the `git-who` Docker image, run the following command from the project root:
 
-```
+```sh
 docker build -t git-who -f docker/Dockerfile .
 ```
 
@@ -540,7 +540,7 @@ This will create a Docker image named `git-who` that you can use to run the tool
 ### Running `git-who` via Docker
 To use git-who without modifying your Git configuration, you can manually run:
 
-```
+```sh
 docker run --rm -it -v "$(pwd)":/git -v "$HOME":/root git-who who
 ```
 
@@ -560,7 +560,7 @@ configuration. Add the following lines to your `~/.gitconfig` file:
 
 This allows you to run:
 
-```
+```sh
 git who
 ```
 
@@ -662,6 +662,6 @@ A test repository is attached to this repository as a submodule.
 If you want to run the automated tests, you will first need to set up the
 submodule:
 
-```
-$ git submodule update --init
+```sh
+git submodule update --init
 ```
