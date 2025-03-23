@@ -232,6 +232,7 @@ func RunLog(
 			"-z",
 			"--date=unix",
 			"--reverse",
+			"--no-show-signature",
 			"--numstat",
 			"--diff-merges=first-parent",
 		}
@@ -243,6 +244,7 @@ func RunLog(
 			"-z",
 			"--date=unix",
 			"--reverse",
+			"--no-show-signature",
 		}
 	}
 
@@ -276,11 +278,12 @@ func RunStdinLog(
 			logDiffFormat,
 			"-z",
 			"--date=unix",
-			"--stdin",
-			"--no-walk",
 			"--reverse",
+			"--no-show-signature",
 			"--numstat",
 			"--diff-merges=first-parent",
+			"--stdin",
+			"--no-walk",
 		}
 	} else {
 		// Runs git log without --numstat, which is much faster.
@@ -289,9 +292,10 @@ func RunStdinLog(
 			logFormat,
 			"-z",
 			"--date=unix",
+			"--reverse",
+			"--no-show-signature",
 			"--stdin",
 			"--no-walk",
-			"--reverse",
 		}
 	}
 
