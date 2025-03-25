@@ -14,7 +14,7 @@ import (
 // Just prints out the output of git log as seen by git who.
 func dump(
 	revs []string,
-	paths []string,
+	pathspecs []string,
 	short bool,
 	since string,
 	until string,
@@ -31,8 +31,8 @@ func dump(
 		"called revs()",
 		"revs",
 		revs,
-		"paths",
-		paths,
+		"pathspecs",
+		pathspecs,
 		"short",
 		short,
 		"since",
@@ -59,9 +59,9 @@ func dump(
 
 	var subprocess *git.Subprocess
 	if short {
-		subprocess, err = git.RunLog(ctx, revs, paths, filters, false)
+		subprocess, err = git.RunLog(ctx, revs, pathspecs, filters, false)
 	} else {
-		subprocess, err = git.RunLog(ctx, revs, paths, filters, true)
+		subprocess, err = git.RunLog(ctx, revs, pathspecs, filters, true)
 	}
 	if err != nil {
 		return err

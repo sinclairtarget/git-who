@@ -211,7 +211,7 @@ loop:
 
 			// Now that we're tallying, we DO care to only look at the file
 			// diffs under the given paths
-			commits = git.LimitDiffsByPath(commits, whop.paths)
+			commits = git.LimitDiffsByPathspec(commits, whop.pathspecs)
 
 			result, err := whop.tally(commits, whop.opts)
 			if err != nil {

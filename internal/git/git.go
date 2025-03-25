@@ -68,7 +68,7 @@ func (d FileDiff) String() string {
 func CommitsWithOpts(
 	ctx context.Context,
 	revs []string,
-	paths []string,
+	pathspecs []string,
 	filters LogFilters,
 	populateDiffs bool,
 ) (
@@ -76,7 +76,7 @@ func CommitsWithOpts(
 	func() error,
 	error,
 ) {
-	subprocess, err := RunLog(ctx, revs, paths, filters, populateDiffs)
+	subprocess, err := RunLog(ctx, revs, pathspecs, filters, populateDiffs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -93,7 +93,7 @@ func CommitsWithOpts(
 func RevList(
 	ctx context.Context,
 	revranges []string,
-	paths []string,
+	pathspecs []string,
 	filters LogFilters,
 ) (_ []string, err error) {
 	defer func() {
@@ -104,7 +104,7 @@ func RevList(
 
 	revs := []string{}
 
-	subprocess, err := RunRevList(ctx, revranges, paths, filters)
+	subprocess, err := RunRevList(ctx, revranges, pathspecs, filters)
 	if err != nil {
 		return revs, err
 	}
@@ -159,8 +159,8 @@ func GetRoot() (_ string, err error) {
 	return root, nil
 }
 
-// Returns all paths in the working tree under the given paths.
-func WorkingTreeFiles(paths []string) (_ map[string]bool, err error) {
+// Returns all paths in the working tree under the given pathspecs.
+func WorkingTreeFiles(pathspecs []string) (_ map[string]bool, err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("error getting tree files: %w", err)
@@ -172,7 +172,7 @@ func WorkingTreeFiles(paths []string) (_ map[string]bool, err error) {
 
 	wtreeset := map[string]bool{}
 
-	subprocess, err := RunLsFiles(ctx, paths)
+	subprocess, err := RunLsFiles(ctx, pathspecs)
 	if err != nil {
 		return wtreeset, err
 	}
@@ -193,15 +193,28 @@ func WorkingTreeFiles(paths []string) (_ map[string]bool, err error) {
 	return wtreeset, nil
 }
 
-func LimitDiffsByPath(
+// Returns all commits in the input iterator, but for each commit, strips out
+// any file diff not modifying one of the given pathspecs
+func LimitDiffsByPathspec(
 	commits iter.Seq2[Commit, error],
-	paths []string,
+	pathspecs []string,
 ) iter.Seq2[Commit, error] {
-	if len(paths) == 0 {
+	if len(pathspecs) == 0 {
 		return commits
 	}
 
 	return func(yield func(Commit, error) bool) {
+		// Check all pathspecs are supported
+		for _, p := range pathspecs {
+			if !isSupportedPathspec(p) {
+				yield(
+					Commit{},
+					fmt.Errorf("unsupported magic in pathspec: \"%s\"", p),
+				)
+				return
+			}
+		}
+
 		for commit, err := range commits {
 			if err != nil {
 				yield(commit, err)
@@ -210,8 +223,8 @@ func LimitDiffsByPath(
 
 			filtered := []FileDiff{}
 			for _, diff := range commit.FileDiffs {
-				for _, p := range paths {
-					if strings.HasPrefix(diff.Path, p) {
+				for _, p := range pathspecs {
+					if pathspecMatch(diff.Path, p) {
 						filtered = append(filtered, diff)
 						break
 					}

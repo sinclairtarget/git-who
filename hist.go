@@ -20,7 +20,7 @@ const barWidth = 36
 
 func hist(
 	revs []string,
-	paths []string,
+	pathspecs []string,
 	mode tally.TallyMode,
 	showEmail bool,
 	countMerges bool,
@@ -39,8 +39,8 @@ func hist(
 		"called hist()",
 		"revs",
 		revs,
-		"paths",
-		paths,
+		"pathspecs",
+		pathspecs,
 		"mode",
 		mode,
 		"showEmail",
@@ -86,7 +86,7 @@ func hist(
 		buckets, err = concurrent.TallyCommitsTimeline(
 			ctx,
 			revs,
-			paths,
+			pathspecs,
 			filters,
 			tallyOpts,
 			end,
@@ -100,7 +100,7 @@ func hist(
 		commits, closer, err := git.CommitsWithOpts(
 			ctx,
 			revs,
-			paths,
+			pathspecs,
 			filters,
 			populateDiffs,
 		)

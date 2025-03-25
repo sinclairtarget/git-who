@@ -14,7 +14,7 @@ import (
 // for debugging.
 func parse(
 	revs []string,
-	paths []string,
+	pathspecs []string,
 	short bool,
 	since string,
 	until string,
@@ -31,8 +31,8 @@ func parse(
 		"called parse()",
 		"revs",
 		revs,
-		"paths",
-		paths,
+		"pathspecs",
+		pathspecs,
 		"short",
 		short,
 		"since",
@@ -60,7 +60,7 @@ func parse(
 	commits, closer, err := git.CommitsWithOpts(
 		ctx,
 		revs,
-		paths,
+		pathspecs,
 		filters,
 		!short,
 	)

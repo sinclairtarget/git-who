@@ -5,10 +5,10 @@ import (
 	"fmt"
 )
 
-// Handles splitting the Git revisions from the paths given a list of args.
+// Handles splitting the Git revisions from the pathspecs given a list of args.
 //
 // We call git rev-parse to disambiguate.
-func ParseArgs(args []string) (revs []string, paths []string, err error) {
+func ParseArgs(args []string) (revs []string, pathspecs []string, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -19,7 +19,7 @@ func ParseArgs(args []string) (revs []string, paths []string, err error) {
 
 	lines := subprocess.StdoutLines()
 	revs = []string{}
-	paths = []string{}
+	pathspecs = []string{}
 
 	finishedRevs := false
 	for line, err := range lines {
@@ -36,7 +36,7 @@ func ParseArgs(args []string) (revs []string, paths []string, err error) {
 			finishedRevs = true
 
 			if line != "--" {
-				paths = append(paths, line)
+				pathspecs = append(pathspecs, line)
 			}
 		}
 	}
@@ -51,5 +51,5 @@ func ParseArgs(args []string) (revs []string, paths []string, err error) {
 		revs = append(revs, "HEAD")
 	}
 
-	return revs, paths, nil
+	return revs, pathspecs, nil
 }

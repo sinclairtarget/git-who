@@ -172,13 +172,13 @@ Usage: git-who table [options...] [revisions...] [[--] paths...]
 				return errors.New("-n flag must be a positive integer")
 			}
 
-			revs, paths, err := git.ParseArgs(args)
+			revs, pathspecs, err := git.ParseArgs(args)
 			if err != nil {
 				return err
 			}
 			return table(
 				revs,
-				paths,
+				pathspecs,
 				mode,
 				*useCsv,
 				*showEmail,
@@ -226,7 +226,7 @@ Usage: git-who tree [options...] [revisions...] [[--] paths...]
 		flagSet:     flagSet,
 		description: description,
 		run: func(args []string) error {
-			revs, paths, err := git.ParseArgs(args)
+			revs, pathspecs, err := git.ParseArgs(args)
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
@@ -253,7 +253,7 @@ Usage: git-who tree [options...] [revisions...] [[--] paths...]
 
 			return tree(
 				revs,
-				paths,
+				pathspecs,
 				mode,
 				*depth,
 				*showEmail,
@@ -293,7 +293,7 @@ Usage: git-who hist [options...] [revisions...] [[--] paths...]
 		flagSet:     flagSet,
 		description: description,
 		run: func(args []string) error {
-			revs, paths, err := git.ParseArgs(args)
+			revs, pathspecs, err := git.ParseArgs(args)
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
@@ -311,7 +311,7 @@ Usage: git-who hist [options...] [revisions...] [[--] paths...]
 
 			return hist(
 				revs,
-				paths,
+				pathspecs,
 				mode,
 				*showEmail,
 				*countMerges,
@@ -334,13 +334,13 @@ func dumpCmd() command {
 	return command{
 		flagSet: flagSet,
 		run: func(args []string) error {
-			revs, paths, err := git.ParseArgs(args)
+			revs, pathspecs, err := git.ParseArgs(args)
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
 			return dump(
 				revs,
-				paths,
+				pathspecs,
 				*short,
 				*filterFlags.since,
 				*filterFlags.until,
@@ -361,13 +361,13 @@ func parseCmd() command {
 	return command{
 		flagSet: flagSet,
 		run: func(args []string) error {
-			revs, paths, err := git.ParseArgs(args)
+			revs, pathspecs, err := git.ParseArgs(args)
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
 			return parse(
 				revs,
-				paths,
+				pathspecs,
 				*short,
 				*filterFlags.since,
 				*filterFlags.until,

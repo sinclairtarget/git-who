@@ -40,7 +40,7 @@ type treeOutputLine struct {
 
 func tree(
 	revs []string,
-	paths []string,
+	pathspecs []string,
 	mode tally.TallyMode,
 	depth int,
 	showEmail bool,
@@ -61,8 +61,8 @@ func tree(
 		"called tree()",
 		"revs",
 		revs,
-		"paths",
-		paths,
+		"pathspecs",
+		pathspecs,
 		"mode",
 		mode,
 		"depth",
@@ -83,7 +83,7 @@ func tree(
 		nauthors,
 	)
 
-	wtreeset, err := git.WorkingTreeFiles(paths)
+	wtreeset, err := git.WorkingTreeFiles(pathspecs)
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func tree(
 		root, err = concurrent.TallyCommitsTree(
 			ctx,
 			revs,
-			paths,
+			pathspecs,
 			filters,
 			tallyOpts,
 			wtreeset,
@@ -136,7 +136,7 @@ func tree(
 		commits, closer, innererr := git.CommitsWithOpts(
 			ctx,
 			revs,
-			paths,
+			pathspecs,
 			filters,
 			true,
 		)

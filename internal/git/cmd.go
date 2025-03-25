@@ -220,7 +220,7 @@ func (f LogFilters) ToArgs() []string {
 func RunLog(
 	ctx context.Context,
 	revs []string,
-	paths []string,
+	pathspecs []string,
 	filters LogFilters,
 	needDiffs bool,
 ) (*Subprocess, error) {
@@ -250,8 +250,14 @@ func RunLog(
 	filterArgs := filters.ToArgs()
 
 	var args []string
-	if len(paths) > 0 {
-		args = slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
+	if len(pathspecs) > 0 {
+		args = slices.Concat(
+			baseArgs,
+			filterArgs,
+			revs,
+			[]string{"--"},
+			pathspecs,
+		)
 	} else {
 		args = slices.Concat(baseArgs, filterArgs, revs)
 	}
@@ -267,7 +273,7 @@ func RunLog(
 // Runs git log --stdin
 func RunStdinLog(
 	ctx context.Context,
-	paths []string, // Doesn't limit commits, but limits diffs!
+	pathspecs []string, // Doesn't limit commits, but limits diffs!
 	needDiffs bool,
 ) (*Subprocess, error) {
 	var baseArgs []string
@@ -298,8 +304,8 @@ func RunStdinLog(
 	}
 
 	var args []string
-	if len(paths) > 0 {
-		args = slices.Concat(baseArgs, []string{"--"}, paths)
+	if len(pathspecs) > 0 {
+		args = slices.Concat(baseArgs, []string{"--"}, pathspecs)
 	} else {
 		args = baseArgs
 	}
@@ -333,7 +339,7 @@ func RunRevParse(ctx context.Context, args []string) (*Subprocess, error) {
 func RunRevList(
 	ctx context.Context,
 	revs []string,
-	paths []string,
+	pathspecs []string,
 	filters LogFilters,
 ) (*Subprocess, error) {
 	if len(revs) == 0 {
@@ -348,8 +354,14 @@ func RunRevList(
 	filterArgs := filters.ToArgs()
 
 	var args []string
-	if len(paths) > 0 {
-		args = slices.Concat(baseArgs, filterArgs, revs, []string{"--"}, paths)
+	if len(pathspecs) > 0 {
+		args = slices.Concat(
+			baseArgs,
+			filterArgs,
+			revs,
+			[]string{"--"},
+			pathspecs,
+		)
 	} else {
 		args = slices.Concat(baseArgs, filterArgs, revs)
 	}
@@ -362,14 +374,14 @@ func RunRevList(
 	return subprocess, nil
 }
 
-func RunLsFiles(ctx context.Context, paths []string) (*Subprocess, error) {
+func RunLsFiles(ctx context.Context, pathspecs []string) (*Subprocess, error) {
 	baseArgs := []string{"ls-files", "--exclude-standard"}
 
 	var args []string
-	if len(paths) > 0 {
-		args = slices.Concat(baseArgs, paths)
+	if len(pathspecs) > 0 {
+		args = slices.Concat(baseArgs, pathspecs)
 	} else {
-		args = slices.Concat(baseArgs, []string{"--"}, paths)
+		args = slices.Concat(baseArgs, []string{"--"}, pathspecs)
 	}
 
 	subprocess, err := run(ctx, args, false)

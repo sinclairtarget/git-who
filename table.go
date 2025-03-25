@@ -35,7 +35,7 @@ func pickWidth(mode tally.TallyMode, showEmail bool) int {
 // commits and paths in a table printed to stdout.
 func table(
 	revs []string,
-	paths []string,
+	pathspecs []string,
 	mode tally.TallyMode,
 	useCsv bool,
 	showEmail bool,
@@ -56,8 +56,8 @@ func table(
 		"called table()",
 		"revs",
 		revs,
-		"paths",
-		paths,
+		"pathspecs",
+		pathspecs,
 		"mode",
 		mode,
 		"useCsv",
@@ -101,7 +101,7 @@ func table(
 		tallies, err = concurrent.TallyCommits(
 			ctx,
 			revs,
-			paths,
+			pathspecs,
 			filters,
 			tallyOpts,
 			getCache(),
@@ -115,7 +115,7 @@ func table(
 		commits, closer, err := git.CommitsWithOpts(
 			ctx,
 			revs,
-			paths,
+			pathspecs,
 			filters,
 			populateDiffs,
 		)
