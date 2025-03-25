@@ -3,7 +3,6 @@ package git
 import (
 	"fmt"
 	"iter"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,97 +15,6 @@ var commitHashRegexp *regexp.Regexp
 func init() {
 	fileRenameRegexp = regexp.MustCompile(`{(.*) => (.*)}`)
 	commitHashRegexp = regexp.MustCompile(`^[\^a-f0-9]+$`)
-}
-
-// Splits a path from git log --numstat on "/", while ignoring "/" surrounded
-// by "{" and "}".
-func splitPath(path string) []string {
-	parts := []string{}
-	var b strings.Builder
-	var inBrackets bool
-
-	for _, c := range path {
-		if c == os.PathSeparator && !inBrackets {
-			parts = append(parts, b.String())
-			b.Reset()
-			continue
-		}
-
-		if c == '{' {
-			inBrackets = true
-		} else if c == '}' {
-			inBrackets = false
-		}
-
-		b.WriteRune(c)
-	}
-
-	if b.Len() > 0 {
-		parts = append(parts, b.String())
-	}
-
-	return parts
-}
-
-// Parse the path given by git log --numstat for a file diff.
-//
-// Sometimes this looks like /foo/{bar => bim}/baz.txt when a file is moved.
-func parseDiffPath(path string) (outPath string, dst string, err error) {
-	if strings.Contains(path, "=>") && !strings.Contains(path, "}") {
-		// Simple case
-		parts := strings.Split(path, " => ")
-		if len(parts) != 2 {
-			return "", "", fmt.Errorf("error parsing diff path from \"%s\" path", path)
-		}
-		outPath = parts[0]
-		dst = parts[1]
-		return outPath, dst, nil
-	}
-
-	var pathBuilder strings.Builder
-	var dstBuilder strings.Builder
-
-	parts := splitPath(path)
-	for i, part := range parts {
-		if strings.Contains(part, "=>") {
-			matches := fileRenameRegexp.FindStringSubmatch(part)
-			if matches == nil || len(matches) != 3 {
-				return "", "", fmt.Errorf(
-					"error parsing rename from \"%s\" in path \"%s\"",
-					part,
-					path,
-				)
-			}
-
-			pathBuilder.WriteString(matches[1])
-			dstBuilder.WriteString(matches[2])
-
-			if i < len(parts)-1 {
-				if matches[1] != "" {
-					pathBuilder.WriteString(string(os.PathSeparator))
-				}
-				if matches[2] != "" {
-					dstBuilder.WriteString(string(os.PathSeparator))
-				}
-			}
-		} else {
-			pathBuilder.WriteString(part)
-			dstBuilder.WriteString(part)
-
-			if i < len(parts)-1 {
-				pathBuilder.WriteString(string(os.PathSeparator))
-				dstBuilder.WriteString(string(os.PathSeparator))
-			}
-		}
-	}
-
-	outPath = pathBuilder.String()
-	dst = dstBuilder.String()
-	if dst == outPath {
-		dst = ""
-	}
-
-	return outPath, dst, nil
 }
 
 func parseLinesChanged(s string, line string) (int, error) {
@@ -150,7 +58,7 @@ func allowCommit(commit Commit, now time.Time) bool {
 func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 	return func(yield func(Commit, error) bool) {
 		var commit Commit
-		var diff FileDiff
+		var diff *FileDiff
 		now := time.Now()
 		linesThisCommit := 0
 
@@ -176,7 +84,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 				}
 
 				commit = Commit{}
-				diff = FileDiff{}
+				diff = nil
 				linesThisCommit = 0
 
 				if len(line) == 0 {
@@ -214,55 +122,80 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			case linesThisCommit == 6:
 				break // Used to parse subject here; no longer
 			default:
-				// file diff line
-				parts := strings.Split(strings.Trim(line, "\t"), "\t")
-
+				// Handle file diffs
 				var err error
-				if len(parts) == 3 {
-					if parts[0] != "-" {
-						diff.LinesAdded, err = parseLinesChanged(parts[0], line)
-						if err != nil {
-							goto handleError
+				if diff == nil {
+					diff = &FileDiff{}
+
+					// Split to get non-empty tokens
+					parts := strings.SplitN(line, "\t", 3)
+					nonemptyParts := []string{}
+					for _, p := range parts {
+						if len(p) > 0 {
+							nonemptyParts = append(nonemptyParts, p)
 						}
 					}
 
-					if parts[1] != "-" {
-						diff.LinesRemoved, err = parseLinesChanged(parts[1], line)
-						if err != nil {
-							goto handleError
+					if len(nonemptyParts) == 3 {
+						if nonemptyParts[0] != "-" {
+							diff.LinesAdded, err = parseLinesChanged(
+								nonemptyParts[0],
+								line,
+							)
+							if err != nil {
+								goto handleError
+							}
 						}
-					}
 
-					diff.Path = parts[2]
-					commit.FileDiffs = append(commit.FileDiffs, diff)
-					diff = FileDiff{}
-				} else if len(parts) == 2 {
-					if parts[0] != "-" {
-						diff.LinesAdded, err = parseLinesChanged(parts[0], line)
-						if err != nil {
-							goto handleError
+						if nonemptyParts[1] != "-" {
+							diff.LinesRemoved, err = parseLinesChanged(
+								nonemptyParts[1],
+								line,
+							)
+							if err != nil {
+								goto handleError
+							}
 						}
-					}
 
-					if parts[1] != "-" {
-						diff.LinesRemoved, err = parseLinesChanged(parts[1], line)
-						if err != nil {
-							goto handleError
+						diff.Path = nonemptyParts[2]
+						commit.FileDiffs = append(commit.FileDiffs, *diff)
+						diff = nil
+					} else if len(nonemptyParts) == 2 {
+						if nonemptyParts[0] != "-" {
+							diff.LinesAdded, err = parseLinesChanged(
+								nonemptyParts[0],
+								line,
+							)
+							if err != nil {
+								goto handleError
+							}
 						}
-					}
-				} else if len(parts) == 1 {
-					if len(diff.Path) > 0 {
-						diff.Path = parts[0]
-						commit.FileDiffs = append(commit.FileDiffs, diff)
-						diff = FileDiff{}
+
+						if nonemptyParts[1] != "-" {
+							diff.LinesRemoved, err = parseLinesChanged(
+								nonemptyParts[1],
+								line,
+							)
+							if err != nil {
+								goto handleError
+							}
+						}
 					} else {
-						diff.Path = parts[0]
+						err = fmt.Errorf(
+							"wrong number of elements on line after split: %d",
+							len(nonemptyParts),
+						)
 					}
 				} else {
-					err = fmt.Errorf(
-						"too many elements on line (%d)",
-						len(parts),
-					)
+					if len(diff.Path) > 0 {
+						diff.Path = line
+						commit.FileDiffs = append(commit.FileDiffs, *diff)
+						diff = nil
+					} else {
+						// Used to handle moved files specially. For now, just
+						// mark as path until we overwrite it with next line
+						diff.Path = line
+					}
 				}
 
 			handleError:
@@ -275,6 +208,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 							err,
 						),
 					)
+					return
 				}
 			}
 
