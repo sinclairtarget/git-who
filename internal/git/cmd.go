@@ -234,7 +234,6 @@ func RunLog(
 			"--reverse",
 			"--no-show-signature",
 			"--numstat",
-			"--diff-merges=first-parent",
 		}
 	} else {
 		// Runs git log without --numstat, which is much faster.
@@ -281,7 +280,6 @@ func RunStdinLog(
 			"--reverse",
 			"--no-show-signature",
 			"--numstat",
-			"--diff-merges=first-parent",
 			"--stdin",
 			"--no-walk",
 		}
