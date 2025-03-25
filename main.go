@@ -103,8 +103,11 @@ loop:
 		}
 	}
 
+	args = escapeTerminator(args)
+
 	cmd.flagSet.Parse(args)
 	subargs := cmd.flagSet.Args()
+	subargs = unescapeTerminator(subargs)
 
 	progStart = time.Now()
 	if err := cmd.run(subargs); err != nil {
@@ -430,4 +433,36 @@ Exclude commits by these authors. Can be specified multiple times
 	`))
 
 	return &flags
+}
+
+/*
+* The "flag" package treats `--` as a terminator and doesn't return it as an
+* arg. We aren't really using it as a terminator though; we want to use it like
+* Git does, to separate revisions from paths. So we escape it so the "flag"
+* package treats it like any other arg.
+ */
+func escapeTerminator(args []string) []string {
+	newArgs := []string{}
+	for _, arg := range args {
+		if arg == "--" {
+			newArgs = append(newArgs, "^--") // Seems unlikely to be used?
+		} else {
+			newArgs = append(newArgs, arg)
+		}
+	}
+
+	return newArgs
+}
+
+func unescapeTerminator(args []string) []string {
+	newArgs := []string{}
+	for _, arg := range args {
+		if arg == "^--" {
+			newArgs = append(newArgs, "--")
+		} else {
+			newArgs = append(newArgs, arg)
+		}
+	}
+
+	return newArgs
 }

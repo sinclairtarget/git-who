@@ -61,6 +61,12 @@ func TestParseArgs(t *testing.T) {
 			expPaths: []string{"foobar"},
 		},
 		{
+			name:     "nonexistant_path_after_separator_no_rev",
+			args:     []string{"--", "foobar"},
+			expRevs:  []string{"HEAD"},
+			expPaths: []string{"foobar"},
+		},
+		{
 			name:     "trailing_separator",
 			args:     []string{safeTag, "--"},
 			expRevs:  []string{safeCommit},
