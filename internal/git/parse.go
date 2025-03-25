@@ -75,7 +75,7 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 				return
 			}
 
-			done := linesThisCommit >= 7 && (len(line) == 0 || isRev(line))
+			done := linesThisCommit >= 6 && (len(line) == 0 || isRev(line))
 			if done {
 				if allowCommit(commit, now) {
 					if !yield(commit, nil) {
@@ -119,8 +119,6 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 				}
 
 				commit.Date = time.Unix(int64(i), 0)
-			case linesThisCommit == 6:
-				break // Used to parse subject here; no longer
 			default:
 				// Handle file diffs
 				var err error
