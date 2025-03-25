@@ -177,7 +177,7 @@ func (left TalliesByPath) Combine(right TalliesByPath) TalliesByPath {
 			}
 
 			t := leftTally.Combine(rightTally)
-			t.numTallied = 1 // Same path
+			t.numTallied = min(t.numTallied, 1) // Same path
 			rightPathTallies[path] = t
 		}
 
