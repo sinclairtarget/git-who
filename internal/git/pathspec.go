@@ -70,11 +70,27 @@ func PathspecMatch(pathspec string, path string) bool {
 
 	// Ensure we mimic Git behavior with trailing slash. See "pathspec" in
 	// gitglossary(3).
-	pathspec = filepath.Join(pathspec, "**")
-	didMatch, err = doublestar.PathMatch(pathspec, path)
+	subdirPathspec := filepath.Join(pathspec, "**")
+	didMatch, err = doublestar.PathMatch(subdirPathspec, path)
 	if err != nil {
 		panic("bad pattern passed to doublestar.Match()")
 	}
 
-	return didMatch
+	if didMatch {
+		return true
+	}
+
+	if pathspec[0] == '*' {
+		toplevelPathspec := filepath.Join("**/")
+		didMatch, err = doublestar.PathMatch(toplevelPathspec, path)
+		if err != nil {
+			panic("bad pattern passed to doublestar.Match()")
+		}
+
+		if didMatch {
+			return true
+		}
+	}
+
+	return false
 }
