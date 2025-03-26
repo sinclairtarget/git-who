@@ -242,9 +242,21 @@ func TestPathspecMatch(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "double_glob_dir",
+			pathspec: "foo/",
+			path:     "foo/bim/bam/bar.txt",
+			expected: true,
+		},
+		{
 			name:     "glob_dir_not_match",
 			pathspec: "foo/*.txt",
 			path:     "foo/bim/bam/bar.txt",
+			expected: false,
+		},
+		{
+			name:     "subdir_not_match",
+			pathspec: "foo/bim",
+			path:     "foo/bar.txt",
 			expected: false,
 		},
 	}
