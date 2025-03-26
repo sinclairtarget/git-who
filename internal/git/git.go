@@ -206,7 +206,7 @@ func LimitDiffsByPathspec(
 	return func(yield func(Commit, error) bool) {
 		// Check all pathspecs are supported
 		for _, p := range pathspecs {
-			if !isSupportedPathspec(p) {
+			if !IsSupportedPathspec(p) {
 				yield(
 					Commit{},
 					fmt.Errorf("unsupported magic in pathspec: \"%s\"", p),
@@ -214,6 +214,8 @@ func LimitDiffsByPathspec(
 				return
 			}
 		}
+
+		includes, excludes := SplitPathspecs(pathspecs)
 
 		for commit, err := range commits {
 			if err != nil {
@@ -223,11 +225,24 @@ func LimitDiffsByPathspec(
 
 			filtered := []FileDiff{}
 			for _, diff := range commit.FileDiffs {
-				for _, p := range pathspecs {
-					if pathspecMatch(diff.Path, p) {
-						filtered = append(filtered, diff)
+				shouldInclude := false
+				for _, p := range includes {
+					if PathspecMatch(p, diff.Path) {
+						shouldInclude = true
 						break
 					}
+				}
+
+				shouldExclude := false
+				for _, p := range excludes {
+					if PathspecMatch(p, diff.Path) {
+						shouldExclude = true
+						break
+					}
+				}
+
+				if shouldInclude && !shouldExclude {
+					filtered = append(filtered, diff)
 				}
 			}
 

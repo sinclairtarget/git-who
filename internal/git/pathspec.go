@@ -1,14 +1,80 @@
 package git
 
 import (
-	"strings"
+	"path/filepath"
+	"regexp"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
 
-func isSupportedPathspec(pathspec string) bool {
+var excludePathspecRegexp *regexp.Regexp
+var excludeStripRegexp *regexp.Regexp
+
+func init() {
+	excludePathspecRegexp = regexp.MustCompile(
+		`^(:[!\^]:|:[!\^][^!\^/]|:\(exclude\))`,
+	)
+	excludeStripRegexp = regexp.MustCompile(
+		`^(:[!\^]:?|:\(exclude\))`,
+	)
+}
+
+/*
+* We only support the "exclude" pathspec magic.
+ */
+func IsSupportedPathspec(pathspec string) bool {
+	if len(pathspec) > 0 && pathspec[0] == ':' {
+		return excludePathspecRegexp.MatchString(pathspec)
+	}
+
 	return true
 }
 
-func pathspecMatch(path string, pathspec string) bool {
-	// TODO: Implement SOME of Git's pathspec magic
-	return strings.HasPrefix(path, pathspec)
+/*
+* Splits the include pathspecs from the exclude pathspecs.
+*
+* For the exclude pathspecs, we also strip off the leading "magic".
+ */
+func SplitPathspecs(pathspecs []string) (includes []string, excludes []string) {
+	for _, p := range pathspecs {
+		if len(p) == 0 {
+			continue // skip this degenerate case, Git disallows it
+		}
+
+		if p[0] == ':' {
+			// Strip magic
+			stripped := excludeStripRegexp.ReplaceAllString(p, "")
+			excludes = append(excludes, stripped)
+		} else {
+			includes = append(includes, p)
+		}
+	}
+
+	return includes, excludes
+}
+
+func PathspecMatch(pathspec string, path string) bool {
+	if len(pathspec) == 0 {
+		panic("empty string is not valid pathspec")
+	}
+
+	// Note: Git uses fnmatch(). This match may differ. Hopefully only rarely.
+	didMatch, err := doublestar.PathMatch(pathspec, path)
+	if err != nil {
+		panic("bad pattern passed to doublestar.Match()")
+	}
+
+	if didMatch {
+		return true
+	}
+
+	// Ensure we mimic Git behavior with trailing slash. See "pathspec" in
+	// gitglossary(3).
+	pathspec = filepath.Join(pathspec, "*")
+	didMatch, err = doublestar.PathMatch(pathspec, path)
+	if err != nil {
+		panic("bad pattern passed to doublestar.Match()")
+	}
+
+	return didMatch
 }

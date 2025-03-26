@@ -176,6 +176,12 @@ Usage: git-who table [options...] [revisions...] [[--] paths...]
 			if err != nil {
 				return err
 			}
+
+			err = checkPathspecs(pathspecs)
+			if err != nil {
+				return err
+			}
+
 			return table(
 				revs,
 				pathspecs,
@@ -229,6 +235,11 @@ Usage: git-who tree [options...] [revisions...] [[--] paths...]
 			revs, pathspecs, err := git.ParseArgs(args)
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
+			}
+
+			err = checkPathspecs(pathspecs)
+			if err != nil {
+				return err
 			}
 
 			if !isOnlyOne(
@@ -298,6 +309,11 @@ Usage: git-who hist [options...] [revisions...] [[--] paths...]
 				return fmt.Errorf("could not parse args: %w", err)
 			}
 
+			err = checkPathspecs(pathspecs)
+			if err != nil {
+				return err
+			}
+
 			if !isOnlyOne(*useLines, *useFiles) {
 				return errors.New("all ranking flags are mutually exclusive")
 			}
@@ -338,6 +354,12 @@ func dumpCmd() command {
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
+
+			err = checkPathspecs(pathspecs)
+			if err != nil {
+				return err
+			}
+
 			return dump(
 				revs,
 				pathspecs,
@@ -365,6 +387,12 @@ func parseCmd() command {
 			if err != nil {
 				return fmt.Errorf("could not parse args: %w", err)
 			}
+
+			err = checkPathspecs(pathspecs)
+			if err != nil {
+				return err
+			}
+
 			return parse(
 				revs,
 				pathspecs,
@@ -465,4 +493,18 @@ func unescapeTerminator(args []string) []string {
 	}
 
 	return newArgs
+}
+
+func checkPathspecs(pathspecs []string) error {
+	for _, p := range pathspecs {
+		if !git.IsSupportedPathspec(p) {
+			return fmt.Errorf(
+				"unsupported magic in pathspec: \"%s\"\n"+
+					"only the \"exclude\" magic is supported",
+				p,
+			)
+		}
+	}
+
+	return nil
 }
