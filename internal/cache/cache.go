@@ -200,7 +200,7 @@ func CacheStorageDir(name string) (_ string, err error) {
 // Returns a hash of state in the repo that, if changed, should invalidate our
 // cache.
 func RepoStateHash(gitRootPath string) (string, error) {
-	mailmapPath := filepath.Join(gitRootPath, ".mailmap")
+	mailmapPath := git.MailmapPath(gitRootPath)
 
 	h := fnv.New32()
 
