@@ -54,11 +54,12 @@ type combinable[T any] interface {
 
 // tally job we can do concurrently
 type whoperation[T combinable[T]] struct {
-	revspec   []string
-	pathspecs []string
-	filters   git.LogFilters
-	tally     tallyFunc[T]
-	opts      tally.TallyOpts
+	revspec    []string
+	pathspecs  []string
+	filters    git.LogFilters
+	useMailmap bool
+	tally      tallyFunc[T]
+	opts       tally.TallyOpts
 }
 
 func calcTotalChunks(revCount int) int {
@@ -296,16 +297,18 @@ func TallyCommits(
 	revspec []string,
 	pathspecs []string,
 	filters git.LogFilters,
+	repoFiles git.RepoFiles,
 	opts tally.TallyOpts,
 	cache cache.Cache,
 	allowProgressBar bool,
 ) (_ map[string]tally.Tally, err error) {
 	whop := whoperation[tally.TalliesByPath]{
-		revspec:   revspec,
-		pathspecs: pathspecs,
-		filters:   filters,
-		tally:     tally.TallyCommitsByPath,
-		opts:      opts,
+		revspec:    revspec,
+		pathspecs:  pathspecs,
+		filters:    filters,
+		useMailmap: repoFiles.HasMailmap(),
+		tally:      tally.TallyCommitsByPath,
+		opts:       opts,
 	}
 
 	talliesByPath, err := tallyFanOutFanIn[tally.TalliesByPath](
@@ -326,6 +329,7 @@ func TallyCommitsTree(
 	revspec []string,
 	pathspecs []string,
 	filters git.LogFilters,
+	repoFiles git.RepoFiles,
 	opts tally.TallyOpts,
 	worktreePaths map[string]bool,
 	gitRootPath string,
@@ -333,11 +337,12 @@ func TallyCommitsTree(
 	allowProgressBar bool,
 ) (*tally.TreeNode, error) {
 	whop := whoperation[tally.TalliesByPath]{
-		revspec:   revspec,
-		pathspecs: pathspecs,
-		filters:   filters,
-		tally:     tally.TallyCommitsByPath,
-		opts:      opts,
+		revspec:    revspec,
+		pathspecs:  pathspecs,
+		filters:    filters,
+		useMailmap: repoFiles.HasMailmap(),
+		tally:      tally.TallyCommitsByPath,
+		opts:       opts,
 	}
 
 	talliesByPath, err := tallyFanOutFanIn[tally.TalliesByPath](
@@ -362,6 +367,7 @@ func TallyCommitsTimeline(
 	revspec []string,
 	pathspecs []string,
 	filters git.LogFilters,
+	repoFiles git.RepoFiles,
 	opts tally.TallyOpts,
 	end time.Time,
 	cache cache.Cache,
@@ -375,11 +381,12 @@ func TallyCommitsTimeline(
 	}
 
 	whop := whoperation[tally.TimeSeries]{
-		revspec:   revspec,
-		pathspecs: pathspecs,
-		filters:   filters,
-		tally:     f,
-		opts:      opts,
+		revspec:    revspec,
+		pathspecs:  pathspecs,
+		filters:    filters,
+		useMailmap: repoFiles.HasMailmap(),
+		tally:      f,
+		opts:       opts,
 	}
 
 	buckets, err := tallyFanOutFanIn[tally.TimeSeries](

@@ -122,6 +122,7 @@ func tree(
 			revs,
 			pathspecs,
 			filters,
+			repoFiles,
 			tallyOpts,
 			wtreeset,
 			gitRootPath,
@@ -144,6 +145,7 @@ func tree(
 			pathspecs,
 			filters,
 			true,
+			repoFiles,
 		)
 		if innererr != nil {
 			return innererr

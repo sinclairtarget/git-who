@@ -187,7 +187,12 @@ loop:
 			// commit. Otherwise when we cache the commits we would be caching
 			// only a part of the commit
 			nopaths := []string{}
-			subprocess, err := git.RunStdinLog(ctx, nopaths, true)
+			subprocess, err := git.RunStdinLog(
+				ctx,
+				nopaths,
+				true,
+				whop.useMailmap,
+			)
 			if err != nil {
 				return err
 			}

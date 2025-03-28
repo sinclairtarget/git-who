@@ -57,12 +57,24 @@ func dump(
 		Nauthors: nauthors,
 	}
 
-	var subprocess *git.Subprocess
-	if short {
-		subprocess, err = git.RunLog(ctx, revs, pathspecs, filters, false)
-	} else {
-		subprocess, err = git.RunLog(ctx, revs, pathspecs, filters, true)
+	gitRootPath, err := git.GetRoot()
+	if err != nil {
+		return err
 	}
+
+	repoFiles, err := git.CheckRepoFiles(gitRootPath)
+	if err != nil {
+		return err
+	}
+
+	subprocess, err := git.RunLog(
+		ctx,
+		revs,
+		pathspecs,
+		filters,
+		!short,
+		repoFiles.HasMailmap(),
+	)
 	if err != nil {
 		return err
 	}

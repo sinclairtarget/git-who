@@ -223,6 +223,7 @@ func RunLog(
 	pathspecs []string,
 	filters LogFilters,
 	needDiffs bool,
+	useMailmap bool,
 ) (*Subprocess, error) {
 	var baseArgs []string
 	if needDiffs {
@@ -245,6 +246,10 @@ func RunLog(
 			"--reverse",
 			"--no-show-signature",
 		}
+	}
+
+	if !useMailmap {
+		baseArgs = append(baseArgs, "--no-mailmap")
 	}
 
 	filterArgs := filters.ToArgs()
@@ -275,6 +280,7 @@ func RunStdinLog(
 	ctx context.Context,
 	pathspecs []string, // Doesn't limit commits, but limits diffs!
 	needDiffs bool,
+	useMailmap bool,
 ) (*Subprocess, error) {
 	var baseArgs []string
 	if needDiffs {
@@ -301,6 +307,10 @@ func RunStdinLog(
 			"--stdin",
 			"--no-walk",
 		}
+	}
+
+	if !useMailmap {
+		baseArgs = append(baseArgs, "--no-mailmap")
 	}
 
 	var args []string

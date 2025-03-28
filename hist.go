@@ -98,6 +98,7 @@ func hist(
 			revs,
 			pathspecs,
 			filters,
+			repoFiles,
 			tallyOpts,
 			end,
 			getCache(gitRootPath, repoFiles),
@@ -113,6 +114,7 @@ func hist(
 			pathspecs,
 			filters,
 			populateDiffs,
+			repoFiles,
 		)
 		if err != nil {
 			return err

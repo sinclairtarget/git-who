@@ -113,6 +113,7 @@ func table(
 			revs,
 			pathspecs,
 			filters,
+			repoFiles,
 			tallyOpts,
 			getCache(gitRootPath, repoFiles),
 			pretty.AllowDynamic(os.Stdout),
@@ -128,6 +129,7 @@ func table(
 			pathspecs,
 			filters,
 			populateDiffs,
+			repoFiles,
 		)
 		if err != nil {
 			return err

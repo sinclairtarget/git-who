@@ -57,12 +57,23 @@ func parse(
 		Nauthors: nauthors,
 	}
 
+	gitRootPath, err := git.GetRoot()
+	if err != nil {
+		return err
+	}
+
+	repoFiles, err := git.CheckRepoFiles(gitRootPath)
+	if err != nil {
+		return err
+	}
+
 	commits, closer, err := git.CommitsWithOpts(
 		ctx,
 		revs,
 		pathspecs,
 		filters,
 		!short,
+		repoFiles,
 	)
 	if err != nil {
 		return err

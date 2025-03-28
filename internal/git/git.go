@@ -71,12 +71,20 @@ func CommitsWithOpts(
 	pathspecs []string,
 	filters LogFilters,
 	populateDiffs bool,
+	repoFiles RepoFiles,
 ) (
 	iter.Seq2[Commit, error],
 	func() error,
 	error,
 ) {
-	subprocess, err := RunLog(ctx, revs, pathspecs, filters, populateDiffs)
+	subprocess, err := RunLog(
+		ctx,
+		revs,
+		pathspecs,
+		filters,
+		populateDiffs,
+		repoFiles.HasMailmap(),
+	)
 	if err != nil {
 		return nil, nil, err
 	}

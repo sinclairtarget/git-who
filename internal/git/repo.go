@@ -12,8 +12,56 @@ import (
 )
 
 type RepoFiles struct {
-	MailmapPath    string // Empty if file does not exist
-	IgnoreRevsPath string // Empty if file does not exist
+	MailmapPath    string
+	IgnoreRevsPath string
+}
+
+func (rf RepoFiles) HasMailmap() bool {
+	return len(rf.MailmapPath) > 0
+}
+
+func (rf RepoFiles) HasIgnoreRevs() bool {
+	return len(rf.IgnoreRevsPath) > 0
+}
+
+// Returns a hash of the files we care about in the repo.
+func (rf RepoFiles) Hash() (string, error) {
+	h := fnv.New32()
+
+	if rf.HasMailmap() {
+		f, err := os.Open(rf.MailmapPath)
+		if !errors.Is(err, fs.ErrNotExist) {
+			if err != nil {
+				return "", fmt.Errorf("could not read mailmap file: %v", err)
+			}
+			defer f.Close()
+
+			_, err = io.Copy(h, f)
+			if err != nil {
+				return "", fmt.Errorf("error hashing mailmap file: %v", err)
+			}
+		}
+	}
+
+	if rf.HasIgnoreRevs() {
+		f, err := os.Open(rf.IgnoreRevsPath)
+		if !errors.Is(err, fs.ErrNotExist) {
+			if err != nil {
+				return "", fmt.Errorf(
+					"could not read ignore revs file: %v",
+					err,
+				)
+			}
+			defer f.Close()
+
+			_, err = io.Copy(h, f)
+			if err != nil {
+				return "", fmt.Errorf("error hashing ignore revs file: %v", err)
+			}
+		}
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // NOTE: We do NOT respect the git config here, we just assume the conventional
@@ -60,44 +108,4 @@ func CheckRepoFiles(gitRootPath string) (_ RepoFiles, err error) {
 	}
 
 	return files, nil
-}
-
-// Returns a hash of the files we care about in the repo.
-func (repoFiles RepoFiles) Hash() (string, error) {
-	h := fnv.New32()
-
-	if len(repoFiles.MailmapPath) > 0 {
-		f, err := os.Open(repoFiles.MailmapPath)
-		if !errors.Is(err, fs.ErrNotExist) {
-			if err != nil {
-				return "", fmt.Errorf("could not read mailmap file: %v", err)
-			}
-			defer f.Close()
-
-			_, err = io.Copy(h, f)
-			if err != nil {
-				return "", fmt.Errorf("error hashing mailmap file: %v", err)
-			}
-		}
-	}
-
-	if len(repoFiles.IgnoreRevsPath) > 0 {
-		f, err := os.Open(repoFiles.IgnoreRevsPath)
-		if !errors.Is(err, fs.ErrNotExist) {
-			if err != nil {
-				return "", fmt.Errorf(
-					"could not read ignore revs file: %v",
-					err,
-				)
-			}
-			defer f.Close()
-
-			_, err = io.Copy(h, f)
-			if err != nil {
-				return "", fmt.Errorf("error hashing ignore revs file: %v", err)
-			}
-		}
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
 }
