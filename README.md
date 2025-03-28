@@ -141,7 +141,8 @@ of 3.10.9 up to the release of 3.11.9:
 Just like with `git` itself, when there is ambiguity between a path name
 and a commit-ish, you can use `--` to clarify the distinction. The
 following command will show you contributions to the file or directory
-called `foo` even if there is also a branch called `foo` in your repository:
+called `foo` even if there is also a branch called `foo` in your repository (or
+even if the file/directory was previously committed but has since been deleted):
 ```
 $ git who -- foo
 ```
@@ -521,6 +522,33 @@ eight months:
 └── configure.ac
 ```
 
+If you want to filter out all commits under a certain path or using a certain
+extension (i.e. ignore these files), you can do so using Git's "exclude"
+[pathspec
+magic](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec).
+
+The following example counts all files under the `Parser/` directory but
+excludes `.c` files:
+```
+~/clones/cpython$ git who tree -- Parser ':!*.c'
+Parser/...................Benjamin Peterson (56)
+├── lexer/................Pablo Galindo Salgado (1)
+│   ├── buffer.h..........Lysandros Nikolaou (1)
+│   ├── lexer.h...........Lysandros Nikolaou (1)
+│   └── state.h
+├── tokenizer/............Lysandros Nikolaou (1)
+│   ├── helpers.h
+│   └── tokenizer.h
+├── Python.asdl
+├── asdl.py
+├── asdl_c.py
+├── pegen.h...............Pablo Galindo Salgado (14)
+└── string_parser.h.......Pablo Galindo Salgado (1)
+```
+
+Git supports other kinds of pathspec magic but the "exclude" pathspec magic is
+the only one supported by `git who`.
+
 ## Caching
 `git who` caches data on a per-repository basis under `XDG_CACHE_HOME` (this is
 `~/.cache` if the environment variable is not set).
@@ -598,6 +626,21 @@ different names?
 Git already has a solution for his problem called [Git
 mailmap](https://git-scm.com/docs/gitmailmap). If a `.mailmap` file is present
 in a Git repository, `git who` will respect it.
+
+Note that `git who` will _not_ consult your Git configuration to find your
+mailmap file if you have configured a different location for it other than the
+conventional `.mailmap` at the root of your repository.
+
+## Git Blame Ignore Revs
+If you have a `.git-blame-ignore-revs` file at the root of your repository,
+`git who` will skip all commits named in that file. The format of the file
+should be identical to the format of the file expected by the
+`--ignore-revs-file` option of `git blame`.
+
+Note that `git who` will _not_ consult the value of `blame.ignoreRevsFile` in
+your Git configuration. If there is a file named `.git-blame-ignore-revs` at
+the root of your repository, `git who` will use it. Otherwise no commits will
+be skipped.
 
 ## What Exactly Do These Numbers Mean?
 ### Metrics
