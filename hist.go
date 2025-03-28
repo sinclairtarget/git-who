@@ -81,6 +81,16 @@ func hist(
 		end = time.Now()
 	}
 
+	gitRootPath, err := git.GetRoot()
+	if err != nil {
+		return err
+	}
+
+	repoFiles, err := git.CheckRepoFiles(gitRootPath)
+	if err != nil {
+		return err
+	}
+
 	var buckets []tally.TimeBucket
 	if populateDiffs && runtime.GOMAXPROCS(0) > 1 {
 		buckets, err = concurrent.TallyCommitsTimeline(
@@ -90,7 +100,7 @@ func hist(
 			filters,
 			tallyOpts,
 			end,
-			getCache(),
+			getCache(gitRootPath, repoFiles),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {

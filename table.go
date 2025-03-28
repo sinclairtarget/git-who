@@ -96,6 +96,16 @@ func table(
 		Nauthors: nauthors,
 	}
 
+	gitRootPath, err := git.GetRoot()
+	if err != nil {
+		return err
+	}
+
+	repoFiles, err := git.CheckRepoFiles(gitRootPath)
+	if err != nil {
+		return err
+	}
+
 	var tallies map[string]tally.Tally
 	if populateDiffs && runtime.GOMAXPROCS(0) > 1 {
 		tallies, err = concurrent.TallyCommits(
@@ -104,7 +114,7 @@ func table(
 			pathspecs,
 			filters,
 			tallyOpts,
-			getCache(),
+			getCache(gitRootPath, repoFiles),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {

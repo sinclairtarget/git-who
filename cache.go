@@ -18,7 +18,7 @@ func warnFail(cb cache.Backend, err error) cache.Cache {
 	return cache.NewCache(cb)
 }
 
-func getCache() cache.Cache {
+func getCache(gitRootPath string, repoFiles git.RepoFiles) cache.Cache {
 	var fallback cache.Backend = cacheBackends.NoopBackend{}
 
 	if !cache.IsCachingEnabled() {
@@ -32,18 +32,13 @@ func getCache() cache.Cache {
 		return warnFail(fallback, err)
 	}
 
-	gitRootPath, err := git.GetRoot()
-	if err != nil {
-		return warnFail(fallback, err)
-	}
-
 	dirname := cacheBackends.GobCacheDir(cacheStorageDir, gitRootPath)
 	err = os.MkdirAll(dirname, 0o700)
 	if err != nil {
 		return warnFail(fallback, err)
 	}
 
-	filename, err := cacheBackends.GobCacheFilename(gitRootPath)
+	filename, err := cacheBackends.GobCacheFilename(repoFiles)
 	if err != nil {
 		return warnFail(fallback, err)
 	}

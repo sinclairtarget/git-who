@@ -91,11 +91,6 @@ func tree(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	gitRootPath, err := git.GetRoot()
-	if err != nil {
-		return err
-	}
-
 	filters := git.LogFilters{
 		Since:    since,
 		Until:    until,
@@ -110,6 +105,16 @@ func tree(
 		tallyOpts.Key = func(c git.Commit) string { return c.AuthorName }
 	}
 
+	gitRootPath, err := git.GetRoot()
+	if err != nil {
+		return err
+	}
+
+	repoFiles, err := git.CheckRepoFiles(gitRootPath)
+	if err != nil {
+		return err
+	}
+
 	var root *tally.TreeNode
 	if runtime.GOMAXPROCS(0) > 1 {
 		root, err = concurrent.TallyCommitsTree(
@@ -120,7 +125,7 @@ func tree(
 			tallyOpts,
 			wtreeset,
 			gitRootPath,
-			getCache(),
+			getCache(gitRootPath, repoFiles),
 			pretty.AllowDynamic(os.Stdout),
 		)
 
