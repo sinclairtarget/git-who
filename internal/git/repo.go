@@ -2,10 +2,9 @@ package git
 
 import (
 	"bufio"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"hash/fnv"
+	"hash"
 	"io"
 	"io/fs"
 	"os"
@@ -26,44 +25,23 @@ func (rf RepoConfigFiles) HasIgnoreRevs() bool {
 	return len(rf.IgnoreRevsPath) > 0
 }
 
-// Returns a hash of the files we care about in the repo.
-func (rf RepoConfigFiles) Hash() (string, error) {
-	h := fnv.New32()
-
+func (rf RepoConfigFiles) MailmapHash(h hash.Hash32) error {
 	if rf.HasMailmap() {
 		f, err := os.Open(rf.MailmapPath)
 		if !errors.Is(err, fs.ErrNotExist) {
 			if err != nil {
-				return "", fmt.Errorf("could not read mailmap file: %v", err)
+				return fmt.Errorf("could not read mailmap file: %v", err)
 			}
 			defer f.Close()
 
 			_, err = io.Copy(h, f)
 			if err != nil {
-				return "", fmt.Errorf("error hashing mailmap file: %v", err)
+				return fmt.Errorf("error hashing mailmap file: %v", err)
 			}
 		}
 	}
 
-	if rf.HasIgnoreRevs() {
-		f, err := os.Open(rf.IgnoreRevsPath)
-		if !errors.Is(err, fs.ErrNotExist) {
-			if err != nil {
-				return "", fmt.Errorf(
-					"could not read ignore revs file: %v",
-					err,
-				)
-			}
-			defer f.Close()
-
-			_, err = io.Copy(h, f)
-			if err != nil {
-				return "", fmt.Errorf("error hashing ignore revs file: %v", err)
-			}
-		}
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return nil
 }
 
 // Get git blame ignored revisions

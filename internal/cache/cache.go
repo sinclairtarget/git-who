@@ -2,7 +2,9 @@
 package cache
 
 import (
+	"encoding/hex"
 	"fmt"
+	"hash/fnv"
 	"iter"
 	"os"
 	"os/user"
@@ -190,4 +192,15 @@ func CacheStorageDir(name string) (_ string, err error) {
 	}
 
 	return absP, nil
+}
+
+// Hash of all the state in the repo that affects the validity of our cache
+func RepoStateHash(rf git.RepoConfigFiles) (string, error) {
+	h := fnv.New32()
+	err := rf.MailmapHash(h)
+	if err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
