@@ -20,6 +20,7 @@ func TestCommitsFileRename(t *testing.T) {
 		[]string{path},
 		git.LogFilters{},
 		true,
+		git.RepoConfigFiles{},
 	)
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
@@ -78,6 +79,7 @@ func TestCommitsFileRenameNewDir(t *testing.T) {
 		[]string{path},
 		git.LogFilters{},
 		true,
+		git.RepoConfigFiles{},
 	)
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
@@ -136,6 +138,7 @@ func TestCommitsRenameDeepDir(t *testing.T) {
 		[]string{path},
 		git.LogFilters{},
 		true,
+		git.RepoConfigFiles{},
 	)
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)
@@ -191,6 +194,7 @@ func TestParseWholeLog(t *testing.T) {
 		[]string{"."},
 		git.LogFilters{},
 		true,
+		git.RepoConfigFiles{},
 	)
 	if err != nil {
 		t.Fatalf("error getting commits: %v", err)

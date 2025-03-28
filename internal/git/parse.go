@@ -14,7 +14,7 @@ var commitHashRegexp *regexp.Regexp
 
 func init() {
 	fileRenameRegexp = regexp.MustCompile(`{(.*) => (.*)}`)
-	commitHashRegexp = regexp.MustCompile(`^[\^a-f0-9]+$`)
+	commitHashRegexp = regexp.MustCompile(`^\^?[a-f0-9]+$`)
 }
 
 func parseLinesChanged(s string, line string) (int, error) {

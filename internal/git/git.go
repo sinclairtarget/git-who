@@ -77,6 +77,11 @@ func CommitsWithOpts(
 	func() error,
 	error,
 ) {
+	ignoreRevs, err := repoFiles.IgnoreRevs()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	subprocess, err := RunLog(
 		ctx,
 		revs,
@@ -91,6 +96,7 @@ func CommitsWithOpts(
 
 	lines := subprocess.StdoutLogLines()
 	commits := ParseCommits(lines)
+	commits = SkipIgnored(commits, ignoreRevs)
 
 	closer := func() error {
 		return subprocess.Wait()
@@ -256,6 +262,34 @@ func LimitDiffsByPathspec(
 
 			commit.FileDiffs = filtered
 			yield(commit, nil)
+		}
+	}
+}
+
+// Returns an iterator over commits that skips any revs in the given list.
+func SkipIgnored(
+	commits iter.Seq2[Commit, error],
+	ignoreRevs []string,
+) iter.Seq2[Commit, error] {
+	ignoreSet := map[string]bool{}
+	for _, rev := range ignoreRevs {
+		ignoreSet[rev] = true
+	}
+
+	return func(yield func(Commit, error) bool) {
+		for commit, err := range commits {
+			if err != nil {
+				yield(commit, err)
+				return
+			}
+
+			if shouldIgnore := ignoreSet[commit.Hash]; shouldIgnore {
+				continue // skip this commit
+			}
+
+			if !yield(commit, nil) {
+				break
+			}
 		}
 	}
 }

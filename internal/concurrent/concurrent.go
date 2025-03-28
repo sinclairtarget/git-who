@@ -58,6 +58,7 @@ type whoperation[T combinable[T]] struct {
 	pathspecs  []string
 	filters    git.LogFilters
 	useMailmap bool
+	ignoreRevs []string
 	tally      tallyFunc[T]
 	opts       tally.TallyOpts
 }
@@ -143,6 +144,25 @@ func tallyFanOutFanIn[T combinable[T]](
 	if len(revs) == 0 {
 		logger().Debug("no commits found; no work to do")
 		return accumulator, nil
+	}
+
+	// Filter out ignored revs
+	if len(whop.ignoreRevs) > 0 {
+		ignoreSet := map[string]bool{}
+		for _, rev := range whop.ignoreRevs {
+			ignoreSet[rev] = true
+		}
+
+		unignoredRevs := []string{}
+		for _, rev := range revs {
+			if ignoreSet[rev] {
+				continue
+			}
+
+			unignoredRevs = append(unignoredRevs, rev)
+		}
+
+		revs = unignoredRevs
 	}
 
 	// -- Use cached commits if there are any ----------------------------------
@@ -302,11 +322,17 @@ func TallyCommits(
 	cache cache.Cache,
 	allowProgressBar bool,
 ) (_ map[string]tally.Tally, err error) {
+	ignoreRevs, err := repoFiles.IgnoreRevs()
+	if err != nil {
+		return nil, err
+	}
+
 	whop := whoperation[tally.TalliesByPath]{
 		revspec:    revspec,
 		pathspecs:  pathspecs,
 		filters:    filters,
 		useMailmap: repoFiles.HasMailmap(),
+		ignoreRevs: ignoreRevs,
 		tally:      tally.TallyCommitsByPath,
 		opts:       opts,
 	}
@@ -336,11 +362,17 @@ func TallyCommitsTree(
 	cache cache.Cache,
 	allowProgressBar bool,
 ) (*tally.TreeNode, error) {
+	ignoreRevs, err := repoFiles.IgnoreRevs()
+	if err != nil {
+		return nil, err
+	}
+
 	whop := whoperation[tally.TalliesByPath]{
 		revspec:    revspec,
 		pathspecs:  pathspecs,
 		filters:    filters,
 		useMailmap: repoFiles.HasMailmap(),
+		ignoreRevs: ignoreRevs,
 		tally:      tally.TallyCommitsByPath,
 		opts:       opts,
 	}
@@ -373,6 +405,11 @@ func TallyCommitsTimeline(
 	cache cache.Cache,
 	allowProgressBar bool,
 ) ([]tally.TimeBucket, error) {
+	ignoreRevs, err := repoFiles.IgnoreRevs()
+	if err != nil {
+		return nil, err
+	}
+
 	f := func(
 		commits iter.Seq2[git.Commit, error],
 		opts tally.TallyOpts,
@@ -385,6 +422,7 @@ func TallyCommitsTimeline(
 		pathspecs:  pathspecs,
 		filters:    filters,
 		useMailmap: repoFiles.HasMailmap(),
+		ignoreRevs: ignoreRevs,
 		tally:      f,
 		opts:       opts,
 	}

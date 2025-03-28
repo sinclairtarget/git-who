@@ -1,6 +1,7 @@
 package git
 
 import (
+	"bufio"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type RepoConfigFiles struct {
@@ -62,6 +64,42 @@ func (rf RepoConfigFiles) Hash() (string, error) {
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// Get git blame ignored revisions
+func (rf RepoConfigFiles) IgnoreRevs() (_ []string, err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("error reading git blame ignore revs: %w", err)
+		}
+	}()
+
+	var revs []string
+
+	if !rf.HasIgnoreRevs() {
+		return revs, nil
+	}
+
+	f, err := os.Open(rf.IgnoreRevsPath)
+	if err != nil {
+		return revs, err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if isRev(line) {
+			revs = append(revs, line)
+		}
+	}
+
+	err = scanner.Err()
+	if err != nil {
+		return revs, err
+	}
+
+	return revs, nil
 }
 
 // NOTE: We do NOT respect the git config here, we just assume the conventional
