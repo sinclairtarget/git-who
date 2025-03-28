@@ -254,6 +254,12 @@ func TestPathspecMatch(t *testing.T) {
 			expected: true,
 		},
 		{
+			name:     "glob_not_match",
+			pathspec: "*.txt",
+			path:     "README.md",
+			expected: false,
+		},
+		{
 			name:     "glob_dir_not_match",
 			pathspec: "foo/*.txt",
 			path:     "foo/bim/bam/bar.txt",

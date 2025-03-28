@@ -81,7 +81,7 @@ func PathspecMatch(pathspec string, path string) bool {
 	}
 
 	if pathspec[0] == '*' {
-		toplevelPathspec := filepath.Join("**/")
+		toplevelPathspec := filepath.Join("**/", pathspec)
 		didMatch, err = doublestar.PathMatch(toplevelPathspec, path)
 		if err != nil {
 			panic("bad pattern passed to doublestar.Match()")
