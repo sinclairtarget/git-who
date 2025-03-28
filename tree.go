@@ -110,7 +110,7 @@ func tree(
 		return err
 	}
 
-	repoFiles, err := git.CheckRepoFiles(gitRootPath)
+	repoFiles, err := git.CheckRepoConfigFiles(gitRootPath)
 	if err != nil {
 		return err
 	}

@@ -312,7 +312,7 @@ func GobCacheDir(prefix string, gitRootPath string) string {
 	return repoDir
 }
 
-func GobCacheFilename(repoFiles git.RepoFiles) (string, error) {
+func GobCacheFilename(repoFiles git.RepoConfigFiles) (string, error) {
 	stateHash, err := repoFiles.Hash()
 	if err != nil {
 		return "", err

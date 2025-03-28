@@ -11,21 +11,21 @@ import (
 	"path/filepath"
 )
 
-type RepoFiles struct {
+type RepoConfigFiles struct {
 	MailmapPath    string
 	IgnoreRevsPath string
 }
 
-func (rf RepoFiles) HasMailmap() bool {
+func (rf RepoConfigFiles) HasMailmap() bool {
 	return len(rf.MailmapPath) > 0
 }
 
-func (rf RepoFiles) HasIgnoreRevs() bool {
+func (rf RepoConfigFiles) HasIgnoreRevs() bool {
 	return len(rf.IgnoreRevsPath) > 0
 }
 
 // Returns a hash of the files we care about in the repo.
-func (rf RepoFiles) Hash() (string, error) {
+func (rf RepoConfigFiles) Hash() (string, error) {
 	h := fnv.New32()
 
 	if rf.HasMailmap() {
@@ -79,7 +79,7 @@ func IgnoreRevsPath(gitRootPath string) string {
 }
 
 // Checks to see whether the files exist on disk or not
-func CheckRepoFiles(gitRootPath string) (_ RepoFiles, err error) {
+func CheckRepoConfigFiles(gitRootPath string) (_ RepoConfigFiles, err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf(
@@ -89,7 +89,7 @@ func CheckRepoFiles(gitRootPath string) (_ RepoFiles, err error) {
 		}
 	}()
 
-	var files RepoFiles
+	var files RepoConfigFiles
 
 	mailmapPath := MailmapPath(gitRootPath)
 	_, err = os.Stat(mailmapPath)

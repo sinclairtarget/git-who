@@ -18,7 +18,7 @@ func warnFail(cb cache.Backend, err error) cache.Cache {
 	return cache.NewCache(cb)
 }
 
-func getCache(gitRootPath string, repoFiles git.RepoFiles) cache.Cache {
+func getCache(gitRootPath string, repoFiles git.RepoConfigFiles) cache.Cache {
 	var fallback cache.Backend = cacheBackends.NoopBackend{}
 
 	if !cache.IsCachingEnabled() {

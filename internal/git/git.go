@@ -71,7 +71,7 @@ func CommitsWithOpts(
 	pathspecs []string,
 	filters LogFilters,
 	populateDiffs bool,
-	repoFiles RepoFiles,
+	repoFiles RepoConfigFiles,
 ) (
 	iter.Seq2[Commit, error],
 	func() error,
