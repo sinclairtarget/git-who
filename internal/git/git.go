@@ -88,7 +88,6 @@ func CommitsWithOpts(
 		pathspecs,
 		filters,
 		populateDiffs,
-		repoFiles.HasMailmap(),
 	)
 	if err != nil {
 		return nil, nil, err

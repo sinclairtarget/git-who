@@ -101,7 +101,7 @@ func hist(
 			repoFiles,
 			tallyOpts,
 			end,
-			getCache(gitRootPath, repoFiles),
+			getCache(ctx, gitRootPath, repoFiles),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {

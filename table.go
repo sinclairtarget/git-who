@@ -115,7 +115,7 @@ func table(
 			filters,
 			repoFiles,
 			tallyOpts,
-			getCache(gitRootPath, repoFiles),
+			getCache(ctx, gitRootPath, repoFiles),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {

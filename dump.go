@@ -62,7 +62,7 @@ func dump(
 		return err
 	}
 
-	repoFiles, err := git.CheckRepoConfigFiles(gitRootPath)
+	_, err = git.CheckRepoConfigFiles(gitRootPath)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,6 @@ func dump(
 		pathspecs,
 		filters,
 		!short,
-		repoFiles.HasMailmap(),
 	)
 	if err != nil {
 		return err

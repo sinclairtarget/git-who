@@ -18,6 +18,12 @@ const (
 	logDiffFormat = "--pretty=format:%H%n%h%n%p%n%aN%n%aE%n%ad"
 )
 
+// SubprocessOut contains standard output and the process exit code.
+type SubprocessOut struct {
+	ExitCode int
+	Stdout   string
+}
+
 type SubprocessErr struct {
 	ExitCode int
 	Stderr   string
@@ -51,6 +57,25 @@ func (s Subprocess) StdinWriter() (_ *bufio.Writer, closer func() error) {
 	return bufio.NewWriter(s.stdin), func() error {
 		return s.stdin.Close()
 	}
+}
+
+// Stdout returns the complete standard output of a synchronous subprocess.
+func (s Subprocess) Stdout() (SubprocessOut, error) {
+	stdout, err := io.ReadAll(s.stdout)
+	if err != nil {
+		return SubprocessOut{}, err
+	}
+	_ = s.cmd.Wait()
+	logger().Debug(
+		"subprocess exited",
+		"code",
+		s.cmd.ProcessState.ExitCode(),
+	)
+	out := SubprocessOut{
+		ExitCode: s.cmd.ProcessState.ExitCode(),
+		Stdout:   strings.TrimSpace(string(stdout)),
+	}
+	return out, nil
 }
 
 // Returns a single-use iterator over the output of the command, line by line.
@@ -216,6 +241,26 @@ func (f LogFilters) ToArgs() []string {
 	return args
 }
 
+// RunCatFile returns contents of a blob.
+func RunCatFile(ctx context.Context, blob string) (*Subprocess, error) {
+	args := []string{"cat-file", "blob", blob}
+	subprocess, err := run(ctx, args, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run git cat-file: %w", err)
+	}
+	return subprocess, nil
+}
+
+// RunConfig returns a configured git key value.
+func RunConfig(ctx context.Context, key string) (*Subprocess, error) {
+	args := []string{"config", "--get", key}
+	subprocess, err := run(ctx, args, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run git config: %w", err)
+	}
+	return subprocess, nil
+}
+
 // Runs git log
 func RunLog(
 	ctx context.Context,
@@ -223,7 +268,6 @@ func RunLog(
 	pathspecs []string,
 	filters LogFilters,
 	needDiffs bool,
-	useMailmap bool,
 ) (*Subprocess, error) {
 	var baseArgs []string
 	if needDiffs {
@@ -246,10 +290,6 @@ func RunLog(
 			"--reverse",
 			"--no-show-signature",
 		}
-	}
-
-	if !useMailmap {
-		baseArgs = append(baseArgs, "--no-mailmap")
 	}
 
 	filterArgs := filters.ToArgs()
@@ -280,7 +320,6 @@ func RunStdinLog(
 	ctx context.Context,
 	pathspecs []string, // Doesn't limit commits, but limits diffs!
 	needDiffs bool,
-	useMailmap bool,
 ) (*Subprocess, error) {
 	var baseArgs []string
 	if needDiffs {
@@ -307,10 +346,6 @@ func RunStdinLog(
 			"--stdin",
 			"--no-walk",
 		}
-	}
-
-	if !useMailmap {
-		baseArgs = append(baseArgs, "--no-mailmap")
 	}
 
 	var args []string

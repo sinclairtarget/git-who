@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,7 +19,12 @@ func warnFail(cb cache.Backend, err error) cache.Cache {
 	return cache.NewCache(cb)
 }
 
-func getCache(gitRootPath string, repoFiles git.RepoConfigFiles) cache.Cache {
+// getCache returns the repository's cache.
+func getCache(
+	ctx context.Context,
+	gitRootPath string,
+	repoFiles git.RepoConfigFiles,
+) cache.Cache {
 	var fallback cache.Backend = cacheBackends.NoopBackend{}
 
 	if !cache.IsCachingEnabled() {
@@ -38,7 +44,7 @@ func getCache(gitRootPath string, repoFiles git.RepoConfigFiles) cache.Cache {
 		return warnFail(fallback, err)
 	}
 
-	filename, err := cacheBackends.GobCacheFilename(repoFiles)
+	filename, err := cacheBackends.GobCacheFilename(ctx, repoFiles)
 	if err != nil {
 		return warnFail(fallback, err)
 	}
