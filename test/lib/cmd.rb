@@ -10,8 +10,15 @@ class GitWho
     @rundir = rundir
   end
 
-  def run(*args)
+  def run(*args, enable_cache: false)
+    if enable_cache
+      env_hash = {}
+    else
+      env_hash = { 'GIT_WHO_DISABLE_CACHE' => '1' }
+    end
+
     stdout_s, stderr_s, status = Open3.capture3(
+      env_hash,
       @exec_path,
       *args,
       chdir: @rundir,
