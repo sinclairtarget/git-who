@@ -16,11 +16,6 @@ end
 
 task default: [:build]
 
-desc 'Run all unit tests'
-task :test do
-  sh 'go test ./internal/...'
-end
-
 desc 'Run go fmt'
 task :fmt do
   sh 'go fmt ./internal/...'
@@ -82,4 +77,22 @@ def build_for_platform(goos, goarch, out: PROGNAME)
   rev = get_commit
   sh "GOOS=#{goos} GOARCH=#{goarch} go build -a -o #{out} "\
     "-ldflags '-s -w -X main.Commit=#{rev} -X main.Version=#{version}'"
+end
+
+desc 'Run all unit tests'
+task :test do
+  sh 'go test ./internal/...'
+end
+
+namespace 'functional' do
+  begin
+    require 'minitest/test_task'
+
+    Minitest::TestTask.create(:test) do |t|
+      t.libs << "test/lib"
+      t.test_globs = ["test/**/*_test.rb"]
+    end
+  rescue LoadError
+    # no-op, minitest not installed
+  end
 end
