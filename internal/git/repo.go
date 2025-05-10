@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"hash"
-	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,25 +20,6 @@ func (rf RepoConfigFiles) HasMailmap() bool {
 
 func (rf RepoConfigFiles) HasIgnoreRevs() bool {
 	return len(rf.IgnoreRevsPath) > 0
-}
-
-func (rf RepoConfigFiles) MailmapHash(h hash.Hash32) error {
-	if rf.HasMailmap() {
-		f, err := os.Open(rf.MailmapPath)
-		if !errors.Is(err, fs.ErrNotExist) {
-			if err != nil {
-				return fmt.Errorf("could not read mailmap file: %v", err)
-			}
-			defer f.Close()
-
-			_, err = io.Copy(h, f)
-			if err != nil {
-				return fmt.Errorf("error hashing mailmap file: %v", err)
-			}
-		}
-	}
-
-	return nil
 }
 
 // Get git blame ignored revisions
@@ -80,9 +58,9 @@ func (rf RepoConfigFiles) IgnoreRevs() (_ []string, err error) {
 	return revs, nil
 }
 
-// NOTE: We do NOT respect the git config here, we just assume the conventional
-// path for this file.
-func MailmapPath(gitRootPath string) string {
+// RepoMailmapPath returns the conventional path of the ".mailmap" file for the
+// repository.
+func RepoMailmapPath(gitRootPath string) string {
 	path := filepath.Join(gitRootPath, ".mailmap")
 	return path
 }
@@ -107,7 +85,7 @@ func CheckRepoConfigFiles(gitRootPath string) (_ RepoConfigFiles, err error) {
 
 	var files RepoConfigFiles
 
-	mailmapPath := MailmapPath(gitRootPath)
+	mailmapPath := RepoMailmapPath(gitRootPath)
 	_, err = os.Stat(mailmapPath)
 	if err == nil {
 		files.MailmapPath = mailmapPath

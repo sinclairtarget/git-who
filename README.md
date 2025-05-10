@@ -586,11 +586,8 @@ different names?
 
 Git already has a solution for his problem called [Git
 mailmap](https://git-scm.com/docs/gitmailmap). If a `.mailmap` file is present
-in a Git repository, `git who` will respect it.
-
-Note that `git who` will _not_ consult your Git configuration to find your
-mailmap file if you have configured a different location for it other than the
-conventional `.mailmap` at the root of your repository.
+in a Git repository, or other configuration options are set, `git who` will
+respect it.
 
 ## Git Blame Ignore Revs
 If you have a `.git-blame-ignore-revs` file at the root of your repository,
