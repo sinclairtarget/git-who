@@ -1,3 +1,6 @@
 [submodule "test-repo"]
 	path = test-repo
 	url = git@github.com:sinclairtarget/git-who-test-repo.git
+[submodule "gunicorn"]
+	path = gunicorn
+	url = git@github.com:benoitc/gunicorn.git
