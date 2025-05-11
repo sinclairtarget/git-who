@@ -81,7 +81,7 @@ end
 
 desc 'Run all unit tests'
 task :test do
-  sh 'go test ./internal/...'
+  sh 'go test -count=1 ./internal/...'
 end
 
 namespace 'functional' do
