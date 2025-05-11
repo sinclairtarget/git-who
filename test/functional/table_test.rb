@@ -18,7 +18,7 @@ class TestTable < Minitest::Test
   UNTIL_FILTER_FLAGS = ['', '--until 2025-01-01']
 
   def test_table_no_flags
-    cmd = GitWho.new(GitWho.built_bin_path, Repo.path)
+    cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
     stdout_s = cmd.run 'table'
     assert stdout_s
   end
@@ -32,7 +32,7 @@ class TestTable < Minitest::Test
   all_flag_combos.each do |flags|
     test_name = "test_table_(#{flags.join ','})"
     define_method(test_name) do
-      cmd = GitWho.new(GitWho.built_bin_path, Repo.path)
+      cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
       stdout_s = cmd.run 'table', *flags
       assert stdout_s
     end
@@ -47,7 +47,7 @@ class TestTable < Minitest::Test
   all_filter_flag_combos.each do |flags|
     test_name = "test_table_filter_(#{flags.join ','})"
     define_method(test_name) do
-      cmd = GitWho.new(GitWho.built_bin_path, Repo.path)
+      cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
       stdout_s = cmd.run 'table', *flags
       assert stdout_s
     end

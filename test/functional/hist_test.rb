@@ -17,7 +17,7 @@ class TestHist < Minitest::Test
   UNTIL_FILTER_FLAGS = ['', '--until 2025-01-01']
 
   def test_hist_no_flags
-    cmd = GitWho.new(GitWho.built_bin_path, Repo.path)
+    cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
     stdout_s = cmd.run 'hist'
     assert stdout_s
   end
@@ -30,7 +30,7 @@ class TestHist < Minitest::Test
   all_flag_combos.each do |flags|
     test_name = "test_hist_(#{flags.join ','})"
     define_method(test_name) do
-      cmd = GitWho.new(GitWho.built_bin_path, Repo.path)
+      cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
       stdout_s = cmd.run 'hist', *flags
       assert stdout_s
     end
@@ -45,7 +45,7 @@ class TestHist < Minitest::Test
   all_filter_flag_combos.each do |flags|
     test_name = "test_hist_filter_(#{flags.join ','})"
     define_method(test_name) do
-      cmd = GitWho.new(GitWho.built_bin_path, Repo.path)
+      cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
       stdout_s = cmd.run 'hist', *flags
       assert stdout_s
     end

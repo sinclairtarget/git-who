@@ -10,11 +10,17 @@ class GitWho
     @rundir = rundir
   end
 
-  def run(*args, enable_cache: false)
-    if enable_cache
-      env_hash = {}
+  def run(*args, cache_home: nil, n_procs: nil)
+    env_hash = {}
+
+    if cache_home
+      env_hash['XDG_CACHE_HOME'] = cache_home
     else
-      env_hash = { 'GIT_WHO_DISABLE_CACHE' => '1' }
+      env_hash['GIT_WHO_DISABLE_CACHE'] = '1'
+    end
+
+    unless n_procs.nil?
+      env_hash['GOMAXPROCS'] = n_procs.to_s
     end
 
     split_args = args.reduce([]) do |args, arg|
