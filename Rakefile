@@ -8,6 +8,7 @@ SUPPORTED = [
   ['linux', 'amd64'],
   ['linux', 'arm64'],
   ['linux', 'arm'],
+  ['windows', 'amd64'],
 ]
 OUTDIR = 'out'
 RELEASE_DIRS = SUPPORTED.map do |os, arch|
@@ -26,7 +27,7 @@ desc 'Build executable'
 task :build do
   gohostos = `go env GOHOSTOS`.strip
   gohostarch = `go env GOHOSTARCH`.strip
-  build_for_platform gohostos, gohostarch
+  build_for_platform gohostos, gohostarch, out: exec_name(gohostos)
 end
 
 namespace 'release' do
@@ -40,7 +41,8 @@ namespace 'release' do
   task build: RELEASE_DIRS do
     SUPPORTED.each do |os, arch|
       output_dir = "#{OUTDIR}/#{os}_#{arch}"
-      build_for_platform(os, arch, out: "#{output_dir}/#{PROGNAME}")
+      progname = exec_name(os)
+      build_for_platform(os, arch, out: "#{output_dir}/#{progname}")
 
       version = get_version
       sh "tar czf #{OUTDIR}/gitwho_#{version}_#{os}_#{arch}.tar.gz "\
@@ -70,6 +72,14 @@ end
 
 def get_commit()
   `git rev-parse --short HEAD`.strip
+end
+
+def exec_name(goos)
+  if goos == 'windows'
+    PROGNAME + '.exe'
+  else
+    PROGNAME
+  end
 end
 
 def build_for_platform(goos, goarch, out: PROGNAME)
