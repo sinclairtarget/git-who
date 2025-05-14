@@ -714,3 +714,18 @@ submodule:
 ```
 $ git submodule update --init
 ```
+
+### Unit Tests
+The unit tests, written in Go, can be run using:
+
+```
+$ rake test
+```
+
+### Functional Tests
+There are some end-to-end/functional tests written in Ruby. These require the
+`minitest` gem. You can run them using:
+
+```
+$ rake functional:test
+```
