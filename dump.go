@@ -88,8 +88,8 @@ func dump(
 			return err
 		}
 
-		lineWithNulls := strings.ReplaceAll(line, "\x00", "^@")
-		fmt.Fprintln(w, lineWithNulls)
+		lineWithReplaced := strings.ReplaceAll(line, "\n", "\\n")
+		fmt.Fprintln(w, lineWithReplaced)
 	}
 
 	w.Flush()

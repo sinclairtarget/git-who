@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	logFormat     = "--pretty=format:%H%n%h%n%p%n%aN%n%aE%n%ad%n" // newline
-	logDiffFormat = "--pretty=format:%H%n%h%n%p%n%aN%n%aE%n%ad"
+	logFormat = "--pretty=format:%H%x00%h%x00%p%x00%aN%x00%aE%x00%ad%x00"
 )
 
 type SubprocessErr struct {
@@ -70,22 +69,16 @@ func (s Subprocess) StdoutLines() iter.Seq2[string, error] {
 	}
 }
 
-// Returns a single-use iterator over the output of the command.
+// Returns a single-use iterator over the output from git log.
 //
-// Lines are split on both newlines and NULLs.
+// Lines are split on NULLs with some additional processing.
 func (s Subprocess) StdoutLogLines() iter.Seq2[string, error] {
 	scanner := bufio.NewScanner(s.stdout)
 
 	scanner.Split(func(data []byte, atEOF bool) (int, []byte, error) {
 		null_i := bytes.IndexByte(data, '\x00')
-		newline_i := bytes.IndexByte(data, '\n')
 
-		if null_i >= 0 && newline_i >= 0 {
-			i := min(null_i, newline_i)
-			return i + 1, data[:i], nil
-		} else if newline_i > 0 {
-			return newline_i + 1, data[:newline_i], nil
-		} else if null_i > 0 {
+		if null_i >= 0 {
 			return null_i + 1, data[:null_i], nil
 		}
 
@@ -98,7 +91,13 @@ func (s Subprocess) StdoutLogLines() iter.Seq2[string, error] {
 
 	return func(yield func(string, error) bool) {
 		for scanner.Scan() {
-			if !yield(scanner.Text(), nil) {
+			line := scanner.Text()
+
+			// Handle annoying new line that exists between regular commit
+			// fields and --numstat data
+			processedLine := strings.TrimPrefix(line, "\n")
+
+			if !yield(processedLine, nil) {
 				return
 			}
 		}
@@ -225,27 +224,17 @@ func RunLog(
 	needDiffs bool,
 	useMailmap bool,
 ) (*Subprocess, error) {
-	var baseArgs []string
+	baseArgs := []string{
+		"log",
+		logFormat,
+		"-z",
+		"--date=unix",
+		"--reverse",
+		"--no-show-signature",
+	}
+
 	if needDiffs {
-		baseArgs = []string{
-			"log",
-			logDiffFormat,
-			"-z",
-			"--date=unix",
-			"--reverse",
-			"--no-show-signature",
-			"--numstat",
-		}
-	} else {
-		// Runs git log without --numstat, which is much faster.
-		baseArgs = []string{
-			"log",
-			logFormat,
-			"-z",
-			"--date=unix",
-			"--reverse",
-			"--no-show-signature",
-		}
+		baseArgs = append(baseArgs, "--numstat")
 	}
 
 	if !useMailmap {
@@ -282,31 +271,19 @@ func RunStdinLog(
 	needDiffs bool,
 	useMailmap bool,
 ) (*Subprocess, error) {
-	var baseArgs []string
+	baseArgs := []string{
+		"log",
+		logFormat,
+		"-z",
+		"--date=unix",
+		"--reverse",
+		"--no-show-signature",
+		"--stdin",
+		"--no-walk",
+	}
+
 	if needDiffs {
-		baseArgs = []string{
-			"log",
-			logDiffFormat,
-			"-z",
-			"--date=unix",
-			"--reverse",
-			"--no-show-signature",
-			"--numstat",
-			"--stdin",
-			"--no-walk",
-		}
-	} else {
-		// Runs git log without --numstat, which is much faster.
-		baseArgs = []string{
-			"log",
-			logFormat,
-			"-z",
-			"--date=unix",
-			"--reverse",
-			"--no-show-signature",
-			"--stdin",
-			"--no-walk",
-		}
+		baseArgs = append(baseArgs, "--numstat")
 	}
 
 	if !useMailmap {
