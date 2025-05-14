@@ -94,7 +94,7 @@ func CommitsWithOpts(
 		return nil, nil, err
 	}
 
-	lines := subprocess.StdoutLogLines()
+	lines := subprocess.StdoutNullDelimitedLines()
 	commits := ParseCommits(lines)
 	commits = SkipIgnored(commits, ignoreRevs)
 
@@ -191,12 +191,12 @@ func WorkingTreeFiles(pathspecs []string) (_ map[string]bool, err error) {
 		return wtreeset, err
 	}
 
-	lines := subprocess.StdoutLines()
+	lines := subprocess.StdoutNullDelimitedLines()
 	for line, err := range lines {
 		if err != nil {
 			return wtreeset, err
 		}
-		wtreeset[strings.TrimSpace(line)] = true
+		wtreeset[line] = true
 	}
 
 	err = subprocess.Wait()

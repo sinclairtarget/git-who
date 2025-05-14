@@ -211,7 +211,7 @@ loop:
 			}
 
 			// Read parsed commits and enqueue for caching
-			lines := subprocess.StdoutLogLines()
+			lines := subprocess.StdoutNullDelimitedLines()
 			commits := git.ParseCommits(lines)
 			commits = cacheTee(commits, toCache)
 

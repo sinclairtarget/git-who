@@ -72,7 +72,7 @@ func (s Subprocess) StdoutLines() iter.Seq2[string, error] {
 // Returns a single-use iterator over the output from git log.
 //
 // Lines are split on NULLs with some additional processing.
-func (s Subprocess) StdoutLogLines() iter.Seq2[string, error] {
+func (s Subprocess) StdoutNullDelimitedLines() iter.Seq2[string, error] {
 	scanner := bufio.NewScanner(s.stdout)
 
 	scanner.Split(func(data []byte, atEOF bool) (int, []byte, error) {
@@ -362,7 +362,11 @@ func RunRevList(
 }
 
 func RunLsFiles(ctx context.Context, pathspecs []string) (*Subprocess, error) {
-	baseArgs := []string{"ls-files", "--exclude-standard"}
+	baseArgs := []string{
+		"ls-files",
+		"--exclude-standard",
+		"-z",
+	}
 
 	var args []string
 	if len(pathspecs) > 0 {
