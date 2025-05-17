@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	logFormat = "--pretty=format:%H%x00%h%x00%p%x00%aN%x00%aE%x00%ad%x00"
+	logFormat        = "--pretty=format:%H%x00%h%x00%p%x00%an%x00%ae%x00%ad%x00"
+	mailmapLogFormat = "--pretty=format:%H%x00%h%x00%p%x00%aN%x00%aE%x00%ad%x00"
 )
 
 type SubprocessErr struct {
@@ -224,21 +225,31 @@ func RunLog(
 	needDiffs bool,
 	useMailmap bool,
 ) (*Subprocess, error) {
-	baseArgs := []string{
-		"log",
-		logFormat,
-		"-z",
-		"--date=unix",
-		"--reverse",
-		"--no-show-signature",
+	var baseArgs []string
+
+	if useMailmap {
+		baseArgs = []string{
+			"log",
+			mailmapLogFormat,
+			"-z",
+			"--date=unix",
+			"--reverse",
+			"--no-show-signature",
+		}
+	} else {
+		baseArgs = []string{
+			"log",
+			logFormat,
+			"-z",
+			"--date=unix",
+			"--reverse",
+			"--no-show-signature",
+			"--no-mailmap",
+		}
 	}
 
 	if needDiffs {
 		baseArgs = append(baseArgs, "--numstat")
-	}
-
-	if !useMailmap {
-		baseArgs = append(baseArgs, "--no-mailmap")
 	}
 
 	filterArgs := filters.ToArgs()
@@ -271,23 +282,35 @@ func RunStdinLog(
 	needDiffs bool,
 	useMailmap bool,
 ) (*Subprocess, error) {
-	baseArgs := []string{
-		"log",
-		logFormat,
-		"-z",
-		"--date=unix",
-		"--reverse",
-		"--no-show-signature",
-		"--stdin",
-		"--no-walk",
+	var baseArgs []string
+
+	if useMailmap {
+		baseArgs = []string{
+			"log",
+			mailmapLogFormat,
+			"-z",
+			"--date=unix",
+			"--reverse",
+			"--no-show-signature",
+			"--stdin",
+			"--no-walk",
+		}
+	} else {
+		baseArgs = []string{
+			"log",
+			logFormat,
+			"-z",
+			"--date=unix",
+			"--reverse",
+			"--no-show-signature",
+			"--stdin",
+			"--no-walk",
+			"--no-mailmap",
+		}
 	}
 
 	if needDiffs {
 		baseArgs = append(baseArgs, "--numstat")
-	}
-
-	if !useMailmap {
-		baseArgs = append(baseArgs, "--no-mailmap")
 	}
 
 	var args []string
