@@ -55,7 +55,7 @@ namespace 'release' do
     FileUtils.cd(OUTDIR) do
       version = get_version
       sumsfile = "SHA2-256SUMS_#{version}.txt"
-      sh "shasum -a 256 **/git-who > #{sumsfile}"
+      sh "shasum -a 256 **/git-who* > #{sumsfile}"
       sh "ssh-keygen -Y sign -n file -f ~/.ssh/gitwho_ed25519 #{sumsfile}"
     end
   end
