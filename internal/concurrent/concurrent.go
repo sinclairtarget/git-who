@@ -292,6 +292,14 @@ loop:
 					err,
 				)
 			}
+		case err, ok := <-cacheErr:
+			if ok && err != nil {
+				logger().Debug("cache error in concurrent tally; cancelling")
+				return accumulator, fmt.Errorf(
+					"concurrent tally failed: %w",
+					err,
+				)
+			}
 		}
 	}
 
@@ -300,6 +308,8 @@ loop:
 	}
 
 	// Check if there was a caching error (and wait for cacher to exit)
+	// We have to do this here in addition to above in case there is a caching
+	// error after the last chunk of work is handled.
 	select {
 	case <-ctx.Done():
 		return accumulator, errors.New("concurrent tally cancelled")
