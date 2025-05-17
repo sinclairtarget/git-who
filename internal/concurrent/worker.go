@@ -191,7 +191,6 @@ loop:
 				ctx,
 				nopaths,
 				true,
-				whop.useMailmap,
 			)
 			if err != nil {
 				return err

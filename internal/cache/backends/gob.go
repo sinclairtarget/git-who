@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/binary"
 	"encoding/gob"
 	"errors"
@@ -312,8 +313,12 @@ func GobCacheDir(prefix string, gitRootPath string) string {
 	return repoDir
 }
 
-func GobCacheFilename(repoFiles git.RepoConfigFiles) (string, error) {
-	stateHash, err := cache.RepoStateHash(repoFiles)
+// GobCacheFilename gets the filename of the current repository state cache.
+func GobCacheFilename(
+	ctx context.Context,
+	repoFiles git.RepoConfigFiles,
+) (string, error) {
+	stateHash, err := cache.RepoStateHash(ctx, repoFiles)
 	if err != nil {
 		return "", err
 	}

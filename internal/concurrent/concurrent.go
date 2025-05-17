@@ -57,7 +57,6 @@ type whoperation[T combinable[T]] struct {
 	revspec    []string
 	pathspecs  []string
 	filters    git.LogFilters
-	useMailmap bool
 	ignoreRevs []string
 	tally      tallyFunc[T]
 	opts       tally.TallyOpts
@@ -341,7 +340,6 @@ func TallyCommits(
 		revspec:    revspec,
 		pathspecs:  pathspecs,
 		filters:    filters,
-		useMailmap: repoFiles.HasMailmap(),
 		ignoreRevs: ignoreRevs,
 		tally:      tally.TallyCommitsByPath,
 		opts:       opts,
@@ -381,7 +379,6 @@ func TallyCommitsTree(
 		revspec:    revspec,
 		pathspecs:  pathspecs,
 		filters:    filters,
-		useMailmap: repoFiles.HasMailmap(),
 		ignoreRevs: ignoreRevs,
 		tally:      tally.TallyCommitsByPath,
 		opts:       opts,
@@ -431,7 +428,6 @@ func TallyCommitsTimeline(
 		revspec:    revspec,
 		pathspecs:  pathspecs,
 		filters:    filters,
-		useMailmap: repoFiles.HasMailmap(),
 		ignoreRevs: ignoreRevs,
 		tally:      f,
 		opts:       opts,
