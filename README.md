@@ -40,7 +40,6 @@ go install github.com/sinclairtarget/git-who@latest
 ```
 
 ### From Source
-
 Building from source requires that you have Go, Ruby, and the `rake` Ruby gem
 installed. Note that these are _only_ required when building from source; you
 can download and run one of the binary releases without installing any of these
