@@ -23,6 +23,12 @@ class TestTree < Minitest::Test
     refute_empty(stdout_s)
   end
 
+  def test_tree_subdir
+    cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path + '/file-rename')
+    stdout_s = cmd.run 'tree'
+    refute_empty(stdout_s)
+  end
+
   all_flag_combos = GitWho.generate_args_cartesian_product([
     SHOW_ALL_FLAGS,
     MODE_FLAGS,
