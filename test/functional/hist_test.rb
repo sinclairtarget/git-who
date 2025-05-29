@@ -12,14 +12,14 @@ class TestHist < Minitest::Test
   MERGES_FLAGS = ['', '--merges']
 
   AUTHOR_FILTER_FLAGS = ['', '--author Bob']
-  NAUTHOR_FILTER_FLAGS = ['', '--nauthor Bob']
-  SINCE_FILTER_FLAGS = ['', '--since 2025-01-01']
-  UNTIL_FILTER_FLAGS = ['', '--until 2025-01-01']
+  NAUTHOR_FILTER_FLAGS = ['', '--nauthor Alice']
+  SINCE_FILTER_FLAGS = ['', '--since 2024-12-25']
+  UNTIL_FILTER_FLAGS = ['', '--until 2025-02-01']
 
   def test_hist_no_flags
     cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
     stdout_s = cmd.run 'hist'
-    assert stdout_s
+    refute_empty(stdout_s)
   end
 
   all_flag_combos = GitWho.generate_args_cartesian_product([
@@ -32,7 +32,7 @@ class TestHist < Minitest::Test
     define_method(test_name) do
       cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
       stdout_s = cmd.run 'hist', *flags
-      assert stdout_s
+      refute_empty(stdout_s)
     end
   end
 
@@ -47,7 +47,7 @@ class TestHist < Minitest::Test
     define_method(test_name) do
       cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
       stdout_s = cmd.run 'hist', *flags
-      assert stdout_s
+      refute_empty(stdout_s)
     end
   end
 end

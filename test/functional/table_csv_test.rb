@@ -8,7 +8,7 @@ class TestTableCSV < Minitest::Test
   def test_table_csv
     cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
     stdout_s = cmd.run 'table', '--csv'
-    assert stdout_s
+    refute_empty(stdout_s)
 
     data = CSV.parse(stdout_s, headers: true)
     assert_equal data.headers, [
@@ -22,7 +22,7 @@ class TestTableCSV < Minitest::Test
   def test_table_csv_email
     cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
     stdout_s = cmd.run 'table', '--csv', '-e'
-    assert stdout_s
+    refute_empty(stdout_s)
 
     data = CSV.parse(stdout_s, headers: true)
     assert_equal data.headers, [
@@ -36,7 +36,7 @@ class TestTableCSV < Minitest::Test
   def test_table_csv_lines
     cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
     stdout_s = cmd.run 'table', '--csv', '-l'
-    assert stdout_s
+    refute_empty(stdout_s)
 
     data = CSV.parse(stdout_s, headers: true)
     assert_equal data.headers, [

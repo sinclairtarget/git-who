@@ -7,6 +7,6 @@ class TestVersion < Minitest::Test
   def test_version
     cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
     stdout_s = cmd.run '--version'
-    assert stdout_s
+    refute_empty(stdout_s)
   end
 end

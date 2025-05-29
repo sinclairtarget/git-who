@@ -12,7 +12,7 @@ class TestBigRepo < Minitest::Test
   def test_table_csv_big_repo
     cmd = GitWho.new(GitWho.built_bin_path, BigRepo.path)
     stdout_s = cmd.run 'table', '--csv', n_procs: 1
-    assert stdout_s
+    refute_empty(stdout_s)
 
     data = CSV.parse(stdout_s, headers: true)
     assert_equal data.headers, [
@@ -26,7 +26,7 @@ class TestBigRepo < Minitest::Test
   def test_table_csv_big_repo_lines
     cmd = GitWho.new(GitWho.built_bin_path, BigRepo.path)
     stdout_s = cmd.run 'table', '--csv', '-l'
-    assert stdout_s
+    refute_empty(stdout_s)
 
     data = CSV.parse(stdout_s, headers: true)
     check_csv_results(data)
@@ -35,7 +35,7 @@ class TestBigRepo < Minitest::Test
   def test_table_csv_big_repo_concurrent
     cmd = GitWho.new(GitWho.built_bin_path, BigRepo.path)
     stdout_s = cmd.run 'table', '--csv', '-l'
-    assert stdout_s
+    refute_empty(stdout_s)
 
     data = CSV.parse(stdout_s, headers: true)
     check_csv_results(data)
@@ -50,7 +50,7 @@ class TestBigRepo < Minitest::Test
 
       # First run, cold start
       stdout_s = cmd.run 'table', '--csv', '-l', cache_home: dir
-      assert stdout_s
+      refute_empty(stdout_s)
 
       data = CSV.parse(stdout_s, headers: true)
       check_csv_results(data)
@@ -59,7 +59,7 @@ class TestBigRepo < Minitest::Test
 
       # Second run
       stdout_s = cmd.run 'table', '--csv', '-l', cache_home: dir
-      assert stdout_s
+      refute_empty(stdout_s)
 
       data = CSV.parse(stdout_s, headers: true)
       check_csv_results(data)
