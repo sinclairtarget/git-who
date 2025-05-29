@@ -3,6 +3,7 @@ package git
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 )
 
 // Handles splitting the Git revisions from the pathspecs given a list of args.
@@ -36,7 +37,9 @@ func ParseArgs(args []string) (revs []string, pathspecs []string, err error) {
 			finishedRevs = true
 
 			if line != "--" {
-				pathspecs = append(pathspecs, line)
+				// If user used backslashes as path separator on windows,
+				// we want to turn into forward slashes
+				pathspecs = append(pathspecs, filepath.ToSlash(line))
 			}
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"iter"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -36,7 +37,7 @@ func (t *TreeNode) String() string {
 
 // Splits path into first dir and remainder.
 func splitPath(path string) (string, string) {
-	dir, subpath, found := strings.Cut(path, string(os.PathSeparator))
+	dir, subpath, found := strings.Cut(path, "/")
 	if !found {
 		return path, ""
 	}
@@ -124,17 +125,20 @@ func TallyCommitsTreeFromPaths(
 
 	// Build tree
 	for key, pathTallies := range talliesByPath {
-		for path, tally := range pathTallies {
-			relPath := path
+		for p, tally := range pathTallies {
+			relPath := p
 			if gitRootPath != "" {
 				// Adjust path for working dir
-				absPath := filepath.Join(gitRootPath, path)
-				relPath, err = filepath.Rel(wd, absPath)
+				// Here we use the os separator
+				absPath := path.Join(gitRootPath, p)
+				relPath, err = filepath.Rel(wd, filepath.FromSlash(absPath))
 				if err != nil || !filepath.IsLocal(relPath) {
 					continue // Skip any paths outside of working dir
 				}
 			}
 
+			// Okay, back to all paths using forward-slash separator
+			relPath = filepath.ToSlash(relPath)
 			inWTree := worktreePaths[relPath]
 			root.insert(relPath, key, tally, inWTree)
 		}

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"iter"
-	"os"
 	"strings"
 	"time"
 )
@@ -198,14 +197,7 @@ func WorkingTreeFiles(pathspecs []string) (_ map[string]bool, err error) {
 			return wtreeset, err
 		}
 
-		// Make sure file paths are correct on windows
-		postprocessedLine := strings.ReplaceAll(
-			line,
-			"/",
-			string(os.PathSeparator),
-		)
-
-		wtreeset[postprocessedLine] = true
+		wtreeset[line] = true
 	}
 
 	err = subprocess.Wait()
