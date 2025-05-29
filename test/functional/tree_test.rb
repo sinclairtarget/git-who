@@ -24,8 +24,8 @@ class TestTree < Minitest::Test
   end
 
   def test_tree_subdir
-    cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path + '/file-rename')
-    stdout_s = cmd.run 'tree'
+    cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
+    stdout_s = cmd.run 'tree', 'file-rename'
     refute_empty(stdout_s)
   end
 
