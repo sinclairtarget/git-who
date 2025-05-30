@@ -21,6 +21,7 @@ import (
 
 const narrowWidth = 55
 const wideWidth = 80
+const maxBeforeColorAlternating = 14
 
 func pickWidth(mode tally.TallyMode, showEmail bool) int {
 	wideMode := mode == tally.FilesMode || mode == tally.LinesMode
@@ -309,39 +310,51 @@ func writeTable(
 	fmt.Printf("├%s┤\n", rule)
 
 	// -- Write table rows --
-	for _, t := range tallies {
+	totalRows := len(tallies)
+	for i, t := range tallies {
+		alternating := ""
+		if totalRows > maxBeforeColorAlternating && i%2 == 1 {
+			alternating = pretty.Invert
+		}
+
 		lines := fmt.Sprintf(
 			"%s%7s%s / %s%7s%s",
 			pretty.Green,
 			format.Number(t.LinesAdded),
-			pretty.Reset,
+			pretty.DefaultColor,
 			pretty.Red,
 			format.Number(t.LinesRemoved),
-			pretty.Reset,
+			pretty.DefaultColor,
 		)
 
 		if mode == tally.LinesMode || mode == tally.FilesMode {
 			fmt.Printf(
-				"│%s %-11s %7s %7s  %17s│\n",
+				"│%s%s %-11s %7s %7s  %17s%s│\n",
+				alternating,
 				formatAuthor(t, showEmail, colwidth-36-13),
 				format.RelativeTime(progStart, t.LastCommitTime),
 				format.Number(t.Commits),
 				format.Number(t.FileCount),
 				lines,
+				pretty.Reset,
 			)
 		} else if mode == tally.FirstModifiedMode {
 			fmt.Printf(
-				"│%s %-11s %7s│\n",
+				"│%s%s %-11s %7s%s│\n",
+				alternating,
 				formatAuthor(t, showEmail, colwidth-22),
 				format.RelativeTime(progStart, t.FirstCommitTime),
 				format.Number(t.Commits),
+				pretty.Reset,
 			)
 		} else {
 			fmt.Printf(
-				"│%s %-11s %7s│\n",
+				"│%s%s %-11s %7s%s│\n",
+				alternating,
 				formatAuthor(t, showEmail, colwidth-22),
 				format.RelativeTime(progStart, t.LastCommitTime),
 				format.Number(t.Commits),
+				pretty.Reset,
 			)
 		}
 	}
