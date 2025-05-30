@@ -31,6 +31,14 @@ $ brew install git-who
 ### Docker
 See the [section on Docker](#using-docker) below.
 
+### go install command
+
+This method requires that you have Go installed.
+
+```bash
+go install github.com/sinclairtarget/git-who@latest
+```
+
 ### From Source
 Building from source requires that you have Go, Ruby, and the `rake` Ruby gem
 installed. Note that these are _only_ required when building from source; you
