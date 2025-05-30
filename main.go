@@ -61,6 +61,9 @@ func main() {
 			fmt.Printf("  %s\n", name)
 			fmt.Printf("\t%s\n", cmd.description)
 		}
+
+		fmt.Println()
+		fmt.Println("Run git-who <subcommand> -h for subcommand help")
 	}
 
 	// Look for the index of the first arg not intended as a top-level flag.
