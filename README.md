@@ -20,13 +20,12 @@ Who](https://sinclairtarget.com/blog/2025/03/who-will-maintain-vim-a-demo-of-git
 See [releases](https://github.com/sinclairtarget/git-who/releases).
 
 ### Package Managers
+[![Packaging status](https://repology.org/badge/vertical-allrepos/git-who.svg)](https://repology.org/project/git-who/versions)
+
 #### Mac OS
 ```
 $ brew install git-who
 ```
-
-#### Arch Linux
-[AUR Package](https://aur.archlinux.org/packages/git-who)
 
 ### Docker
 See the [section on Docker](#using-docker) below.
