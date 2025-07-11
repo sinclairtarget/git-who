@@ -29,7 +29,7 @@ class TestBigRepo < Minitest::Test
     refute_empty(stdout_s)
 
     data = CSV.parse(stdout_s, headers: true)
-    check_csv_results(data)
+    check_sorted_by_lines_csv_results(data)
   end
 
   def test_table_csv_big_repo_concurrent
@@ -38,7 +38,7 @@ class TestBigRepo < Minitest::Test
     refute_empty(stdout_s)
 
     data = CSV.parse(stdout_s, headers: true)
-    check_csv_results(data)
+    check_sorted_by_lines_csv_results(data)
   end
 
   def test_table_csv_big_repo_caching
@@ -53,7 +53,7 @@ class TestBigRepo < Minitest::Test
       refute_empty(stdout_s)
 
       data = CSV.parse(stdout_s, headers: true)
-      check_csv_results(data)
+      check_sorted_by_lines_csv_results(data)
 
       assert git_who_cache_path.exist?
 
@@ -62,11 +62,11 @@ class TestBigRepo < Minitest::Test
       refute_empty(stdout_s)
 
       data = CSV.parse(stdout_s, headers: true)
-      check_csv_results(data)
+      check_sorted_by_lines_csv_results(data)
     end
   end
 
-  def check_csv_results(data)
+  def check_sorted_by_lines_csv_results(data)
       assert_equal data.headers, [
         'name',
         'commits',
@@ -77,10 +77,23 @@ class TestBigRepo < Minitest::Test
         'first commit time',
       ]
       assert_equal data.length, 10
+
       assert_equal data[0]['name'], 'Benoit Chesneau'
       assert_equal data[0]['commits'], '316'
       assert_equal data[0]['lines added'], '28094'
       assert_equal data[0]['lines removed'], '24412'
       assert_equal data[0]['files'], '185'
+
+      assert_equal data[1]['name'], 'benoitc'
+      assert_equal data[1]['commits'], '1043'
+      assert_equal data[1]['lines added'], '28846'
+      assert_equal data[1]['lines removed'], '13187'
+      assert_equal data[1]['files'], '308'
+
+      assert_equal data[2]['name'], 'Paul J. Davis'
+      assert_equal data[2]['commits'], '185'
+      assert_equal data[2]['lines added'], '12851'
+      assert_equal data[2]['lines removed'], '9117'
+      assert_equal data[2]['files'], '264'
   end
 end
