@@ -47,11 +47,19 @@ class TestTree < Minitest::Test
     refute_empty(stdout_s)
   end
 
-  def test_exclude_ext_pathspec_trailing_slash
-    skip("git ls-files bug")
+  def test_exclude_ext_pathspec_trailing_slash_last_arg
+    cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
+    stdout_s = cmd.run 'tree', '--', ':!*.py', 'exclude-ext/'
+    refute_empty(stdout_s)
+  end
 
-    # This doesn't work because ls-files doesn't output anything. But it works
-    # if you put the exclude magic pathspec first. Bug with git ls-files?
+  def test_exclude_ext_pathspec_trailing_slash_first_arg
+    skip("git ls-files doesn't output anything for some reason")
+
+    # This doesn't work because when the tree subcommand invokes git ls-files
+    # Git doesn't output anything. But it works if you swap the order of the
+    # arguments and put the exclude magic pathspec first. Bug with git
+    # ls-files?
     cmd = GitWho.new(GitWho.built_bin_path, TestRepo.path)
     stdout_s = cmd.run 'tree', '--', 'exclude-ext/', ':!*.py'
     refute_empty(stdout_s)
