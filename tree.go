@@ -139,36 +139,31 @@ func tree(
 			return err
 		}
 	} else {
-		commits, closer, innererr := git.CommitsWithOpts(
-			ctx,
-			revs,
-			pathspecs,
-			filters,
-			true,
-			repoFiles,
-		)
-		if innererr != nil {
-			return innererr
-		}
+		root, err = func() (_ *tally.TreeNode, err error) {
+			commits, finish := git.CommitsWithOpts(
+				ctx,
+				revs,
+				pathspecs,
+				filters,
+				true,
+				repoFiles,
+			)
+			defer func() { err = finish() }()
 
-		root, innererr = tally.TallyCommitsTree(
-			commits,
-			tallyOpts,
-			wtreeset,
-			gitRootPath,
-		)
-		if innererr == tally.EmptyTreeErr {
+			root, err := tally.TallyCommitsTree(
+				commits,
+				tallyOpts,
+				wtreeset,
+				gitRootPath,
+			)
+			return root, err
+		}()
+
+		if err == tally.EmptyTreeErr {
 			logger().Debug("Tree was empty.")
 			return nil
-		}
-
-		if innererr != nil {
-			return fmt.Errorf("failed to tally commits: %w", innererr)
-		}
-
-		innererr = closer()
-		if innererr != nil {
-			return innererr
+		} else if err != nil {
+			return fmt.Errorf("failed to tally commits: %w", err)
 		}
 	}
 

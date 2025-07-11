@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"slices"
 	"strings"
 	"time"
 )
@@ -62,9 +63,8 @@ func (d FileDiff) String() string {
 	)
 }
 
-// Returns an iterator over commits identified by the given revisions and paths.
-//
-// Also returns a closer() function for cleanup and an error when encountered.
+// Returns a single-use iterator over commits identified by the given revisions
+// and paths.
 func CommitsWithOpts(
 	ctx context.Context,
 	revs []string,
@@ -75,11 +75,12 @@ func CommitsWithOpts(
 ) (
 	iter.Seq[Commit],
 	func() error,
-	error,
 ) {
+	empty := slices.Values([]Commit{})
+
 	ignoreRevs, err := repoFiles.IgnoreRevs()
 	if err != nil {
-		return nil, nil, err
+		return empty, func() error { return err }
 	}
 
 	subprocess, err := RunLog(
@@ -91,7 +92,7 @@ func CommitsWithOpts(
 		repoFiles.HasMailmap(),
 	)
 	if err != nil {
-		return nil, nil, err
+		return empty, func() error { return err }
 	}
 
 	lines, finishLines := subprocess.StdoutNullDelimitedLines()
@@ -99,20 +100,16 @@ func CommitsWithOpts(
 	commits = SkipIgnored(commits, ignoreRevs)
 
 	finish := func() error {
-		err = finishLines()
-		if err != nil {
-			return err
-		}
-
-		err = finishCommits()
-		if err != nil {
-			return err
+		iterErr := finishCommits()
+		iterErr = finishLines()
+		if iterErr != nil {
+			return fmt.Errorf("error iterating: %v", iterErr)
 		}
 
 		return subprocess.Wait()
 	}
 
-	return commits, finish, nil
+	return commits, finish
 }
 
 func RevList(

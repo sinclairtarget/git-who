@@ -14,7 +14,7 @@ func TestCommitsFileRename(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitsSeq, closer, err := git.CommitsWithOpts(
+	seq, finish := git.CommitsWithOpts(
 		ctx,
 		[]string{"HEAD"},
 		[]string{path},
@@ -22,13 +22,8 @@ func TestCommitsFileRename(t *testing.T) {
 		true,
 		git.RepoConfigFiles{},
 	)
-	if err != nil {
-		t.Fatalf("error getting commits: %v", err)
-	}
-
-	commits := slices.Collect(commitsSeq)
-
-	err = closer()
+	commits := slices.Collect(seq)
+	err := finish()
 	if err != nil {
 		t.Errorf("error iterating commits: %v", err)
 	}
@@ -70,7 +65,7 @@ func TestCommitsFileRenameNewDir(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitsSeq, closer, err := git.CommitsWithOpts(
+	seq, finish := git.CommitsWithOpts(
 		ctx,
 		[]string{"HEAD"},
 		[]string{path},
@@ -78,12 +73,8 @@ func TestCommitsFileRenameNewDir(t *testing.T) {
 		true,
 		git.RepoConfigFiles{},
 	)
-	if err != nil {
-		t.Fatalf("error getting commits: %v", err)
-	}
-
-	commits := slices.Collect(commitsSeq)
-	err = closer()
+	commits := slices.Collect(seq)
+	err := finish()
 	if err != nil {
 		t.Errorf("error iterating commits: %v", err)
 	}
@@ -125,7 +116,7 @@ func TestCommitsRenameDeepDir(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitsSeq, closer, err := git.CommitsWithOpts(
+	seq, finish := git.CommitsWithOpts(
 		ctx,
 		[]string{"HEAD"},
 		[]string{path},
@@ -133,12 +124,8 @@ func TestCommitsRenameDeepDir(t *testing.T) {
 		true,
 		git.RepoConfigFiles{},
 	)
-	if err != nil {
-		t.Fatalf("error getting commits: %v", err)
-	}
-
-	commits := slices.Collect(commitsSeq)
-	err = closer()
+	commits := slices.Collect(seq)
+	err := finish()
 	if err != nil {
 		t.Errorf("error iterating commits: %v", err)
 	}
@@ -177,7 +164,7 @@ func TestParseWholeLog(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	_, closer, err := git.CommitsWithOpts(
+	_, finish := git.CommitsWithOpts(
 		ctx,
 		[]string{"HEAD"},
 		[]string{"."},
@@ -185,11 +172,7 @@ func TestParseWholeLog(t *testing.T) {
 		true,
 		git.RepoConfigFiles{},
 	)
-	if err != nil {
-		t.Fatalf("error getting commits: %v", err)
-	}
-
-	err = closer()
+	err := finish()
 	if err != nil {
 		t.Errorf("error iterating commits: %v", err)
 	}

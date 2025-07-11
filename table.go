@@ -123,27 +123,24 @@ func table(
 			return err
 		}
 	} else {
-		// This is fast in the no-diff case even if we don't parallelize it
-		commits, closer, err := git.CommitsWithOpts(
-			ctx,
-			revs,
-			pathspecs,
-			filters,
-			populateDiffs,
-			repoFiles,
-		)
-		if err != nil {
-			return err
-		}
+		err = func() (err error) {
+			// This is fast in the no-diff case even if we don't parallelize it
+			commits, finish := git.CommitsWithOpts(
+				ctx,
+				revs,
+				pathspecs,
+				filters,
+				populateDiffs,
+				repoFiles,
+			)
+			defer func() { err = finish() }()
 
-		tallies, err = tally.TallyCommits(commits, tallyOpts)
+			tallies, err = tally.TallyCommits(commits, tallyOpts)
+			return err
+		}()
+
 		if err != nil {
 			return fmt.Errorf("failed to tally commits: %w", err)
-		}
-
-		err = closer()
-		if err != nil {
-			return err
 		}
 	}
 

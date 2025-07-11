@@ -67,7 +67,7 @@ func parse(
 		return err
 	}
 
-	commits, closer, err := git.CommitsWithOpts(
+	commits, finish := git.CommitsWithOpts(
 		ctx,
 		revs,
 		pathspecs,
@@ -75,9 +75,6 @@ func parse(
 		!short,
 		repoFiles,
 	)
-	if err != nil {
-		return err
-	}
 
 	w := bufio.NewWriter(os.Stdout)
 
@@ -95,7 +92,7 @@ func parse(
 
 	w.Flush()
 
-	err = closer()
+	err = finish()
 	if err != nil {
 		return err
 	}

@@ -108,28 +108,25 @@ func hist(
 			return err
 		}
 	} else {
-		commits, closer, err := git.CommitsWithOpts(
-			ctx,
-			revs,
-			pathspecs,
-			filters,
-			populateDiffs,
-			repoFiles,
-		)
-		if err != nil {
-			return err
-		}
+		buckets, err = func() (_ []tally.TimeBucket, err error) {
+			commits, finish := git.CommitsWithOpts(
+				ctx,
+				revs,
+				pathspecs,
+				filters,
+				populateDiffs,
+				repoFiles,
+			)
+			defer func() { err = finish() }()
 
-		buckets, err = tally.TallyCommitsTimeline(
-			commits,
-			tallyOpts,
-			end,
-		)
-		if err != nil {
-			return err
-		}
+			buckets, err := tally.TallyCommitsTimeline(
+				commits,
+				tallyOpts,
+				end,
+			)
+			return buckets, err
+		}()
 
-		err = closer()
 		if err != nil {
 			return err
 		}
