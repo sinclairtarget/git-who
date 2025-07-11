@@ -73,7 +73,7 @@ func CommitsWithOpts(
 	populateDiffs bool,
 	repoFiles RepoConfigFiles,
 ) (
-	iter.Seq2[Commit, error],
+	iter.Seq[Commit],
 	func() error,
 	error,
 ) {
@@ -94,14 +94,25 @@ func CommitsWithOpts(
 		return nil, nil, err
 	}
 
-	lines := subprocess.StdoutNullDelimitedLines()
-	commits := ParseCommits(lines)
+	lines, finishLines := subprocess.StdoutNullDelimitedLines()
+	commits, finishCommits := ParseCommits(lines)
 	commits = SkipIgnored(commits, ignoreRevs)
 
-	closer := func() error {
+	finish := func() error {
+		err = finishLines()
+		if err != nil {
+			return err
+		}
+
+		err = finishCommits()
+		if err != nil {
+			return err
+		}
+
 		return subprocess.Wait()
 	}
-	return commits, closer, nil
+
+	return commits, finish, nil
 }
 
 func RevList(
@@ -123,13 +134,14 @@ func RevList(
 		return revs, err
 	}
 
-	lines := subprocess.StdoutLines()
-	for line, err := range lines {
-		if err != nil {
-			return revs, err
-		}
-
+	lines, finish := subprocess.StdoutLines()
+	for line := range lines {
 		revs = append(revs, line)
+	}
+
+	err = finish()
+	if err != nil {
+		return revs, err
 	}
 
 	err = subprocess.Wait()
@@ -191,13 +203,14 @@ func WorkingTreeFiles(pathspecs []string) (_ map[string]bool, err error) {
 		return wtreeset, err
 	}
 
-	lines := subprocess.StdoutNullDelimitedLines()
-	for line, err := range lines {
-		if err != nil {
-			return wtreeset, err
-		}
-
+	lines, finish := subprocess.StdoutNullDelimitedLines()
+	for line := range lines {
 		wtreeset[line] = true
+	}
+
+	err = finish()
+	if err != nil {
+		return wtreeset, err
 	}
 
 	err = subprocess.Wait()
@@ -211,33 +224,25 @@ func WorkingTreeFiles(pathspecs []string) (_ map[string]bool, err error) {
 // Returns all commits in the input iterator, but for each commit, strips out
 // any file diff not modifying one of the given pathspecs
 func LimitDiffsByPathspec(
-	commits iter.Seq2[Commit, error],
+	commits iter.Seq[Commit],
 	pathspecs []string,
-) iter.Seq2[Commit, error] {
+) (iter.Seq[Commit], error) {
 	if len(pathspecs) == 0 {
-		return commits
+		return commits, nil
 	}
 
-	return func(yield func(Commit, error) bool) {
-		// Check all pathspecs are supported
-		for _, p := range pathspecs {
-			if !IsSupportedPathspec(p) {
-				yield(
-					Commit{},
-					fmt.Errorf("unsupported magic in pathspec: \"%s\"", p),
-				)
-				return
-			}
+	// Check all pathspecs are supported
+	for _, p := range pathspecs {
+		if !IsSupportedPathspec(p) {
+			err := fmt.Errorf("unsupported magic in pathspec: \"%s\"", p)
+			return commits, err
 		}
+	}
 
+	return func(yield func(Commit) bool) {
 		includes, excludes := SplitPathspecs(pathspecs)
 
-		for commit, err := range commits {
-			if err != nil {
-				yield(commit, err)
-				return
-			}
-
+		for commit := range commits {
 			filtered := []FileDiff{}
 			for _, diff := range commit.FileDiffs {
 				shouldInclude := false
@@ -262,33 +267,30 @@ func LimitDiffsByPathspec(
 			}
 
 			commit.FileDiffs = filtered
-			yield(commit, nil)
+			if !yield(commit) {
+				return
+			}
 		}
-	}
+	}, nil
 }
 
 // Returns an iterator over commits that skips any revs in the given list.
 func SkipIgnored(
-	commits iter.Seq2[Commit, error],
+	commits iter.Seq[Commit],
 	ignoreRevs []string,
-) iter.Seq2[Commit, error] {
+) iter.Seq[Commit] {
 	ignoreSet := map[string]bool{}
 	for _, rev := range ignoreRevs {
 		ignoreSet[rev] = true
 	}
 
-	return func(yield func(Commit, error) bool) {
-		for commit, err := range commits {
-			if err != nil {
-				yield(commit, err)
-				return
-			}
-
+	return func(yield func(Commit) bool) {
+		for commit := range commits {
 			if shouldIgnore := ignoreSet[commit.Hash]; shouldIgnore {
 				continue // skip this commit
 			}
 
-			if !yield(commit, nil) {
+			if !yield(commit) {
 				break
 			}
 		}

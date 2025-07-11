@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 func TestTimeSeriesCombine(t *testing.T) {
@@ -137,7 +136,7 @@ func TestTimeSeriesCombine(t *testing.T) {
 }
 
 func TestTallyCommitsTimelineEmpty(t *testing.T) {
-	seq := iterutils.WithoutErrors(slices.Values([]git.Commit{}))
+	seq := slices.Values([]git.Commit{})
 	opts := TallyOpts{
 		Mode: CommitMode,
 		Key:  func(c git.Commit) string { return c.AuthorEmail },

@@ -44,7 +44,7 @@ func init() {
 }
 
 type tallyFunc[T any] func(
-	commits iter.Seq2[git.Commit, error],
+	commits iter.Seq[git.Commit],
 	opts tally.TallyOpts,
 ) (T, error)
 
@@ -88,6 +88,8 @@ func setDiff(a []string, b []string) []string {
 	return ret
 }
 
+// Tallies the commits in the cache, returning a slice of remaining revs to
+// tally.
 func accumulateCached[T combinable[T]](
 	whop whoperation[T],
 	c cache.Cache,
@@ -95,15 +97,19 @@ func accumulateCached[T combinable[T]](
 ) (T, []string, error) {
 	var none T
 
-	result, err := c.Get(revs)
+	commits, finish := c.Get(revs)
+	commits, err := git.LimitDiffsByPathspec(commits, whop.pathspecs)
 	if err != nil {
 		return none, revs, err
 	}
 
-	commits := git.LimitDiffsByPathspec(result.Commits, whop.pathspecs)
-
 	foundRevs := []string{}
 	accumulator, err := whop.tally(revTee(commits, &foundRevs), whop.opts)
+	if err != nil {
+		return none, revs, err
+	}
+
+	err = finish()
 	if err != nil {
 		return none, revs, err
 	}
@@ -421,7 +427,7 @@ func TallyCommitsTimeline(
 	}
 
 	f := func(
-		commits iter.Seq2[git.Commit, error],
+		commits iter.Seq[git.Commit],
 		opts tally.TallyOpts,
 	) (tally.TimeSeries, error) {
 		return tally.TallyCommitsByDate(commits, opts)

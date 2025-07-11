@@ -189,7 +189,7 @@ func CalcResolution(start time.Time, end time.Time) Resolution {
 
 // Returns tallies grouped by calendar date.
 func TallyCommitsByDate(
-	commits iter.Seq2[git.Commit, error],
+	commits iter.Seq[git.Commit],
 	opts TallyOpts,
 ) (_ []TimeBucket, err error) {
 	defer func() {
@@ -211,11 +211,7 @@ func TallyCommitsByDate(
 	buckets := map[int64]TimeBucket{} // Map of (unix) time to bucket
 
 	// Tally
-	for commit, err := range commits {
-		if err != nil {
-			return nil, fmt.Errorf("error iterating commits: %w", err)
-		}
-
+	for commit := range commits {
 		bucketedCommitTime := resolution.apply(commit.Date)
 		if bucketedCommitTime.Before(minTime) {
 			minTime = bucketedCommitTime
@@ -281,7 +277,7 @@ func TallyCommitsByDate(
 // between the first commit and end time, if the end-time is non-zero. Otherwise
 // the end time is the time of the last commit in chronological order.
 func TallyCommitsTimeline(
-	commits iter.Seq2[git.Commit, error],
+	commits iter.Seq[git.Commit],
 	opts TallyOpts,
 	end time.Time,
 ) ([]TimeBucket, error) {

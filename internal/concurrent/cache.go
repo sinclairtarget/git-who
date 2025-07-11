@@ -10,18 +10,13 @@ const cacheChunkSize = chunkSize
 
 // Transparently splits off commits to the cache queue
 func cacheTee(
-	commits iter.Seq2[git.Commit, error],
+	commits iter.Seq[git.Commit],
 	toCache chan<- []git.Commit,
-) iter.Seq2[git.Commit, error] {
+) iter.Seq[git.Commit] {
 	chunk := []git.Commit{}
 
-	return func(yield func(git.Commit, error) bool) {
-		for c, err := range commits {
-			if err != nil {
-				yield(c, err)
-				return
-			}
-
+	return func(yield func(git.Commit) bool) {
+		for c := range commits {
 			chunk = append(chunk, c)
 
 			if len(chunk) >= cacheChunkSize {
@@ -29,7 +24,7 @@ func cacheTee(
 				chunk = []git.Commit{}
 			}
 
-			if !yield(c, nil) {
+			if !yield(c) {
 				break
 			}
 		}
@@ -46,18 +41,13 @@ func cacheTee(
 //
 // A little awkward... is there a better way to do this?
 func revTee(
-	commits iter.Seq2[git.Commit, error],
+	commits iter.Seq[git.Commit],
 	revs *[]string,
-) iter.Seq2[git.Commit, error] {
-	return func(yield func(git.Commit, error) bool) {
-		for c, err := range commits {
-			if err != nil {
-				yield(c, err)
-				return
-			}
-
+) iter.Seq[git.Commit] {
+	return func(yield func(git.Commit) bool) {
+		for c := range commits {
 			*revs = append(*revs, c.Hash)
-			if !yield(c, nil) {
+			if !yield(c) {
 				return
 			}
 		}

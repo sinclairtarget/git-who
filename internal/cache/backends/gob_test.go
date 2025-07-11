@@ -1,9 +1,9 @@
 package backends_test
 
 import (
-	"iter"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -11,7 +11,6 @@ import (
 
 	"github.com/sinclairtarget/git-who/internal/cache/backends"
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 func CacheDir(t *testing.T) string {
@@ -67,23 +66,18 @@ func TestGobAddGetClear(t *testing.T) {
 
 	// -- Get --
 	revs := []string{commit.Hash}
-	result, err := c.Get(revs)
-	if err != nil {
-		t.Fatalf("get commits from cache failed with error: %v", err)
-	}
-
-	next, stop := iter.Pull2(result.Commits)
-	defer stop()
-
-	cachedCommit, err, ok := next()
+	it, finish := c.Get(revs)
+	commits := slices.Collect(it)
+	err = finish()
 	if err != nil {
 		t.Fatalf("error iterating cached commits: %v", err)
 	}
 
-	if !ok {
+	if len(commits) == 0 {
 		t.Fatal("not enough commits in result")
 	}
 
+	cachedCommit := commits[0]
 	if diff := cmp.Diff(commit, cachedCommit); diff != "" {
 		t.Errorf("commit is wrong:\n%s", diff)
 	}
@@ -94,17 +88,14 @@ func TestGobAddGetClear(t *testing.T) {
 		t.Fatalf("clearing cache failed with error: %v", err)
 	}
 
-	result, err = c.Get(revs)
+	it, finish = c.Get(revs)
+	commits = slices.Collect(it)
+	err = finish()
 	if err != nil {
 		t.Fatalf(
 			"get commits from cache after clear failed with error: %v",
 			err,
 		)
-	}
-
-	commits, err := iterutils.Collect(result.Commits)
-	if err != nil {
-		t.Fatalf("error collecting commits: %v", err)
 	}
 
 	if len(commits) > 0 {
@@ -169,14 +160,11 @@ func TestGobAddGetAddGet(t *testing.T) {
 		t.Fatalf("add commits to cache failed with error: %v", err)
 	}
 
-	result, err := c.Get(revs)
+	it, finish := c.Get(revs)
+	commits := slices.Collect(it)
+	err = finish()
 	if err != nil {
-		t.Fatalf("get commits from cache failed with error: %v", err)
-	}
-
-	commits, err := iterutils.Collect(result.Commits)
-	if err != nil {
-		t.Fatalf("error collecting commits: %v", err)
+		t.Fatalf("error iterating cached commits: %v", err)
 	}
 
 	if len(commits) != 1 {
@@ -191,14 +179,11 @@ func TestGobAddGetAddGet(t *testing.T) {
 		t.Fatalf("add commits to cache failed with error: %v", err)
 	}
 
-	result, err = c.Get(revs)
+	it, finish = c.Get(revs)
+	commits = slices.Collect(it)
+	err = finish()
 	if err != nil {
-		t.Fatalf("get commits from cache failed with error: %v", err)
-	}
-
-	commits, err = iterutils.Collect(result.Commits)
-	if err != nil {
-		t.Fatalf("error collecting commits: %v", err)
+		t.Fatalf("error iterating cached commits: %v", err)
 	}
 
 	if len(commits) != 2 {

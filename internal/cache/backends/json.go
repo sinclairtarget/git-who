@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"iter"
 	"os"
 	"slices"
 
-	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 // Stores commits on disk at a particular filepath.
@@ -34,19 +33,26 @@ func (b JSONBackend) Close() error {
 	return nil
 }
 
-func (b JSONBackend) Get(revs []string) (cache.Result, error) {
-	result := cache.EmptyResult()
-
+// Reads all commits into memory!
+func (b JSONBackend) Get(revs []string) (iter.Seq[git.Commit], func() error) {
 	lookingFor := map[string]bool{}
 	for _, rev := range revs {
 		lookingFor[rev] = true
 	}
 
+	var iterErr error
+	empty := slices.Values([]git.Commit{})
+	finish := func() error {
+		return iterErr
+	}
+
 	f, err := os.Open(b.Path)
 	if errors.Is(err, fs.ErrNotExist) {
-		return result, nil
+		// If file doesn't exist, don't treat as an error
+		return empty, finish
 	} else if err != nil {
-		return result, err
+		iterErr = err
+		return empty, finish
 	}
 	defer f.Close() // Don't care about error closing when reading
 
@@ -66,16 +72,18 @@ func (b JSONBackend) Get(revs []string) (cache.Result, error) {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return result, err
+			iterErr = err
+			return slices.Values(commits), finish
 		}
 
 		hit, _ := lookingFor[c.Hash]
 		if hit {
 			if isDup, _ := seen[c.Hash]; isDup {
-				return result, fmt.Errorf(
+				iterErr = fmt.Errorf(
 					"duplicate commit in cache: %s",
 					c.Hash,
 				)
+				return slices.Values(commits), finish
 			}
 
 			seen[c.Hash] = true
@@ -83,9 +91,7 @@ func (b JSONBackend) Get(revs []string) (cache.Result, error) {
 		}
 	}
 
-	return cache.Result{
-		Commits: iterutils.WithoutErrors(slices.Values(commits)),
-	}, nil
+	return slices.Values(commits), finish
 }
 
 func (b JSONBackend) Add(commits []git.Commit) (err error) {

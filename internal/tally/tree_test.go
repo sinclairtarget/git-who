@@ -8,7 +8,6 @@ import (
 
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
-	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 func TestTallyCommitsTree(t *testing.T) {
@@ -60,7 +59,7 @@ func TestTallyCommitsTree(t *testing.T) {
 	}
 
 	worktreeset := map[string]bool{"foo/bim.txt": true, "foo/bar.txt": true}
-	seq := iterutils.WithoutErrors(slices.Values(commits))
+	seq := slices.Values(commits)
 	opts := tally.TallyOpts{
 		Mode: tally.CommitMode,
 		Key:  func(c git.Commit) string { return c.AuthorEmail },
@@ -118,7 +117,7 @@ func TestTallyCommitsTree(t *testing.T) {
 }
 
 func TestTallyCommitsTreeNoCommits(t *testing.T) {
-	seq := iterutils.WithoutErrors(slices.Values([]git.Commit{}))
+	seq := slices.Values([]git.Commit{})
 	opts := tally.TallyOpts{
 		Mode: tally.CommitMode,
 		Key:  func(c git.Commit) string { return c.AuthorEmail },

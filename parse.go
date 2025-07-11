@@ -82,12 +82,7 @@ func parse(
 	w := bufio.NewWriter(os.Stdout)
 
 	numCommits := 0
-	for commit, err := range commits {
-		if err != nil {
-			w.Flush()
-			return fmt.Errorf("Error iterating commits: %w", err)
-		}
-
+	for commit := range commits {
 		fmt.Fprintf(w, "%s\n", commit)
 		for _, diff := range commit.FileDiffs {
 			fmt.Fprintf(w, "  %s\n", diff)
@@ -100,12 +95,12 @@ func parse(
 
 	w.Flush()
 
-	fmt.Printf("Parsed %d commits.\n", numCommits)
-
 	err = closer()
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("Parsed %d commits.\n", numCommits)
 
 	elapsed := time.Now().Sub(start)
 	logger().Debug("finished parse", "duration_ms", elapsed.Milliseconds())

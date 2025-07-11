@@ -81,18 +81,21 @@ func dump(
 
 	w := bufio.NewWriter(os.Stdout)
 
-	lines := subprocess.StdoutNullDelimitedLines()
-	for line, err := range lines {
-		if err != nil {
-			w.Flush()
-			return err
-		}
-
+	lines, finish := subprocess.StdoutNullDelimitedLines()
+	for line := range lines {
 		lineWithReplaced := strings.ReplaceAll(line, "\n", "\\n")
 		fmt.Fprintln(w, lineWithReplaced)
 	}
 
-	w.Flush()
+	err = w.Flush()
+	if err != nil {
+		return err
+	}
+
+	err = finish()
+	if err != nil {
+		return err
+	}
 
 	err = subprocess.Wait()
 	if err != nil {

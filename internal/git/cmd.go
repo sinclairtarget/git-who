@@ -54,43 +54,57 @@ func (s Subprocess) StdinWriter() (_ *bufio.Writer, closer func() error) {
 }
 
 // Returns a single-use iterator over the output of the command, line by line.
-func (s Subprocess) StdoutLines() iter.Seq2[string, error] {
-	scanner := bufio.NewScanner(s.stdout)
+func (s Subprocess) StdoutLines() (iter.Seq[string], func() error) {
+	var iterErr error
 
-	return func(yield func(string, error) bool) {
+	seq := func(yield func(string) bool) {
+		scanner := bufio.NewScanner(s.stdout)
 		for scanner.Scan() {
-			if !yield(scanner.Text(), nil) {
+			if !yield(scanner.Text()) {
 				return
 			}
 		}
 
-		if err := scanner.Err(); err != nil {
-			yield("", fmt.Errorf("error while scanning: %w", err))
-		}
+		iterErr = scanner.Err()
 	}
+
+	finish := func() error {
+		if iterErr != nil {
+			iterErr = fmt.Errorf("error while scanning: %w", iterErr)
+		}
+
+		return iterErr
+	}
+
+	return seq, finish
 }
 
 // Returns a single-use iterator over the output from git log.
 //
 // Lines are split on NULLs with some additional processing.
-func (s Subprocess) StdoutNullDelimitedLines() iter.Seq2[string, error] {
-	scanner := bufio.NewScanner(s.stdout)
+func (s Subprocess) StdoutNullDelimitedLines() (
+	iter.Seq[string],
+	func() error,
+) {
+	var iterErr error
 
-	scanner.Split(func(data []byte, atEOF bool) (int, []byte, error) {
-		null_i := bytes.IndexByte(data, '\x00')
+	seq := func(yield func(string) bool) {
+		scanner := bufio.NewScanner(s.stdout)
 
-		if null_i >= 0 {
-			return null_i + 1, data[:null_i], nil
-		}
+		scanner.Split(func(data []byte, atEOF bool) (int, []byte, error) {
+			null_i := bytes.IndexByte(data, '\x00')
 
-		if atEOF {
-			return 0, data, bufio.ErrFinalToken
-		}
+			if null_i >= 0 {
+				return null_i + 1, data[:null_i], nil
+			}
 
-		return 0, nil, nil // Scan more
-	})
+			if atEOF {
+				return 0, data, bufio.ErrFinalToken
+			}
 
-	return func(yield func(string, error) bool) {
+			return 0, nil, nil // Scan more
+		})
+
 		for scanner.Scan() {
 			line := scanner.Text()
 
@@ -98,15 +112,23 @@ func (s Subprocess) StdoutNullDelimitedLines() iter.Seq2[string, error] {
 			// fields and --numstat data
 			processedLine := strings.TrimPrefix(line, "\n")
 
-			if !yield(processedLine, nil) {
+			if !yield(processedLine) {
 				return
 			}
 		}
 
-		if err := scanner.Err(); err != nil {
-			yield("", fmt.Errorf("error while scanning: %w", err))
-		}
+		iterErr = scanner.Err()
 	}
+
+	finish := func() error {
+		if iterErr != nil {
+			iterErr = fmt.Errorf("error while scanning: %w", iterErr)
+		}
+
+		return iterErr
+	}
+
+	return seq, finish
 }
 
 func (s Subprocess) Wait() error {

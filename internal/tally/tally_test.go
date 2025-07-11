@@ -8,7 +8,6 @@ import (
 
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/tally"
-	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 func TestTallyCommits(t *testing.T) {
@@ -51,7 +50,7 @@ func TestTallyCommits(t *testing.T) {
 		},
 	}
 
-	seq := iterutils.WithoutErrors(slices.Values(commits))
+	seq := slices.Values(commits)
 	opts := tally.TallyOpts{
 		Mode: tally.LinesMode,
 		Key: func(c git.Commit) string {

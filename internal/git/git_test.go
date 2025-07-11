@@ -2,10 +2,10 @@ package git_test
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 func TestCommitsFileRename(t *testing.T) {
@@ -26,14 +26,11 @@ func TestCommitsFileRename(t *testing.T) {
 		t.Fatalf("error getting commits: %v", err)
 	}
 
-	commits, err := iterutils.Collect(commitsSeq)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	commits := slices.Collect(commitsSeq)
 
 	err = closer()
 	if err != nil {
-		t.Errorf("encountered error cleaning up: %v", err)
+		t.Errorf("error iterating commits: %v", err)
 	}
 
 	if len(commits) != 3 {
@@ -85,14 +82,10 @@ func TestCommitsFileRenameNewDir(t *testing.T) {
 		t.Fatalf("error getting commits: %v", err)
 	}
 
-	commits, err := iterutils.Collect(commitsSeq)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
+	commits := slices.Collect(commitsSeq)
 	err = closer()
 	if err != nil {
-		t.Errorf("encountered error cleaning up: %v", err)
+		t.Errorf("error iterating commits: %v", err)
 	}
 
 	if len(commits) != 2 {
@@ -144,14 +137,10 @@ func TestCommitsRenameDeepDir(t *testing.T) {
 		t.Fatalf("error getting commits: %v", err)
 	}
 
-	commits, err := iterutils.Collect(commitsSeq)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
+	commits := slices.Collect(commitsSeq)
 	err = closer()
 	if err != nil {
-		t.Errorf("encountered error cleaning up: %v", err)
+		t.Errorf("error iterating commits: %v", err)
 	}
 
 	if len(commits) != 2 {
@@ -188,7 +177,7 @@ func TestParseWholeLog(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	commitsSeq, closer, err := git.CommitsWithOpts(
+	_, closer, err := git.CommitsWithOpts(
 		ctx,
 		[]string{"HEAD"},
 		[]string{"."},
@@ -200,13 +189,8 @@ func TestParseWholeLog(t *testing.T) {
 		t.Fatalf("error getting commits: %v", err)
 	}
 
-	_, err = iterutils.Collect(commitsSeq)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
 	err = closer()
 	if err != nil {
-		t.Errorf("encountered error cleaning up: %v", err)
+		t.Errorf("error iterating commits: %v", err)
 	}
 }

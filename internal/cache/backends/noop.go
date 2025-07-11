@@ -1,7 +1,9 @@
 package backends
 
 import (
-	"github.com/sinclairtarget/git-who/internal/cache"
+	"iter"
+	"slices"
+
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
@@ -19,8 +21,8 @@ func (b NoopBackend) Close() error {
 	return nil
 }
 
-func (b NoopBackend) Get(revs []string) (cache.Result, error) {
-	return cache.EmptyResult(), nil
+func (b NoopBackend) Get(revs []string) (iter.Seq[git.Commit], func() error) {
+	return slices.Values([]git.Commit{}), func() error { return nil }
 }
 
 func (b NoopBackend) Add(commits []git.Commit) error {

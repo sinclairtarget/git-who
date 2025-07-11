@@ -55,30 +55,20 @@ func allowCommit(commit Commit, now time.Time) bool {
 }
 
 // Turns an iterator over lines from git log into an iterator of commits
-func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
-	return func(yield func(Commit, error) bool) {
+func ParseCommits(lines iter.Seq[string]) (iter.Seq[Commit], func() error) {
+	var iterErr error
+
+	seq := func(yield func(Commit) bool) {
 		var commit Commit
 		var diff *FileDiff
 		now := time.Now()
 		linesThisCommit := 0
 
-		for line, err := range lines {
-			if err != nil {
-				yield(
-					commit,
-					fmt.Errorf(
-						"error reading commit %s: %w",
-						commit.Name(),
-						err,
-					),
-				)
-				return
-			}
-
+		for line := range lines {
 			done := linesThisCommit >= 6 && (len(line) == 0 || isRev(line))
 			if done {
 				if allowCommit(commit, now) {
-					if !yield(commit, nil) {
+					if !yield(commit) {
 						return
 					}
 				}
@@ -107,21 +97,19 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 			case linesThisCommit == 5:
 				i, err := strconv.Atoi(line)
 				if err != nil {
-					yield(
-						commit,
-						fmt.Errorf(
-							"error parsing date from commit %s: %w",
-							commit.Name(),
-							err,
-						),
+					iterErr = fmt.Errorf(
+						"error parsing date from commit %s: %w",
+						commit.Name(),
+						err,
 					)
 					return
 				}
 
 				commit.Date = time.Unix(int64(i), 0)
 			default:
-				// Handle file diffs
 				var err error
+
+				// Handle file diffs
 				if diff == nil {
 					diff = &FileDiff{}
 
@@ -198,13 +186,10 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 
 			handleError:
 				if err != nil {
-					yield(
-						commit,
-						fmt.Errorf(
-							"error parsing file diffs from commit %s: %w",
-							commit.Name(),
-							err,
-						),
+					iterErr = fmt.Errorf(
+						"error parsing file diffs from commit %s: %w",
+						commit.Name(),
+						err,
 					)
 					return
 				}
@@ -214,9 +199,15 @@ func ParseCommits(lines iter.Seq2[string, error]) iter.Seq2[Commit, error] {
 		}
 
 		if linesThisCommit > 0 && allowCommit(commit, now) {
-			yield(commit, nil)
+			yield(commit) // Last yield
 		}
 	}
+
+	finish := func() error {
+		return iterErr
+	}
+
+	return seq, finish
 }
 
 // Returns true if this is a (full-length) Git revision hash, false otherwise.

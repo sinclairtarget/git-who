@@ -211,15 +211,31 @@ loop:
 			}
 
 			// Read parsed commits and enqueue for caching
-			lines := subprocess.StdoutNullDelimitedLines()
-			commits := git.ParseCommits(lines)
+			lines, finishLines := subprocess.StdoutNullDelimitedLines()
+			commits, finishCommits := git.ParseCommits(lines)
 			commits = cacheTee(commits, toCache)
 
 			// Now that we're tallying, we DO care to only look at the file
 			// diffs under the given paths
-			commits = git.LimitDiffsByPathspec(commits, whop.pathspecs)
+			commits, err = git.LimitDiffsByPathspec(
+				commits,
+				whop.pathspecs,
+			)
+			if err != nil {
+				return err
+			}
 
 			result, err := whop.tally(commits, whop.opts)
+			if err != nil {
+				return err
+			}
+
+			err = finishLines()
+			if err != nil {
+				return err
+			}
+
+			err = finishCommits()
 			if err != nil {
 				return err
 			}

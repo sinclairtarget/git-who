@@ -9,11 +9,9 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"slices"
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
-	"github.com/sinclairtarget/git-who/internal/utils/iterutils"
 )
 
 func IsCachingEnabled() bool {
@@ -24,23 +22,11 @@ func IsCachingEnabled() bool {
 	return true
 }
 
-type Result struct {
-	Commits iter.Seq2[git.Commit, error] // The sequence of commits
-}
-
-// If we use the zero-value for Result, the iterator will be nil. We instead
-// want an interator over a zero-length sequence.
-func EmptyResult() Result {
-	return Result{
-		Commits: iterutils.WithoutErrors(slices.Values([]git.Commit{})),
-	}
-}
-
 type Backend interface {
 	Name() string
 	Open() error
 	Close() error
-	Get(revs []string) (Result, error)
+	Get(revs []string) (iter.Seq[git.Commit], func() error)
 	Add(commits []git.Commit) error
 	Clear() error
 }
@@ -107,19 +93,10 @@ func (c *Cache) Close() (err error) {
 	return nil
 }
 
-func (c *Cache) Get(revs []string) (_ Result, err error) {
-	defer func() {
-		if err != nil {
-			err = fmt.Errorf("failed to retrieve from cache: %w", err)
-		}
-	}()
-
+func (c *Cache) Get(revs []string) (iter.Seq[git.Commit], func() error) {
 	start := time.Now()
 
-	result, err := c.backend.Get(revs)
-	if err != nil {
-		return result, err
-	}
+	commits, finish := c.backend.Get(revs)
 
 	elapsed := time.Now().Sub(start)
 	logger().Debug(
@@ -128,12 +105,14 @@ func (c *Cache) Get(revs []string) (_ Result, err error) {
 		elapsed.Milliseconds(),
 	)
 
-	// Make sure iterator is not nil
-	if result.Commits == nil {
-		panic("Cache backend returned nil commits iterator; this isn't kosher!")
-	}
+	return commits, func() error {
+		err := finish()
+		if err != nil {
+			err = fmt.Errorf("failed to retrieve from cache: %w", err)
+		}
 
-	return result, nil
+		return err
+	}
 }
 
 func (c *Cache) Add(commits []git.Commit) error {

@@ -18,23 +18,17 @@ func ParseArgs(args []string) (revs []string, pathspecs []string, err error) {
 		return nil, nil, fmt.Errorf("could not parse args: %w", err)
 	}
 
-	lines := subprocess.StdoutLines()
+	lines, finish := subprocess.StdoutLines()
+
 	revs = []string{}
 	pathspecs = []string{}
 
-	finishedRevs := false
-	for line, err := range lines {
-		if err != nil {
-			return nil, nil, fmt.Errorf(
-				"failed reading output of rev-parse: %w",
-				err,
-			)
-		}
-
-		if !finishedRevs && isRev(line) {
+	pastRevs := false
+	for line := range lines {
+		if !pastRevs && isRev(line) {
 			revs = append(revs, line)
 		} else {
-			finishedRevs = true
+			pastRevs = true
 
 			if line != "--" {
 				// If user used backslashes as path separator on windows,
@@ -42,6 +36,12 @@ func ParseArgs(args []string) (revs []string, pathspecs []string, err error) {
 				pathspecs = append(pathspecs, filepath.ToSlash(line))
 			}
 		}
+	}
+
+	err = finish()
+	if err != nil {
+		err = fmt.Errorf("failed reading output of rev-parse: %w", err)
+		return nil, nil, err
 	}
 
 	err = subprocess.Wait()

@@ -2,7 +2,6 @@
 package tally
 
 import (
-	"fmt"
 	"iter"
 	"slices"
 	"time"
@@ -209,7 +208,7 @@ func (byPath TalliesByPath) Reduce() map[string]Tally {
 }
 
 func TallyCommits(
-	commits iter.Seq2[git.Commit, error],
+	commits iter.Seq[git.Commit],
 	opts TallyOpts,
 ) (map[string]Tally, error) {
 	// Map of author to tally
@@ -221,11 +220,7 @@ func TallyCommits(
 		tallies = map[string]Tally{}
 
 		// Don't need info about file paths, just count commits and commit time
-		for commit, err := range commits {
-			if err != nil {
-				return nil, fmt.Errorf("error iterating commits: %w", err)
-			}
-
+		for commit := range commits {
 			if commit.IsMerge && !opts.CountMerges {
 				continue
 			}
@@ -268,17 +263,13 @@ func TallyCommits(
 
 // Tally metrics per author per path.
 func TallyCommitsByPath(
-	commits iter.Seq2[git.Commit, error],
+	commits iter.Seq[git.Commit],
 	opts TallyOpts,
 ) (TalliesByPath, error) {
 	tallies := TalliesByPath{}
 
 	// Tally over commits
-	for commit, err := range commits {
-		if err != nil {
-			return nil, fmt.Errorf("error iterating commits: %w", err)
-		}
-
+	for commit := range commits {
 		if commit.IsMerge && !opts.CountMerges {
 			continue
 		}

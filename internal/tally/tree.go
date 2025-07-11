@@ -97,7 +97,7 @@ func (t *TreeNode) Rank(mode TallyMode) *TreeNode {
 * with a tally for each node.
  */
 func TallyCommitsTree(
-	commits iter.Seq2[git.Commit, error],
+	commits iter.Seq[git.Commit],
 	opts TallyOpts,
 	worktreePaths map[string]bool,
 	gitRootPath string,

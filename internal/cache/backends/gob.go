@@ -11,8 +11,10 @@ import (
 	"hash/fnv"
 	"io"
 	"io/fs"
+	"iter"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -154,23 +156,29 @@ func (b *GobBackend) Close() (err error) {
 	return nil
 }
 
-func (b *GobBackend) Get(revs []string) (_ cache.Result, err error) {
+func (b *GobBackend) Get(revs []string) (iter.Seq[git.Commit], func() error) {
 	if !b.wasOpened {
 		panic("cache not yet open. Did you forget to call Open()?")
 	}
-
-	result := cache.EmptyResult()
 
 	lookingFor := map[string]bool{}
 	for _, rev := range revs {
 		lookingFor[rev] = true
 	}
 
+	empty := slices.Values([]git.Commit{})
+	var iterErr error
+	finish := func() error {
+		return iterErr
+	}
+
 	f, err := os.Open(b.Path)
 	if errors.Is(err, fs.ErrNotExist) {
-		return result, nil
+		// If file doesn't exist, don't treat as an error
+		return empty, finish
 	} else if err != nil {
-		return result, err
+		iterErr = err
+		return empty, finish
 	}
 
 	// In theory we shouldn't get any duplicates into the cache if we're
@@ -178,19 +186,17 @@ func (b *GobBackend) Get(revs []string) (_ cache.Result, err error) {
 	// and throwing an error if we see one.
 	seen := map[string]bool{}
 
-	it := func(yield func(git.Commit, error) bool) {
+	seq := func(yield func(git.Commit) bool) {
 		defer f.Close() // Don't care about error closing when reading
 
 		for {
-			var commit git.Commit
-
 			// -- Find length of next gob in bytes --
 			prefix := make([]byte, 4)
-			_, err = f.Read(prefix)
+			_, err := f.Read(prefix)
 			if err == io.EOF {
 				return
 			} else if err != nil {
-				yield(commit, err)
+				iterErr = err
 				return
 			}
 
@@ -201,7 +207,7 @@ func (b *GobBackend) Get(revs []string) (_ cache.Result, err error) {
 				&size,
 			)
 			if err != nil {
-				yield(commit, err)
+				iterErr = err
 				return
 			}
 
@@ -214,7 +220,7 @@ func (b *GobBackend) Get(revs []string) (_ cache.Result, err error) {
 			dec := gob.NewDecoder(bytes.NewReader(data))
 			err = dec.Decode(&commits)
 			if err != nil {
-				yield(commit, err)
+				iterErr = err
 				return
 			}
 
@@ -223,15 +229,15 @@ func (b *GobBackend) Get(revs []string) (_ cache.Result, err error) {
 				hit, _ := lookingFor[c.Hash]
 				if hit {
 					if isDup, _ := seen[c.Hash]; isDup {
-						yield(c, fmt.Errorf(
+						iterErr = fmt.Errorf(
 							"duplicate commit in cache: %s",
 							c.Hash,
-						))
+						)
 						return
 					}
 
 					seen[c.Hash] = true
-					if !yield(c, nil) {
+					if !yield(c) {
 						return
 					}
 				}
@@ -239,7 +245,7 @@ func (b *GobBackend) Get(revs []string) (_ cache.Result, err error) {
 		}
 	}
 
-	return cache.Result{Commits: it}, nil
+	return seq, finish
 }
 
 func (b *GobBackend) Add(commits []git.Commit) (err error) {
