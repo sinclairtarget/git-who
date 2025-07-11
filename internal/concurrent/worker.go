@@ -215,10 +215,10 @@ loop:
 				var result T
 
 				lines, finish := subprocess.StdoutNullDelimitedLines()
-				defer func() { err = finish() }()
+				defer func() { err = errors.Join(err, finish()) }()
 
 				commits, finish := git.ParseCommits(lines)
-				defer func() { err = finish() }()
+				defer func() { err = errors.Join(err, finish()) }()
 
 				commits = cacheTee(commits, toCache)
 

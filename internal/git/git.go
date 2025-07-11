@@ -8,6 +8,7 @@ package git
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"iter"
@@ -101,9 +102,9 @@ func CommitsWithOpts(
 
 	finish := func() error {
 		iterErr := finishCommits()
-		iterErr = finishLines()
+		iterErr = errors.Join(iterErr, finishLines())
 		if iterErr != nil {
-			return fmt.Errorf("error iterating: %v", iterErr)
+			return fmt.Errorf("error iterating commits: %v", iterErr)
 		}
 
 		return subprocess.Wait()
