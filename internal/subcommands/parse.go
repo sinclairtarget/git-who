@@ -1,4 +1,4 @@
-package main
+package subcommands
 
 import (
 	"bufio"
@@ -12,7 +12,7 @@ import (
 
 // Just prints out a simple representation of the commits parsed from `git log`
 // for debugging.
-func parse(
+func Parse(
 	revs []string,
 	pathspecs []string,
 	short bool,

@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
@@ -318,12 +317,6 @@ func GobCacheDir(prefix string, gitRootPath string) string {
 	return repoDir
 }
 
-func GobCacheFilename(repoFiles git.RepoConfigFiles) (string, error) {
-	stateHash, err := cache.RepoStateHash(repoFiles)
-	if err != nil {
-		return "", err
-	}
-
-	filename := fmt.Sprintf("%s.gobs", stateHash)
-	return filename, nil
+func GobCacheFilename(stateHash string) string {
+	return fmt.Sprintf("%s.gobs", stateHash)
 }

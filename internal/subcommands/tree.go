@@ -1,4 +1,4 @@
-package main
+package subcommands
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -38,7 +39,7 @@ type treeOutputLine struct {
 	dimPath   bool
 }
 
-func tree(
+func Tree(
 	revs []string,
 	pathspecs []string,
 	mode tally.TallyMode,
@@ -126,7 +127,7 @@ func tree(
 			tallyOpts,
 			wtreeset,
 			gitRootPath,
-			getCache(gitRootPath, repoFiles),
+			cache.GetCache(gitRootPath, repoFiles),
 			pretty.AllowDynamic(os.Stdout),
 		)
 

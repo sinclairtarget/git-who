@@ -1,4 +1,4 @@
-package main
+package subcommands
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -18,7 +19,7 @@ import (
 
 const barWidth = 36
 
-func hist(
+func Hist(
 	revs []string,
 	pathspecs []string,
 	mode tally.TallyMode,
@@ -101,7 +102,7 @@ func hist(
 			repoFiles,
 			tallyOpts,
 			end,
-			getCache(gitRootPath, repoFiles),
+			cache.GetCache(gitRootPath, repoFiles),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {

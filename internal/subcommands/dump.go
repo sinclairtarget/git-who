@@ -1,4 +1,4 @@
-package main
+package subcommands
 
 import (
 	"bufio"
@@ -12,7 +12,7 @@ import (
 )
 
 // Just prints out the output of git log as seen by git who.
-func dump(
+func Dump(
 	revs []string,
 	pathspecs []string,
 	short bool,

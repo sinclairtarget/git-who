@@ -1,4 +1,4 @@
-package main
+package subcommands
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 
 	runewidth "github.com/mattn/go-runewidth"
 
+	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
@@ -34,7 +35,7 @@ func pickWidth(mode tally.TallyMode, showEmail bool) int {
 
 // The "table" subcommand summarizes the authorship history of the given
 // commits and paths in a table printed to stdout.
-func table(
+func Table(
 	revs []string,
 	pathspecs []string,
 	mode tally.TallyMode,
@@ -116,7 +117,7 @@ func table(
 			filters,
 			repoFiles,
 			tallyOpts,
-			getCache(gitRootPath, repoFiles),
+			cache.GetCache(gitRootPath, repoFiles),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {

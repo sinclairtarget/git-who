@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/sinclairtarget/git-who/internal/cache/backends"
 	"github.com/sinclairtarget/git-who/internal/git"
 )
 
@@ -147,7 +148,7 @@ func (c *Cache) Clear() error {
 // backend.
 //
 // Tries to store it under the XDG_CACHE_HOME dir.
-func CacheStorageDir(name string) (_ string, err error) {
+func cacheStorageDir(name string) (_ string, err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("failed to determine cache storage path: %w", err)
@@ -174,7 +175,7 @@ func CacheStorageDir(name string) (_ string, err error) {
 }
 
 // Hash of all the state in the repo that affects the validity of our cache
-func RepoStateHash(rf git.RepoConfigFiles) (string, error) {
+func repoStateHash(rf git.RepoConfigFiles) (string, error) {
 	h := fnv.New32()
 	err := rf.MailmapHash(h)
 	if err != nil {
@@ -182,4 +183,43 @@ func RepoStateHash(rf git.RepoConfigFiles) (string, error) {
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func warnFail(cb Backend, err error) Cache {
+	logger().Warn(
+		fmt.Sprintf("failed to initialize cache: %v", err),
+	)
+	logger().Warn("disabling caching")
+	return NewCache(cb)
+}
+
+func GetCache(gitRootPath string, repoFiles git.RepoConfigFiles) Cache {
+	var fallback Backend = backends.NoopBackend{}
+
+	if !IsCachingEnabled() {
+		return NewCache(fallback)
+	}
+
+	cacheStorageDir, err := cacheStorageDir(
+		backends.GobBackendName,
+	)
+	if err != nil {
+		return warnFail(fallback, err)
+	}
+
+	dirname := backends.GobCacheDir(cacheStorageDir, gitRootPath)
+	err = os.MkdirAll(dirname, 0o700)
+	if err != nil {
+		return warnFail(fallback, err)
+	}
+
+	stateHash, err := repoStateHash(repoFiles)
+	if err != nil {
+		return warnFail(fallback, err)
+	}
+
+	filename := backends.GobCacheFilename(stateHash)
+	p := filepath.Join(dirname, filename)
+	logger().Debug("cache initialized", "path", p)
+	return NewCache(&backends.GobBackend{Path: p, Dir: dirname})
 }

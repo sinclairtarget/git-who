@@ -7,17 +7,15 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/subcommands"
 	"github.com/sinclairtarget/git-who/internal/tally"
 	"github.com/sinclairtarget/git-who/internal/utils/flagutils"
 )
 
 var Commit = "unknown"
 var Version = "unknown"
-
-var progStart time.Time
 
 type command struct {
 	flagSet     *flag.FlagSet
@@ -112,7 +110,6 @@ loop:
 	subargs := cmd.flagSet.Args()
 	subargs = unescapeTerminator(subargs)
 
-	progStart = time.Now()
 	if err := cmd.run(subargs); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
@@ -185,7 +182,7 @@ Usage: git-who table [options...] [revisions...] [[--] paths...]
 				return err
 			}
 
-			return table(
+			return subcommands.Table(
 				revs,
 				pathspecs,
 				mode,
@@ -265,7 +262,7 @@ Usage: git-who tree [options...] [revisions...] [[--] paths...]
 				mode = tally.FirstModifiedMode
 			}
 
-			return tree(
+			return subcommands.Tree(
 				revs,
 				pathspecs,
 				mode,
@@ -328,7 +325,7 @@ Usage: git-who hist [options...] [revisions...] [[--] paths...]
 				mode = tally.FilesMode
 			}
 
-			return hist(
+			return subcommands.Hist(
 				revs,
 				pathspecs,
 				mode,
@@ -363,7 +360,7 @@ func dumpCmd() command {
 				return err
 			}
 
-			return dump(
+			return subcommands.Dump(
 				revs,
 				pathspecs,
 				*short,
@@ -396,7 +393,7 @@ func parseCmd() command {
 				return err
 			}
 
-			return parse(
+			return subcommands.Parse(
 				revs,
 				pathspecs,
 				*short,
