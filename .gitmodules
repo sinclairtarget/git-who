@@ -1,6 +1,12 @@
-[submodule "test-repo"]
-	path = test-repo
+[submodule "functional-tests/repos/test-repo"]
+	path = functional-tests/repos/test-repo
 	url = git@github.com:sinclairtarget/git-who-test-repo.git
-[submodule "gunicorn"]
-	path = gunicorn
+[submodule "functional-tests/repos/gunicorn"]
+	path = functional-tests/repos/gunicorn
+	url = git@github.com:benoitc/gunicorn.git
+[submodule "test/repos/test-repo"]
+	path = test/repos/test-repo
+	url = git@github.com:sinclairtarget/git-who-test-repo.git
+[submodule "test/repos/gunicorn"]
+	path = test/repos/gunicorn
 	url = git@github.com:benoitc/gunicorn.git

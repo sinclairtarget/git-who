@@ -89,20 +89,33 @@ def build_for_platform(goos, goarch, out: PROGNAME)
     "-ldflags '-s -w -X main.Commit=#{rev} -X main.Version=#{version}'"
 end
 
-desc 'Run all unit tests'
-task :test do
-  sh 'go test -count=1 ./internal/...'
-end
+namespace 'test' do
+  desc 'Run all tests'
+  task all: [:unit, :integration, :functional]
 
-namespace 'functional' do
+  desc 'Run unit tests'
+  task :unit do
+    sh 'go test -count=1 ./internal/...'
+  end
+
+  desc 'Run integration tests'
+  task :integration do
+    sh 'go test -count=1 ./test/integration/...'
+  end
+
   begin
     require 'minitest/test_task'
 
-    Minitest::TestTask.create(:test) do |t|
-      t.libs << "test/lib"
-      t.test_globs = ["test/**/*_test.rb"]
+    Minitest::TestTask.create(:functional) do |t|
+      t.libs << "test/functional"
+      t.libs << "test/functional/lib"
+      t.test_globs = ["test/functional/**/*_test.rb"]
     end
   rescue LoadError
-    # no-op, minitest not installed
+    task :functional do
+      puts "Skipping functional tests; minitest gem not found."
+    end
   end
 end
+
+task test: 'test:all'

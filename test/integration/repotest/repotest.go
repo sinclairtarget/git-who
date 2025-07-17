@@ -2,18 +2,16 @@
 package repotest
 
 import (
-	"fmt"
 	"os"
+	"testing"
 )
 
-const msg = `error changing working directory to submodule: %w
+const msg = `error changing working directory to submodule: %v
 Did you remember to initialize the submodule? See README.md`
 
-func UseTestRepo() error {
-	err := os.Chdir("../../test-repo")
+func UseTestRepo(t *testing.T) {
+	err := os.Chdir("../../repos/test-repo")
 	if err != nil {
-		return fmt.Errorf(msg, err)
+		t.Fatalf(msg, err)
 	}
-
-	return nil
 }

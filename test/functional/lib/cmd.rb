@@ -1,6 +1,8 @@
 require 'open3'
 require 'pathname'
 
+BIN_RELPATH = '../../../git-who'
+
 class GitWhoError < StandardError
 end
 
@@ -48,7 +50,7 @@ class GitWho
   end
 
   def self.built_bin_path
-    p = Pathname.new(__dir__) + '../../git-who'
+    p = Pathname.new(__dir__) + BIN_RELPATH
     p.cleanpath.to_s
   end
 

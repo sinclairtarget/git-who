@@ -713,17 +713,17 @@ tree?"
 ## DEVELOPMENT
 ### Test Repository Submodule
 Some of the automated tests for `git-who` need to run against a Git repository.
-A test repository is attached to this repository as a submodule.
+Test repositories are attached to this repository as submodules.
 
 If you want to run the automated tests, you will first need to set up the
-submodule:
+submodules:
 
 ```
 $ git submodule update --init
 ```
 
-### Unit Tests
-The unit tests, written in Go, can be run using:
+### Automated Tests
+The unit and integration tests, written in Go, can be run using:
 
 ```
 $ rake test
@@ -734,5 +734,5 @@ There are some end-to-end/functional tests written in Ruby. These require the
 `minitest` gem. You can run them using:
 
 ```
-$ rake functional:test
+$ rake test:functional
 ```

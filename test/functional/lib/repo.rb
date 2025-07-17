@@ -1,8 +1,10 @@
 require 'pathname'
 
+REPOS_RELPATH = '../../repos/'
+
 module TestRepo
   def self.path
-    p = Pathname.new(__dir__) + '../../test-repo'
+    p = Pathname.new(__dir__) + REPOS_RELPATH + 'test-repo'
     p.cleanpath.to_s
   end
 end
@@ -11,7 +13,7 @@ end
 # processing.
 module BigRepo
   def self.path
-    p = Pathname.new(__dir__) + '../../gunicorn'
+    p = Pathname.new(__dir__) + REPOS_RELPATH + 'gunicorn'
     p.cleanpath.to_s
   end
 end

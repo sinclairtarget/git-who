@@ -11,13 +11,20 @@ import (
 	"testing"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/test/integration/repotest"
 )
 
 const safeTag string = "root"
 const safeCommit string = "6afef287af5ca43f7d741e7ceff61aad38055b6a"
 const filename string = "README.md"
 
+func setUp(t *testing.T) {
+	repotest.UseTestRepo(t)
+}
+
 func TestParseArgs(t *testing.T) {
+	setUp(t)
+
 	tests := []struct {
 		name     string
 		args     []string
@@ -122,6 +129,8 @@ func TestParseArgs(t *testing.T) {
 }
 
 func TestParseArgsError(t *testing.T) {
+	setUp(t)
+
 	tests := []struct {
 		name string
 		args []string
@@ -151,6 +160,8 @@ func TestParseArgsError(t *testing.T) {
 }
 
 func TestParseArgsRange(t *testing.T) {
+	setUp(t)
+
 	revs, paths, err := git.ParseArgs([]string{"HEAD~3.."})
 	if err != nil {
 		t.Errorf("got unexpected error: %v", err)
