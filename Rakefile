@@ -1,7 +1,6 @@
 require 'fileutils'
 require 'rake/clean'
 
-PROGNAME = 'git-who'
 SUPPORTED = [
   ['darwin', 'arm64'],
   ['darwin', 'amd64'],
@@ -10,25 +9,51 @@ SUPPORTED = [
   ['linux', 'arm'],
   ['windows', 'amd64'],
 ]
+SRC_FILES = FileList['*.go', 'internal/**/*.go'].exclude('internal/**/*_test.go')
 OUTDIR = 'out'
 RELEASE_DIRS = SUPPORTED.map do |os, arch|
     "#{OUTDIR}/#{os}_#{arch}"
 end
 
-task default: [:build]
-
-desc 'Run go fmt'
-task :fmt do
-  sh 'go fmt ./internal/...'
-  sh 'go fmt *.go'
+def get_goos
+  `go env GOHOSTOS`.strip
 end
+
+def exec_name(goos)
+  if goos == 'windows'
+    'git-who.exe'
+  else
+    'git-who'
+  end
+end
+
+def get_version()
+  `git describe --tags --always --dirty`.strip
+end
+
+def get_commit()
+  `git rev-parse --short HEAD`.strip
+end
+
+def build_for_platform(goos, goarch, progname)
+  version = get_version
+  rev = get_commit
+  sh "GOOS=#{goos} GOARCH=#{goarch} go build -a -o #{progname} "\
+    "-ldflags '-s -w -X main.Commit=#{rev} -X main.Version=#{version}'"
+end
+
+$host_progname = exec_name(get_goos())
+file $host_progname => SRC_FILES do |t|
+  gohostos = get_goos()
+  gohostarch = `go env GOHOSTARCH`.strip
+  build_for_platform gohostos, gohostarch, t.name
+end
+CLOBBER.include($host_progname)
 
 desc 'Build executable'
-task :build do
-  gohostos = `go env GOHOSTOS`.strip
-  gohostarch = `go env GOHOSTARCH`.strip
-  build_for_platform gohostos, gohostarch, out: exec_name(gohostos)
-end
+task build: $host_progname
+
+task default: [:build]
 
 namespace 'release' do
   directory OUTDIR
@@ -42,7 +67,7 @@ namespace 'release' do
     SUPPORTED.each do |os, arch|
       output_dir = "#{OUTDIR}/#{os}_#{arch}"
       progname = exec_name(os)
-      build_for_platform(os, arch, out: "#{output_dir}/#{progname}")
+      build_for_platform(os, arch, "#{output_dir}/#{progname}")
 
       version = get_version
       sh "tar czf #{OUTDIR}/gitwho_#{version}_#{os}_#{arch}.tar.gz "\
@@ -64,29 +89,11 @@ namespace 'release' do
 end
 
 CLOBBER.include(OUTDIR)
-CLOBBER.include(PROGNAME)
 
-def get_version()
-  `git describe --tags --always --dirty`.strip
-end
-
-def get_commit()
-  `git rev-parse --short HEAD`.strip
-end
-
-def exec_name(goos)
-  if goos == 'windows'
-    PROGNAME + '.exe'
-  else
-    PROGNAME
-  end
-end
-
-def build_for_platform(goos, goarch, out: PROGNAME)
-  version = get_version
-  rev = get_commit
-  sh "GOOS=#{goos} GOARCH=#{goarch} go build -a -o #{out} "\
-    "-ldflags '-s -w -X main.Commit=#{rev} -X main.Version=#{version}'"
+desc 'Run go fmt'
+task :fmt do
+  sh 'go fmt ./internal/...'
+  sh 'go fmt *.go'
 end
 
 namespace 'test' do
