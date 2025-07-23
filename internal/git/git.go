@@ -243,7 +243,9 @@ func LimitDiffsByPathspec(
 		for commit := range commits {
 			filtered := []FileDiff{}
 			for _, diff := range commit.FileDiffs {
-				shouldInclude := false
+				// If we don't have any explicit includes, then everything is
+				// included.
+				shouldInclude := len(includes) == 0
 				for _, p := range includes {
 					if PathspecMatch(p, diff.Path) {
 						shouldInclude = true
