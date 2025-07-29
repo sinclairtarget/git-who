@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+
+	"github.com/sinclairtarget/git-who/internal/git/cmd"
 )
 
 // Handles splitting the Git revisions from the pathspecs given a list of args.
@@ -13,7 +15,7 @@ func ParseArgs(args []string) (revs []string, pathspecs []string, err error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	subprocess, err := RunRevParse(ctx, args)
+	subprocess, err := cmd.RunRevParse(ctx, args)
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not parse args: %w", err)
 	}

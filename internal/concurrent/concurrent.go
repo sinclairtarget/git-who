@@ -30,6 +30,7 @@ import (
 	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/git/cmd"
 	"github.com/sinclairtarget/git-who/internal/pretty"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
@@ -56,7 +57,7 @@ type combinable[T any] interface {
 type whoperation[T combinable[T]] struct {
 	revspec    []string
 	pathspecs  []string
-	filters    git.LogFilters
+	filters    cmd.LogFilters
 	useMailmap bool
 	ignoreRevs []string
 	tally      tallyFunc[T]
@@ -332,7 +333,7 @@ func TallyCommits(
 	ctx context.Context,
 	revspec []string,
 	pathspecs []string,
-	filters git.LogFilters,
+	filters cmd.LogFilters,
 	repoFiles git.RepoConfigFiles,
 	opts tally.TallyOpts,
 	cache cache.Cache,
@@ -370,7 +371,7 @@ func TallyCommitsTree(
 	ctx context.Context,
 	revspec []string,
 	pathspecs []string,
-	filters git.LogFilters,
+	filters cmd.LogFilters,
 	repoFiles git.RepoConfigFiles,
 	opts tally.TallyOpts,
 	worktreePaths map[string]bool,
@@ -414,7 +415,7 @@ func TallyCommitsTimeline(
 	ctx context.Context,
 	revspec []string,
 	pathspecs []string,
-	filters git.LogFilters,
+	filters cmd.LogFilters,
 	repoFiles git.RepoConfigFiles,
 	opts tally.TallyOpts,
 	end time.Time,

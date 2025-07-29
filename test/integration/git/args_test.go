@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/git/cmd"
 	"github.com/sinclairtarget/git-who/test/integration/repotest"
 )
 
@@ -102,7 +103,7 @@ func TestParseArgs(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			revs, paths, err := git.ParseArgs(test.args)
 			if err != nil {
-				var subErr git.SubprocessErr
+				var subErr cmd.SubprocessErr
 				if errors.As(err, &subErr) {
 					t.Logf("subprocess error output:\n%s", subErr.Stderr)
 				}

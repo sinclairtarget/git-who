@@ -15,6 +15,7 @@ import (
 	"github.com/sinclairtarget/git-who/internal/concurrent"
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/git/cmd"
 	"github.com/sinclairtarget/git-who/internal/pretty"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
@@ -92,7 +93,7 @@ func Tree(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	filters := git.LogFilters{
+	filters := cmd.LogFilters{
 		Since:    since,
 		Until:    until,
 		Authors:  authors,

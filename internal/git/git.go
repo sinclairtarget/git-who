@@ -10,11 +10,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"iter"
 	"slices"
-	"strings"
 	"time"
+
+	"github.com/sinclairtarget/git-who/internal/git/cmd"
 )
 
 type Commit struct {
@@ -70,7 +70,7 @@ func CommitsWithOpts(
 	ctx context.Context,
 	revs []string,
 	pathspecs []string,
-	filters LogFilters,
+	filters cmd.LogFilters,
 	populateDiffs bool,
 	repoFiles RepoConfigFiles,
 ) (
@@ -84,7 +84,7 @@ func CommitsWithOpts(
 		return empty, func() error { return err }
 	}
 
-	subprocess, err := RunLog(
+	subprocess, err := cmd.RunLog(
 		ctx,
 		revs,
 		pathspecs,
@@ -117,7 +117,7 @@ func RevList(
 	ctx context.Context,
 	revranges []string,
 	pathspecs []string,
-	filters LogFilters,
+	filters cmd.LogFilters,
 ) (_ []string, err error) {
 	defer func() {
 		if err != nil {
@@ -127,7 +127,7 @@ func RevList(
 
 	revs := []string{}
 
-	subprocess, err := RunRevList(ctx, revranges, pathspecs, filters)
+	subprocess, err := cmd.RunRevList(ctx, revranges, pathspecs, filters)
 	if err != nil {
 		return revs, err
 	}
@@ -153,23 +153,19 @@ func RevList(
 func GetRoot() (_ string, err error) {
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf(
-				"failed to run git rev-parse --show-toplevel: %w",
-				err,
-			)
+			err = fmt.Errorf("failed to get Git root directory: %w", err)
 		}
 	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	args := []string{"rev-parse", "--show-toplevel"}
-	subprocess, err := run(ctx, args, false)
+	subprocess, err := cmd.RunRevParseTopLevel(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	b, err := io.ReadAll(subprocess.stdout)
+	root, err := subprocess.StdoutText()
 	if err != nil {
 		return "", err
 	}
@@ -179,7 +175,6 @@ func GetRoot() (_ string, err error) {
 		return "", err
 	}
 
-	root := strings.TrimSpace(string(b))
 	return root, nil
 }
 
@@ -196,7 +191,7 @@ func WorkingTreeFiles(pathspecs []string) (_ map[string]bool, err error) {
 
 	wtreeset := map[string]bool{}
 
-	subprocess, err := RunLsFiles(ctx, pathspecs)
+	subprocess, err := cmd.RunLsFiles(ctx, pathspecs)
 	if err != nil {
 		return wtreeset, err
 	}

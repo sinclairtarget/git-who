@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/git/cmd"
 )
 
 // Just prints out a simple representation of the commits parsed from `git log`
@@ -50,7 +51,7 @@ func Parse(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	filters := git.LogFilters{
+	filters := cmd.LogFilters{
 		Since:    since,
 		Until:    until,
 		Authors:  authors,

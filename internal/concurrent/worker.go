@@ -7,6 +7,7 @@ import (
 
 	"github.com/sinclairtarget/git-who/internal/cache"
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/git/cmd"
 )
 
 type worker struct {
@@ -187,7 +188,7 @@ loop:
 			// commit. Otherwise when we cache the commits we would be caching
 			// only a part of the commit
 			nopaths := []string{}
-			subprocess, err := git.RunStdinLog(
+			subprocess, err := cmd.RunStdinLog(
 				ctx,
 				nopaths,
 				true,

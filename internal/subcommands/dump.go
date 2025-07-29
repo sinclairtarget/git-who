@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/git/cmd"
 )
 
 // Just prints out the output of git log as seen by git who.
@@ -50,7 +51,7 @@ func Dump(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	filters := git.LogFilters{
+	filters := cmd.LogFilters{
 		Since:    since,
 		Until:    until,
 		Authors:  authors,
@@ -67,7 +68,7 @@ func Dump(
 		return err
 	}
 
-	subprocess, err := git.RunLog(
+	subprocess, err := cmd.RunLog(
 		ctx,
 		revs,
 		pathspecs,
