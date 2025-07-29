@@ -221,3 +221,15 @@ func RunLsFiles(ctx context.Context, pathspecs []string) (*Subprocess, error) {
 
 	return subprocess, nil
 }
+
+func RunConfigGet(ctx context.Context, args []string) (*Subprocess, error) {
+	baseArgs := []string{"config", "--get"}
+
+	needStdin := false
+	subprocess, err := run(ctx, slices.Concat(baseArgs, args), needStdin)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run git config --get: %w", err)
+	}
+
+	return subprocess, nil
+}

@@ -15,12 +15,13 @@ import (
 
 // Not .gitconfig files, but still configure Git behavior
 type SupplementalFiles struct {
-	MailmapPath    string
-	IgnoreRevsPath string
+	RepoMailmapPath   string
+	GlobalMailmapPath string
+	IgnoreRevsPath    string
 }
 
 func (sf SupplementalFiles) HasMailmap() bool {
-	return len(sf.MailmapPath) > 0
+	return len(sf.RepoMailmapPath) > 0 || len(sf.GlobalMailmapPath) > 0
 }
 
 func (sf SupplementalFiles) HasIgnoreRevs() bool {
@@ -28,17 +29,32 @@ func (sf SupplementalFiles) HasIgnoreRevs() bool {
 }
 
 func (sf SupplementalFiles) MailmapHash(h hash.Hash32) error {
-	if sf.HasMailmap() {
-		f, err := os.Open(sf.MailmapPath)
+	if len(sf.RepoMailmapPath) > 0 {
+		f, err := os.Open(sf.RepoMailmapPath)
 		if !errors.Is(err, fs.ErrNotExist) {
 			if err != nil {
-				return fmt.Errorf("could not read mailmap file: %v", err)
+				return fmt.Errorf("could not read repo mailmap file: %v", err)
 			}
 			defer f.Close()
 
 			_, err = io.Copy(h, f)
 			if err != nil {
-				return fmt.Errorf("error hashing mailmap file: %v", err)
+				return fmt.Errorf("error hashing repo mailmap file: %v", err)
+			}
+		}
+	}
+
+	if len(sf.GlobalMailmapPath) > 0 {
+		f, err := os.Open(sf.GlobalMailmapPath)
+		if !errors.Is(err, fs.ErrNotExist) {
+			if err != nil {
+				return fmt.Errorf("could not read global mailmap file: %v", err)
+			}
+			defer f.Close()
+
+			_, err = io.Copy(h, f)
+			if err != nil {
+				return fmt.Errorf("error hashing global mailmap file: %v", err)
 			}
 		}
 	}
