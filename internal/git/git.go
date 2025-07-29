@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/sinclairtarget/git-who/internal/git/cmd"
+	"github.com/sinclairtarget/git-who/internal/git/config"
 )
 
 type Commit struct {
@@ -72,14 +73,14 @@ func CommitsWithOpts(
 	pathspecs []string,
 	filters cmd.LogFilters,
 	populateDiffs bool,
-	repoFiles RepoConfigFiles,
+	configFiles config.SupplementalFiles,
 ) (
 	iter.Seq[Commit],
 	func() error,
 ) {
 	empty := slices.Values([]Commit{})
 
-	ignoreRevs, err := repoFiles.IgnoreRevs()
+	ignoreRevs, err := configFiles.IgnoreRevs()
 	if err != nil {
 		return empty, func() error { return err }
 	}
@@ -90,7 +91,7 @@ func CommitsWithOpts(
 		pathspecs,
 		filters,
 		populateDiffs,
-		repoFiles.HasMailmap(),
+		configFiles.HasMailmap(),
 	)
 	if err != nil {
 		return empty, func() error { return err }

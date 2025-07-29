@@ -9,6 +9,7 @@ import (
 
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/git/cmd"
+	"github.com/sinclairtarget/git-who/internal/git/config"
 )
 
 // Just prints out a simple representation of the commits parsed from `git log`
@@ -63,7 +64,7 @@ func Parse(
 		return err
 	}
 
-	repoFiles, err := git.CheckRepoConfigFiles(gitRootPath)
+	configFiles, err := config.DetectSupplementalFiles(gitRootPath)
 	if err != nil {
 		return err
 	}
@@ -74,7 +75,7 @@ func Parse(
 		pathspecs,
 		filters,
 		!short,
-		repoFiles,
+		configFiles,
 	)
 
 	w := bufio.NewWriter(os.Stdout)

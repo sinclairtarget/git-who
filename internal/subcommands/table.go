@@ -17,6 +17,7 @@ import (
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/git/cmd"
+	"github.com/sinclairtarget/git-who/internal/git/config"
 	"github.com/sinclairtarget/git-who/internal/pretty"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
@@ -104,7 +105,7 @@ func Table(
 		return err
 	}
 
-	repoFiles, err := git.CheckRepoConfigFiles(gitRootPath)
+	configFiles, err := config.DetectSupplementalFiles(gitRootPath)
 	if err != nil {
 		return err
 	}
@@ -116,9 +117,9 @@ func Table(
 			revs,
 			pathspecs,
 			filters,
-			repoFiles,
+			configFiles,
 			tallyOpts,
-			cache.GetCache(gitRootPath, repoFiles),
+			cache.GetCache(gitRootPath, configFiles),
 			pretty.AllowDynamic(os.Stdout),
 		)
 		if err != nil {
@@ -133,7 +134,7 @@ func Table(
 				pathspecs,
 				filters,
 				populateDiffs,
-				repoFiles,
+				configFiles,
 			)
 			defer func() { err = finish() }()
 

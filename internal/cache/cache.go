@@ -13,6 +13,7 @@ import (
 
 	"github.com/sinclairtarget/git-who/internal/cache/backends"
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/git/config"
 )
 
 func IsCachingEnabled() bool {
@@ -175,9 +176,9 @@ func cacheStorageDir(name string) (_ string, err error) {
 }
 
 // Hash of all the state in the repo that affects the validity of our cache
-func repoStateHash(rf git.RepoConfigFiles) (string, error) {
+func repoStateHash(sf config.SupplementalFiles) (string, error) {
 	h := fnv.New32()
-	err := rf.MailmapHash(h)
+	err := sf.MailmapHash(h)
 	if err != nil {
 		return "", err
 	}
@@ -193,7 +194,7 @@ func warnFail(cb Backend, err error) Cache {
 	return NewCache(cb)
 }
 
-func GetCache(gitRootPath string, repoFiles git.RepoConfigFiles) Cache {
+func GetCache(gitRootPath string, configFiles config.SupplementalFiles) Cache {
 	var fallback Backend = backends.NoopBackend{}
 
 	if !IsCachingEnabled() {
@@ -213,7 +214,7 @@ func GetCache(gitRootPath string, repoFiles git.RepoConfigFiles) Cache {
 		return warnFail(fallback, err)
 	}
 
-	stateHash, err := repoStateHash(repoFiles)
+	stateHash, err := repoStateHash(configFiles)
 	if err != nil {
 		return warnFail(fallback, err)
 	}

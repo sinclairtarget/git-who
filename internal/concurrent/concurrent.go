@@ -31,6 +31,7 @@ import (
 	"github.com/sinclairtarget/git-who/internal/format"
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/git/cmd"
+	"github.com/sinclairtarget/git-who/internal/git/config"
 	"github.com/sinclairtarget/git-who/internal/pretty"
 	"github.com/sinclairtarget/git-who/internal/tally"
 )
@@ -334,12 +335,12 @@ func TallyCommits(
 	revspec []string,
 	pathspecs []string,
 	filters cmd.LogFilters,
-	repoFiles git.RepoConfigFiles,
+	configFiles config.SupplementalFiles,
 	opts tally.TallyOpts,
 	cache cache.Cache,
 	allowProgressBar bool,
 ) (_ map[string]tally.Tally, err error) {
-	ignoreRevs, err := repoFiles.IgnoreRevs()
+	ignoreRevs, err := configFiles.IgnoreRevs()
 	if err != nil {
 		return nil, err
 	}
@@ -348,7 +349,7 @@ func TallyCommits(
 		revspec:    revspec,
 		pathspecs:  pathspecs,
 		filters:    filters,
-		useMailmap: repoFiles.HasMailmap(),
+		useMailmap: configFiles.HasMailmap(),
 		ignoreRevs: ignoreRevs,
 		tally:      tally.TallyCommitsByPath,
 		opts:       opts,
@@ -372,14 +373,14 @@ func TallyCommitsTree(
 	revspec []string,
 	pathspecs []string,
 	filters cmd.LogFilters,
-	repoFiles git.RepoConfigFiles,
+	configFiles config.SupplementalFiles,
 	opts tally.TallyOpts,
 	worktreePaths map[string]bool,
 	gitRootPath string,
 	cache cache.Cache,
 	allowProgressBar bool,
 ) (*tally.TreeNode, error) {
-	ignoreRevs, err := repoFiles.IgnoreRevs()
+	ignoreRevs, err := configFiles.IgnoreRevs()
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +389,7 @@ func TallyCommitsTree(
 		revspec:    revspec,
 		pathspecs:  pathspecs,
 		filters:    filters,
-		useMailmap: repoFiles.HasMailmap(),
+		useMailmap: configFiles.HasMailmap(),
 		ignoreRevs: ignoreRevs,
 		tally:      tally.TallyCommitsByPath,
 		opts:       opts,
@@ -416,13 +417,13 @@ func TallyCommitsTimeline(
 	revspec []string,
 	pathspecs []string,
 	filters cmd.LogFilters,
-	repoFiles git.RepoConfigFiles,
+	configFiles config.SupplementalFiles,
 	opts tally.TallyOpts,
 	end time.Time,
 	cache cache.Cache,
 	allowProgressBar bool,
 ) ([]tally.TimeBucket, error) {
-	ignoreRevs, err := repoFiles.IgnoreRevs()
+	ignoreRevs, err := configFiles.IgnoreRevs()
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +439,7 @@ func TallyCommitsTimeline(
 		revspec:    revspec,
 		pathspecs:  pathspecs,
 		filters:    filters,
-		useMailmap: repoFiles.HasMailmap(),
+		useMailmap: configFiles.HasMailmap(),
 		ignoreRevs: ignoreRevs,
 		tally:      f,
 		opts:       opts,

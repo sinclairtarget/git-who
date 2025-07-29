@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/sinclairtarget/git-who/internal/git/cmd"
+	rev "github.com/sinclairtarget/git-who/internal/git/revision"
 )
 
 // Handles splitting the Git revisions from the pathspecs given a list of args.
@@ -27,7 +28,7 @@ func ParseArgs(args []string) (revs []string, pathspecs []string, err error) {
 
 	pastRevs := false
 	for line := range lines {
-		if !pastRevs && isRev(line) {
+		if !pastRevs && rev.IsFullHash(line) {
 			revs = append(revs, line)
 		} else {
 			pastRevs = true

@@ -7,14 +7,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	rev "github.com/sinclairtarget/git-who/internal/git/revision"
 )
 
 var fileRenameRegexp *regexp.Regexp
-var commitHashRegexp *regexp.Regexp
 
 func init() {
 	fileRenameRegexp = regexp.MustCompile(`{(.*) => (.*)}`)
-	commitHashRegexp = regexp.MustCompile(`^\^?[a-f0-9]+$`)
 }
 
 func parseLinesChanged(s string, line string) (int, error) {
@@ -65,7 +65,7 @@ func ParseCommits(lines iter.Seq[string]) (iter.Seq[Commit], func() error) {
 		linesThisCommit := 0
 
 		for line := range lines {
-			done := linesThisCommit >= 6 && (len(line) == 0 || isRev(line))
+			done := linesThisCommit >= 6 && (len(line) == 0 || rev.IsFullHash(line))
 			if done {
 				if allowCommit(commit, now) {
 					if !yield(commit) {
@@ -208,12 +208,4 @@ func ParseCommits(lines iter.Seq[string]) (iter.Seq[Commit], func() error) {
 	}
 
 	return seq, finish
-}
-
-// Returns true if this is a (full-length) Git revision hash, false otherwise.
-//
-// We also need to handle a hash with "^" in front.
-func isRev(s string) bool {
-	matched := commitHashRegexp.MatchString(s)
-	return matched && (len(s) == 40 || len(s) == 41)
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/sinclairtarget/git-who/internal/git"
 	"github.com/sinclairtarget/git-who/internal/git/cmd"
+	"github.com/sinclairtarget/git-who/internal/git/config"
 )
 
 // Just prints out the output of git log as seen by git who.
@@ -63,7 +64,7 @@ func Dump(
 		return err
 	}
 
-	repoFiles, err := git.CheckRepoConfigFiles(gitRootPath)
+	configFiles, err := config.DetectSupplementalFiles(gitRootPath)
 	if err != nil {
 		return err
 	}
@@ -74,7 +75,7 @@ func Dump(
 		pathspecs,
 		filters,
 		!short,
-		repoFiles.HasMailmap(),
+		configFiles.HasMailmap(),
 	)
 	if err != nil {
 		return err
