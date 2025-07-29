@@ -69,6 +69,8 @@ func (sf SupplementalFiles) IgnoreRevs() (_ []string, err error) {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
+
+		// Comments starting with "#" are allowed in the ignore revs file
 		if rev.IsFullHash(line) {
 			revs = append(revs, line)
 		}
