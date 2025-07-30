@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"path"
 	"regexp"
 
@@ -53,15 +54,17 @@ func SplitPathspecs(pathspecs []string) (includes []string, excludes []string) {
 	return includes, excludes
 }
 
+// Function might panic if passed an invalid pathspec. We validate these
+// elsewhere.
 func PathspecMatch(pathspec string, p string) bool {
 	if len(pathspec) == 0 {
 		panic("empty string is not valid pathspec")
 	}
 
 	// Note: Git uses fnmatch(). This match may differ. Hopefully only rarely.
-	didMatch, err := doublestar.PathMatch(pathspec, p)
+	didMatch, err := doublestar.Match(pathspec, p)
 	if err != nil {
-		panic("bad pattern passed to doublestar.Match()")
+		panic(fmt.Sprintf("error calling doublestar.Match(): %v", err))
 	}
 
 	if didMatch {
@@ -71,9 +74,9 @@ func PathspecMatch(pathspec string, p string) bool {
 	// Ensure we mimic Git behavior with trailing slash. See "pathspec" in
 	// gitglossary(3).
 	subdirPathspec := path.Join(pathspec, "**")
-	didMatch, err = doublestar.PathMatch(subdirPathspec, p)
+	didMatch, err = doublestar.Match(subdirPathspec, p)
 	if err != nil {
-		panic("bad pattern passed to doublestar.Match()")
+		panic(fmt.Sprintf("error calling doublestar.Match(): %v", err))
 	}
 
 	if didMatch {
@@ -82,9 +85,9 @@ func PathspecMatch(pathspec string, p string) bool {
 
 	if pathspec[0] == '*' {
 		toplevelPathspec := path.Join("**/", pathspec)
-		didMatch, err = doublestar.PathMatch(toplevelPathspec, p)
+		didMatch, err = doublestar.Match(toplevelPathspec, p)
 		if err != nil {
-			panic("bad pattern passed to doublestar.Match()")
+			panic(fmt.Sprintf("error calling doublestar.Match(): %v", err))
 		}
 
 		if didMatch {
