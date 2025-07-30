@@ -12,7 +12,7 @@ class GitWho
     @rundir = rundir
   end
 
-  def run(*args, cache_home: nil, config_home: nil, n_procs: nil)
+  def run(*args, cache_home: nil, git_config_path: nil, n_procs: nil)
     env_hash = {}
 
     if cache_home
@@ -21,8 +21,11 @@ class GitWho
       env_hash['GIT_WHO_DISABLE_CACHE'] = '1'
     end
 
-    if config_home
-      env_hash['XDG_CONFIG_HOME'] = config_home.to_s
+    env_hash['GIT_CONFIG_SYSTEM'] = ''
+    if git_config_path
+      env_hash['GIT_CONFIG_GLOBAL'] = git_config_path.to_s
+    else
+      env_hash['GIT_CONFIG_GLOBAL'] = ''
     end
 
     unless n_procs.nil?

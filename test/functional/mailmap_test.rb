@@ -65,9 +65,7 @@ class TestMailmap < Minitest::Test
     Dir.mktmpdir do |dir|
       dir = Pathname.new(dir)
       cache_home = dir / ".cache"
-      config_home = dir / ".config"
       cache_home.mkdir
-      config_home.mkdir
 
       # Try with no mailmap
       cmd = GitWho.new(GitWho.built_bin_path, BigRepo.path)
@@ -76,7 +74,6 @@ class TestMailmap < Minitest::Test
         '--csv',
         '-e',
         cache_home: cache_home,
-        config_home: config_home,
       )
       refute_empty(stdout_s)
 
@@ -86,7 +83,7 @@ class TestMailmap < Minitest::Test
       assert_equal data[3]['commits'], '110'
 
       # Try with mailmap, does it invalidate cache?
-      git_dir = config_home / "git"
+      git_dir = dir / "git"
       git_dir.mkdir
 
       mailmap_path = git_dir / ".mailmap"
@@ -100,7 +97,7 @@ class TestMailmap < Minitest::Test
         '--csv',
         '-e',
         cache_home: cache_home,
-        config_home: config_home,
+        git_config_path: git_config_path,
       )
       refute_empty(stdout_s)
 
@@ -117,7 +114,7 @@ class TestMailmap < Minitest::Test
         '--csv',
         '-e',
         cache_home: cache_home,
-        config_home: config_home,
+        git_config_path: git_config_path,
       )
       refute_empty(stdout_s)
 
@@ -132,9 +129,7 @@ class TestMailmap < Minitest::Test
     Dir.mktmpdir do |dir|
       dir = Pathname.new(dir)
       cache_home = dir / ".cache"
-      config_home = dir / ".config"
       cache_home.mkdir
-      config_home.mkdir
 
       # Try with no mailmap
       cmd = GitWho.new(GitWho.built_bin_path, BigRepo.path)
@@ -143,7 +138,6 @@ class TestMailmap < Minitest::Test
         '--csv',
         '-e',
         cache_home: cache_home,
-        config_home: config_home,
       )
       refute_empty(stdout_s)
 
@@ -164,7 +158,6 @@ class TestMailmap < Minitest::Test
         '--csv',
         '-e',
         cache_home: cache_home,
-        config_home: config_home,
       )
       refute_empty(stdout_s)
 
@@ -177,7 +170,7 @@ class TestMailmap < Minitest::Test
       assert_equal data[3]['commits'], '110'
 
       # Try with two mailmaps, does it invalidate cache?
-      git_dir = config_home / "git"
+      git_dir = dir / "git"
       git_dir.mkdir
 
       global_mailmap_path = git_dir / ".mailmap"
@@ -191,7 +184,7 @@ class TestMailmap < Minitest::Test
         '--csv',
         '-e',
         cache_home: cache_home,
-        config_home: config_home,
+        git_config_path: git_config_path,
       )
       refute_empty(stdout_s)
 
@@ -211,7 +204,7 @@ class TestMailmap < Minitest::Test
         '--csv',
         '-e',
         cache_home: cache_home,
-        config_home: config_home,
+        git_config_path: git_config_path,
       )
       refute_empty(stdout_s)
 
@@ -231,7 +224,6 @@ class TestMailmap < Minitest::Test
         '--csv',
         '-e',
         cache_home: cache_home,
-        config_home: config_home,
       )
       refute_empty(stdout_s)
 
@@ -250,11 +242,9 @@ class TestMailmap < Minitest::Test
     Dir.mktmpdir do |dir|
       dir = Pathname.new(dir)
       cache_home = dir / ".cache"
-      config_home = dir / ".config"
       cache_home.mkdir
-      config_home.mkdir
 
-      git_dir = config_home / "git"
+      git_dir = dir / "git"
       git_dir.mkdir
       mailmap_path = git_dir / ".mailmap"
       # NOTE: We aren't creating the file!
@@ -268,7 +258,7 @@ class TestMailmap < Minitest::Test
         '--csv',
         '-e',
         cache_home: cache_home,
-        config_home: config_home,
+        git_config_path: git_config_path,
       )
       refute_empty(stdout_s)
 
