@@ -12,13 +12,17 @@ class GitWho
     @rundir = rundir
   end
 
-  def run(*args, cache_home: nil, n_procs: nil)
+  def run(*args, cache_home: nil, config_home: nil, n_procs: nil)
     env_hash = {}
 
     if cache_home
-      env_hash['XDG_CACHE_HOME'] = cache_home
+      env_hash['XDG_CACHE_HOME'] = cache_home.to_s
     else
       env_hash['GIT_WHO_DISABLE_CACHE'] = '1'
+    end
+
+    if config_home
+      env_hash['XDG_CONFIG_HOME'] = config_home.to_s
     end
 
     unless n_procs.nil?

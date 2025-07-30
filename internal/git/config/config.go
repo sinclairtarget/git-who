@@ -18,6 +18,7 @@ func repoMailmapPath(gitRootPath string) string {
 	return path
 }
 
+// Looks up a file pointed to by the mailmap.file setting in the git config.
 func globalMailmapPath() (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -54,8 +55,10 @@ func globalMailmapPath() (string, error) {
 	return p, nil
 }
 
-// NOTE: We do NOT respect the git config here, we just assume the conventional
-// path for this file in the repo.
+// NOTE: We do NOT respect the blame.ignoreRevsFile option in the git config
+// here, we just assume the conventional path for this file in the repo.
+//
+// The option can be specified multiple times which makes it a tad complicated.
 func ignoreRevsPath(gitRootPath string) string {
 	path := filepath.Join(gitRootPath, ".git-blame-ignore-revs")
 	return path
