@@ -51,41 +51,10 @@ func (b *GobBackend) compressedPath() string {
 	return b.Path + ".gz"
 }
 
-func (b *GobBackend) Open() (err error) {
+func (b *GobBackend) Open() error {
 	b.wasOpened = true
 
-	// Uncompress gzipped file to regular location if it exists
-	f, err := os.Open(b.compressedPath())
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	fout, err := os.OpenFile(b.Path, os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer fout.Close()
-
-	zr, err := gzip.NewReader(f)
-	if err != nil {
-		return err
-	}
-
-	w := bufio.NewWriter(fout)
-	_, err = io.Copy(w, zr)
-	if err != nil {
-		return err
-	}
-
-	err = zr.Close()
-	if err != nil {
-		return err
-	}
-
-	err = w.Flush()
+	err := uncompress(b.compressedPath(), b.Path)
 	if err != nil {
 		return err
 	}
@@ -93,42 +62,16 @@ func (b *GobBackend) Open() (err error) {
 	return nil
 }
 
-func (b *GobBackend) Close() (err error) {
+func (b *GobBackend) Close() error {
 	if b.isDirty {
-		// Compress file and save to gzipped location
-		f, err := os.Open(b.Path)
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil
-		} else if err != nil {
-			return err
-		}
-		defer f.Close()
-
-		fout, err := os.OpenFile(b.compressedPath(), os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-		defer fout.Close()
-
-		r := bufio.NewReader(f)
-		zw, err := gzip.NewWriterLevel(fout, gzip.BestSpeed)
-		if err != nil {
-			return err
-		}
-
-		_, err = io.Copy(zw, r)
-		if err != nil {
-			return err
-		}
-
-		err = zw.Close()
+		err := compress(b.Path, b.compressedPath())
 		if err != nil {
 			return err
 		}
 	}
 
 	// Remove uncompressed file
-	err = os.RemoveAll(b.Path)
+	err := os.RemoveAll(b.Path)
 	if err != nil {
 		return err
 	}
@@ -319,4 +262,79 @@ func GobCacheDir(prefix string, gitRootPath string) string {
 
 func GobCacheFilename(stateHash string) string {
 	return fmt.Sprintf("%s.gobs", stateHash)
+}
+
+// Uncompress gzipped file to regular location if it exists
+func uncompress(sourcePath string, targetPath string) error {
+	f, err := os.Open(sourcePath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	fout, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer fout.Close()
+
+	zr, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+
+	w := bufio.NewWriter(fout)
+	_, err = io.Copy(w, zr)
+	if err != nil {
+		return err
+	}
+
+	err = zr.Close()
+	if err != nil {
+		return err
+	}
+
+	err = w.Flush()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Compress file and save to gzipped location
+func compress(sourcePath string, targetPath string) error {
+	f, err := os.Open(sourcePath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	fout, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer fout.Close()
+
+	r := bufio.NewReader(f)
+	zw, err := gzip.NewWriterLevel(fout, gzip.BestSpeed)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(zw, r)
+	if err != nil {
+		return err
+	}
+
+	err = zw.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
