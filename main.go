@@ -203,7 +203,7 @@ func treeCmd() command {
 	flagSet := flag.NewFlagSet("git-who tree", flag.ExitOnError)
 
 	showEmail := flagSet.Bool("e", false, "Show email address of each author")
-	showHidden := flagSet.Bool("a", false, "Show files not in working tree")
+	showHidden := flagSet.Bool("a", false, "Show files not in working tree (also annotates all files)")
 	countMerges := flagSet.Bool("merges", false, "Count merge commits toward commit total")
 	useLines := flagSet.Bool("l", false, "Rank authors by lines added/changed")
 	useFiles := flagSet.Bool("f", false, "Rank authors by files touched")
