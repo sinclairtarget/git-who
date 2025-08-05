@@ -595,10 +595,6 @@ Git already has a solution for this problem called [Git
 mailmap](https://git-scm.com/docs/gitmailmap). If a `.mailmap` file is present
 in a Git repository, `git who` will respect it.
 
-Note that `git who` will _not_ consult your Git configuration to find your
-mailmap file if you have configured a different location for it other than the
-conventional `.mailmap` at the root of your repository.
-
 ## Git Blame Ignore Revs
 If you have a `.git-blame-ignore-revs` file at the root of your repository,
 `git who` will skip all commits named in that file. The format of the file
