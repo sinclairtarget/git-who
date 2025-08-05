@@ -591,7 +591,7 @@ How can you make sure that all of someone's commits are counted together
 instead of being attributed to three or four different people with slightly
 different names?
 
-Git already has a solution for his problem called [Git
+Git already has a solution for this problem called [Git
 mailmap](https://git-scm.com/docs/gitmailmap). If a `.mailmap` file is present
 in a Git repository, `git who` will respect it.
 
