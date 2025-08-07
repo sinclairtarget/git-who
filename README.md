@@ -653,9 +653,9 @@ from any Git repository, and it will invoke git-who through Docker.
 The number of **commits** shown for each author is the number of unique commits
 found while walking the commit log. When supplying a path argument to `git
 who`, the commits walked include only commits modifying the given path(s).
-Here, the rules described under the HISTORY SIMPLIFICATION section of Git log
-apply—branches in the commit history that do not modify the given path(s) are
-pruned away.
+Here, the rules described under the HISTORY SIMPLIFICATION section of the Git log 
+man page apply—branches in the commit history that do not modify the given path(s) 
+are pruned away.
 
 The number of **files** shown for each author is the number of unique files
 modified in commits by that author. If a file is renamed, it will count twice.
