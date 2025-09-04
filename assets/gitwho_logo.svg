@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="304mm"
+   height="100mm"
+   viewBox="0 0 304 99.999997"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   sodipodi:docname="gitwho_logo_v1.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="title40">git-who-logo-v1</title>
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showguides="false"
+     inkscape:zoom="0.5"
+     inkscape:cx="478"
+     inkscape:cy="653"
+     inkscape:window-width="1920"
+     inkscape:window-height="1051"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1-5"
+     showgrid="false">
+    <sodipodi:guide
+       position="252.83413,79.440224"
+       orientation="0,-1"
+       id="guide2"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="21.610244,46.492639"
+       orientation="1,0"
+       id="guide3"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="282.63827,39.013542"
+       orientation="1,0"
+       id="guide4"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="197.37915,33.56079"
+       orientation="0,-1"
+       id="guide5"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="168.14271,61.635417"
+       orientation="0,-1"
+       id="guide8"
+       inkscape:locked="false" />
+    <inkscape:grid
+       id="grid24"
+       units="mm"
+       originx="0"
+       originy="0"
+       spacingx="1"
+       spacingy="0.99999999"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       enabled="true"
+       visible="false" />
+    <sodipodi:guide
+       position="151.37301,73.739282"
+       orientation="0,-1"
+       id="guide40"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="226.65658,51.076312"
+       orientation="1,0"
+       id="guide41"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="209.96421,48.369372"
+       orientation="1,0"
+       id="guide42"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="36.524678,23.584376"
+       orientation="0,-1"
+       id="guide43"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="53.494205,99.999994"
+       orientation="0,-1"
+       id="guide44"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="0,99.999994"
+       orientation="1,0"
+       id="guide45"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="0,-3.2664882e-07"
+       orientation="0,-1"
+       id="guide46"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="304,0"
+       orientation="1,0"
+       id="guide47"
+       inkscape:locked="false" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="git-who-logo"
+     inkscape:groupmode="layer"
+     id="layer1-5"
+     transform="matrix(0.72702277,0,0,0.72702277,186.13214,78.047861)">
+    <path
+       id="rect1"
+       style="display:inline;fill:#55d400;stroke-width:0.129255;-inkscape-stroke:none"
+       d="m 94.1928,-78.949156 c -2.169439,0.0028 -4.337717,0.836366 -5.997973,2.500782 l -29.968669,30.043292 c -3.320512,3.328831 -3.313566,8.682217 0.01527,12.002731 l 24.923857,24.8619506 6.990993,-6.9562226 a 4.2731974,4.2731974 0 0 1 -0.189106,-1.253359 4.2731974,4.2731974 0 0 1 4.268034,-4.278211 4.2731974,4.2731974 0 0 1 4.278208,4.268035 4.2731974,4.2731974 0 0 1 -4.268033,4.278207 4.2731974,4.2731974 0 0 1 -1.266926,-0.190798 l -6.968922,6.9689642 2.275209,2.2701216 c 3.328836,3.3205173 8.682218,3.3135677 12.002738,-0.015264 l 29.96781,-30.0432898 c 3.32051,-3.328832 3.31442,-8.682214 -0.0144,-12.002731 l -26.66228,-26.595282 -5.254274,5.266986 a 4.2731981,4.2731981 0 0 1 0.188257,1.250816 4.2731981,4.2731981 0 0 1 -0.19165,1.272014 l 10.930857,10.903711 a 4.2731981,4.2731981 0 0 1 1.24148,-0.186563 4.2731981,4.2731981 0 0 1 4.27821,4.268034 4.2731981,4.2731981 0 0 1 -4.26804,4.279058 4.2731981,4.2731981 0 0 1 -1.30933,-0.204371 l -10.90455,10.846049 a 4.3643426,4.273162 89.999999 0 1 0.233203,1.414481 4.3643426,4.273162 89.999999 0 1 -4.268038,4.369792 4.3643426,4.273162 89.999999 0 1 -4.278206,-4.358772 4.3643426,4.273162 89.999999 0 1 4.267184,-4.369794 4.3643426,4.273162 89.999999 0 1 1.255055,0.190801 l 10.910482,-10.920668 a 4.2731981,4.2731981 0 0 1 -0.18402,-1.235576 4.2731981,4.2731981 0 0 1 0.19756,-1.289821 L 95.492801,-62.482505 a 4.2731981,4.2731981 0 0 1 -1.247421,0.18826 4.2731981,4.2731981 0 0 1 -1.251664,-0.185715 l -10.879118,10.907104 a 4.2731981,4.2731981 0 0 1 0.18741,1.244877 4.2731981,4.2731981 0 0 1 -4.268033,4.27821 4.2731981,4.2731981 0 0 1 -4.27821,-4.267184 4.2731981,4.2731981 0 0 1 4.268032,-4.279058 4.2731981,4.2731981 0 0 1 1.288977,0.197585 h 8.48e-4 l 10.852802,-10.876601 a 4.2731981,4.2731981 0 0 1 -0.20013,-1.287281 4.2731981,4.2731981 0 0 1 4.268032,-4.27821 4.2731981,4.2731981 0 0 1 1.288977,0.197588 l 5.242387,-5.253426 -0.56901,-0.567318 c -1.664418,-1.660257 -3.834473,-2.488231 -6.003911,-2.485518 z"
+       inkscape:label="questionMark" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:74.9857px;line-height:1.25;font-family:Aleo;-inkscape-font-specification:Aleo;text-align:start;text-decoration-color:#000000;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#55d400;fill-opacity:1;stroke-width:2.68049;-inkscape-stroke:none"
+       x="-227.19514"
+       y="-15.967382"
+       id="text1"
+       inkscape:label="git-who"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Aleo;-inkscape-font-specification:Aleo;fill:#55d400;fill-opacity:1;stroke-width:2.68049"
+         x="-227.19514"
+         y="-15.967382">git-who</tspan></text>
+  </g>
+  <metadata
+     id="metadata40">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <cc:license
+           rdf:resource="http://creativecommons.org/licenses/by-sa/4.0/" />
+        <dc:title>git-who-logo-v1</dc:title>
+        <dc:date>20250822</dc:date>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>AdrienDSlone</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:description>Thanks to the font Aleo by Alessio Laiso : https://github.com/AlessioLaiso/aleo
+Copyright 2018 The Aleo Project Authors
+This Font Software is licensed under the SIL Open Font License, Version 1.1 </dc:description>
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/licenses/by-sa/4.0/">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:requires
+           rdf:resource="http://creativecommons.org/ns#Notice" />
+        <cc:requires
+           rdf:resource="http://creativecommons.org/ns#Attribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+        <cc:requires
+           rdf:resource="http://creativecommons.org/ns#ShareAlike" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>
