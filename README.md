@@ -1,4 +1,3 @@
-# git-who
 ![logo](./assets/gitwho_logo.svg)
 
 `git-who` is a command-line tool for answering that eternal question:
