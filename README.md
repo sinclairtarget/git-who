@@ -1,5 +1,5 @@
 # git-who
- ![Vanity screenshot](./screenshots/vanity.png)
+![logo](./assets/gitwho_logo.svg)
 
 `git-who` is a command-line tool for answering that eternal question:
 
@@ -9,6 +9,8 @@ Unlike `git blame`, which can tell you who wrote a _line_ of code, `git-who`
 tells you the people responsible for entire components or subsystems in a
 codebase. You can think of `git-who` sort of like `git blame` but for file
 trees rather than individual files.
+
+ ![Vanity screenshot](./screenshots/vanity.png)
 
 ## Demo
 This README contains comprehensive documentation. For an overview, see [Who
