@@ -9,7 +9,9 @@ tells you the people responsible for entire components or subsystems in a
 codebase. You can think of `git-who` sort of like `git blame` but for file
 trees rather than individual files.
 
- ![Vanity screenshot](./screenshots/vanity.png)
+
+![demo](https://github.com/user-attachments/assets/c0281f57-374b-4b3a-a21d-8d0262c3e46b)
+
 
 ## Demo
 This README contains comprehensive documentation. For an overview, see [Who
