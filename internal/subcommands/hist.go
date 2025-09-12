@@ -184,10 +184,10 @@ func drawPlot(
 				"%s ┤ %s%s%-*s%s  %s\n",
 				bucket.Name,
 				valueBar,
-				pretty.Dim,
+				pretty.Dim(),
 				barWidth-clampedValue,
 				totalBar,
-				pretty.Reset,
+				pretty.Reset(),
 				tallyPart,
 			)
 
@@ -213,12 +213,12 @@ func fmtHistTally(
 	case tally.LinesMode:
 		metric = fmt.Sprintf(
 			"(%s%s%s / %s%s%s)",
-			pretty.Green,
+			pretty.Green(),
 			format.Number(t.LinesAdded),
-			pretty.DefaultColor,
-			pretty.Red,
+			pretty.DefaultColor(),
+			pretty.Red(),
 			format.Number(t.LinesRemoved),
-			pretty.DefaultColor,
+			pretty.DefaultColor(),
 		)
 	default:
 		panic("unrecognized tally mode in switch")
@@ -234,10 +234,10 @@ func fmtHistTally(
 	if fade {
 		return fmt.Sprintf(
 			"%s%s %s%s",
-			pretty.Dim,
+			pretty.Dim(),
 			author,
 			metric,
-			pretty.Reset,
+			pretty.Reset(),
 		)
 	} else {
 		return fmt.Sprintf("%s %s", author, metric)

@@ -314,17 +314,17 @@ func writeTable(
 	for i, t := range tallies {
 		alternating := ""
 		if totalRows > maxBeforeColorAlternating && i%2 == 1 {
-			alternating = pretty.Invert
+			alternating = pretty.Invert()
 		}
 
 		lines := fmt.Sprintf(
 			"%s%7s%s / %s%7s%s",
-			pretty.Green,
+			pretty.Green(),
 			format.Number(t.LinesAdded),
-			pretty.DefaultColor,
-			pretty.Red,
+			pretty.DefaultColor(),
+			pretty.Red(),
 			format.Number(t.LinesRemoved),
-			pretty.DefaultColor,
+			pretty.DefaultColor(),
 		)
 
 		if mode == tally.LinesMode || mode == tally.FilesMode {
@@ -336,7 +336,7 @@ func writeTable(
 				format.Number(t.Commits),
 				format.Number(t.FileCount),
 				lines,
-				pretty.Reset,
+				pretty.Reset(),
 			)
 		} else if mode == tally.FirstModifiedMode {
 			fmt.Printf(
@@ -345,7 +345,7 @@ func writeTable(
 				formatAuthor(t, showEmail, colwidth-22),
 				format.RelativeTime(progStart, t.FirstCommitTime),
 				format.Number(t.Commits),
-				pretty.Reset,
+				pretty.Reset(),
 			)
 		} else {
 			fmt.Printf(
@@ -354,7 +354,7 @@ func writeTable(
 				formatAuthor(t, showEmail, colwidth-22),
 				format.RelativeTime(progStart, t.LastCommitTime),
 				format.Number(t.Commits),
-				pretty.Reset,
+				pretty.Reset(),
 			)
 		}
 	}
