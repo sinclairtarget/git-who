@@ -315,12 +315,12 @@ func fmtTallyMetric(t tally.FinalTally, opts printTreeOpts) string {
 	case tally.LinesMode:
 		return fmt.Sprintf(
 			"(%s%s%s / %s%s%s)",
-			pretty.Green,
+			pretty.Green(),
 			format.Number(t.LinesAdded),
-			pretty.DefaultColor,
-			pretty.Red,
+			pretty.DefaultColor(),
+			pretty.Red(),
 			format.Number(t.LinesRemoved),
-			pretty.DefaultColor,
+			pretty.DefaultColor(),
 		)
 	case tally.LastModifiedMode:
 		return fmt.Sprintf(
@@ -356,7 +356,7 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 
 		var path string
 		if line.dimPath {
-			path = fmt.Sprintf("%s%s%s", pretty.Dim, line.path, pretty.Reset)
+			path = fmt.Sprintf("%s%s%s", pretty.Dim(), line.path, pretty.Reset())
 		} else {
 			path = line.path
 		}
@@ -382,9 +382,9 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 				"%s%s%s%s%s%s %s\n",
 				line.indent,
 				path,
-				pretty.Dim,
+				pretty.Dim(),
 				separator,
-				pretty.Reset,
+				pretty.Reset(),
 				author,
 				line.metric,
 			)
@@ -393,11 +393,11 @@ func printTree(lines []treeOutputLine, showEmail bool) {
 				"%s%s%s%s%s %s%s\n",
 				line.indent,
 				path,
-				pretty.Dim,
+				pretty.Dim(),
 				separator,
 				author,
 				line.metric,
-				pretty.Reset,
+				pretty.Reset(),
 			)
 		}
 	}

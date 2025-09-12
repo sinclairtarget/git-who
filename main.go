@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/sinclairtarget/git-who/internal/git"
+	"github.com/sinclairtarget/git-who/internal/pretty"
 	"github.com/sinclairtarget/git-who/internal/subcommands"
 	"github.com/sinclairtarget/git-who/internal/tally"
 	"github.com/sinclairtarget/git-who/internal/utils/flagutils"
@@ -40,6 +41,7 @@ func main() {
 
 	versionFlag := mainFlagSet.Bool("version", false, "Print version and exit")
 	verboseFlag := mainFlagSet.Bool("v", false, "Enables debug logging")
+	noColorFlag := mainFlagSet.Bool("no-color", false, "Disable ANSI color output")
 
 	mainFlagSet.Usage = func() {
 		fmt.Println("Usage: git-who [-v] [subcommand] [subcommand options...]")
@@ -71,7 +73,7 @@ func main() {
 loop:
 	for subcmdIndex < len(os.Args) {
 		switch os.Args[subcmdIndex] {
-		case "-version", "--version", "-v", "--v", "-h", "--help":
+		case "-version", "--version", "-v", "--v", "-h", "--help", "-no-color", "--no-color":
 			subcmdIndex += 1
 		default:
 			break loop
@@ -83,6 +85,10 @@ loop:
 	if *versionFlag {
 		fmt.Printf("%s %s\n", Version, Commit)
 		return
+	}
+
+	if *noColorFlag {
+		pretty.SetColorEnabled(false)
 	}
 
 	if *verboseFlag {
