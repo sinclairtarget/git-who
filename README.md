@@ -27,7 +27,7 @@ See [releases](https://github.com/sinclairtarget/git-who/releases).
 
 #### Mac OS
 ```
-$ brew install git-who
+brew install git-who
 ```
 
 ### Docker
