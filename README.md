@@ -26,7 +26,7 @@ See [releases](https://github.com/sinclairtarget/git-who/releases).
 [![Packaging status](https://repology.org/badge/vertical-allrepos/git-who.svg)](https://repology.org/project/git-who/versions)
 
 #### Mac OS
-```
+```bash
 brew install git-who
 ```
 
@@ -47,11 +47,11 @@ installed. Note that these are _only_ required when building from source; you
 can download and run one of the binary releases without installing any of these
 tools.
 
-```
-$ git clone git@github.com:sinclairtarget/git-who.git
-$ cd git-who
-$ rake
-$ ./git-who --version
+```bash
+git clone git@github.com:sinclairtarget/git-who.git
+cd git-who
+rake
+./git-who --version
 ```
 
 ## Usage
@@ -616,7 +616,7 @@ system directly. Follow these steps to build and use the Docker image.
 ### Building the Docker Image
 To build the `git-who` Docker image, run the following command from the project root:
 
-```
+```bash
 docker build -t git-who -f docker/Dockerfile .
 ```
 
@@ -625,7 +625,7 @@ This will create a Docker image named `git-who` that you can use to run the tool
 ### Running `git-who` via Docker
 To use git-who without modifying your Git configuration, you can manually run:
 
-```
+```bash
 docker run --rm -it -v "$(pwd)":/git -v "$HOME":/root git-who who
 ```
 
